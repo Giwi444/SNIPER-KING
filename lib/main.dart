@@ -274,7 +274,7 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
 }
 
 // ==========================================
-// MAIN NAVIGATION SCREEN
+// MAIN NAVIGATION SCREEN (พร้อมระบบล็อกอัตโนมัติเมื่อออกจากแอป)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -936,7 +936,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (ดีไซน์เต็มรูปแบบตามรูปภาพ)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -984,9 +984,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             slPointsController.text = data['sl_points']?.toString() ?? '500';
             riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
             enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+            dailyTargetController.text = data['daily_target']?.toString() ?? '250';
             enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+            dailyLossController.text = data['daily_loss']?.toString() ?? '250';
           });
         }
       });
@@ -1005,9 +1005,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
         'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
         'enable_daily_target': enableDailyTarget,
-        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
+        'daily_target': double.tryParse(dailyTargetController.text) ?? 250.0,
         'enable_daily_loss': enableDailyLoss,
-        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+        'daily_loss': double.tryParse(dailyLossController.text) ?? 250.0,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1034,6 +1034,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'LIQUIDITY SWEEP PARAMETERS',
+              style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+            ),
+            const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1107,20 +1112,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      Switch(
+                        value: enableDailyTarget,
+                        activeColor: const Color(0xFF00C853),
+                        onChanged: (val) => setState(() => enableDailyTarget = val),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  _buildControllerInputField('Daily Target (\$)', dailyTargetController),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      Switch(
+                        value: enableDailyLoss,
+                        activeColor: Colors.redAccent,
+                        onChanged: (val) => setState(() => enableDailyLoss = val),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
+            Container(
               width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFB300).withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: ElevatedButton.icon(
                 onPressed: _saveSettingsToFirebase,
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.save, color: Colors.black),
+                label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 14)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB300),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
             ),
@@ -1156,7 +1203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (ดีไซน์เต็มรูปแบบตามรูปภาพ)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1218,10 +1265,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(18),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: const Color(0xFF161619),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12, width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text('XAUUSD', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('M1', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('Active Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+              ],
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isTotalProfit
+                    ? [const Color(0xFF00C853).withOpacity(0.2), const Color(0xFF161619)]
+                    : [const Color(0xFFD50000).withOpacity(0.2), const Color(0xFF161619)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent, width: 1.5),
             ),
@@ -1245,12 +1316,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     itemBuilder: (context, index) {
                       final order = activeOrders[index];
                       final String type = order['type']?.toString() ?? 'BUY';
+                      final String symbol = order['symbol']?.toString() ?? 'XAUUSD';
+                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                       final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
                       bool isBuy = type.toUpperCase().contains('BUY');
+                      bool isProfit = profit >= 0;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: const Color(0xFF161619),
                           borderRadius: BorderRadius.circular(16),
@@ -1259,8 +1333,38 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(type, style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold)),
-                            Text('${profit >= 0 ? "+" : ""}\$${profit.toStringAsFixed(2)}', style: TextStyle(color: profit >= 0 ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    type,
+                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const SizedBox(height: 2),
+                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -1274,7 +1378,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN (ดีไซน์เต็มรูปแบบตามรูปแรก)
+// 4. TRADE HISTORY SCREEN (ดีไซน์เต็มรูปแบบตามรูปภาพ)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
