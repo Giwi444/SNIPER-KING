@@ -20,10 +20,9 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.x'
+          flutter-version: 'stable' # เปลี่ยนเป็น stable เพื่อรองรับ Firebase และแพ็กเกจใหม่ๆ
           channel: 'stable'
 
-      # เพิ่มขั้นตอนสร้างโครงสร้างโปรเจกต์ Android/Gradle เผื่อไว้กรณีที่ไฟล์บน GitHub ขาดหายไป
       - name: Create Android & Gradle structure if missing
         run: |
           if [ ! -d "android" ]; then
