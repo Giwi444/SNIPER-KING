@@ -204,7 +204,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (พร้อมภาพหุ่นยนต์สีทองเต็มจอ)
+// 1. HOME SCREEN (พร้อมภาพพื้นหลังหุ่นยนต์ Iron Man)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -311,16 +311,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ภาพพื้นหลังหุ่นยนต์สีทอง
-        // หมายเหตุ: นำไฟล์รูปไปใส่ไว้ที่ assets/images/gold_robot.jpg และประกาศใน pubspec.yaml
+        // ภาพพื้นหลังหุ่นยนต์ Iron Man ที่อัปโหลด
         Image.asset(
-          'assets/images/gold_robot.jpg',
+          'assets/images/IMG_20260922_200506.jpg',
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(color: const Color(0xFF0B0B0E));
           },
         ),
-        // เลเยอร์โปร่งแสงทับเพื่อให้ตัวหนังสืออ่านง่ายขึ้น
+        // เลเยอร์สีดำโปร่งแสงทับเพื่อให้ตัวหนังสือและปุ่มต่างๆ อ่านง่ายขึ้น
         Container(
           color: Colors.black.withOpacity(0.65),
         ),
