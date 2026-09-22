@@ -13,7 +13,7 @@ void main() async {
         appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
         messagingSenderId: "155532929563",
         projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739.firebasestorage.app",
+        storageBucket: "liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
         databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
       ),
     );
@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN CHECK OR SETUP SCREEN (ตรวจสอบหรือสร้าง PIN ใหม่)
+// PIN CHECK OR SETUP SCREEN (ระบบ PIN พร้อมตรวจสอบการออกจากแอป)
 // ==========================================
 class PinCheckOrSetupScreen extends StatefulWidget {
   const PinCheckOrSetupScreen({super.key});
@@ -55,7 +55,7 @@ class PinCheckOrSetupScreen extends StatefulWidget {
   State<PinCheckOrSetupScreen> createState() => _PinCheckOrSetupScreenState();
 }
 
-class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
+class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> with WidgetsBindingObserver {
   String enteredPin = "";
   String? savedPin;
   bool isSetupMode = false;
@@ -66,7 +66,14 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkSavedPin();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _checkSavedPin() async {
@@ -93,14 +100,12 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
       if (enteredPin.length == 6) {
         if (isSetupMode) {
           if (!isConfirmStep) {
-            // ขั้นตอนที่ 1: บันทึก PIN ชั่วคราว แล้วให้ยืนยันอีกครั้ง
             setState(() {
               tempPin = enteredPin;
               isConfirmStep = true;
               enteredPin = "";
             });
           } else {
-            // ขั้นตอนที่ 2: ยืนยัน PIN ว่าตรงกันไหม
             if (enteredPin == tempPin) {
               await _savePinToDevice(enteredPin);
               if (!mounted) return;
@@ -120,7 +125,6 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
             }
           }
         } else {
-          // โหมดกรอกรหัสผ่านเข้าใช้งานปกติ
           if (enteredPin == savedPin) {
             if (!mounted) return;
             Navigator.pushReplacement(
@@ -165,7 +169,7 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0B0B0E), Color(0xFF002A12)], // พื้นหลังไล่สี ดำ ไป เขียวเข้ม
+            colors: [Color(0xFF0B0B0E), Color(0xFF002A12)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -181,8 +185,6 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.2),
               ),
               const SizedBox(height: 30),
-
-              // จุดแสดงสถานะรหัส 6 ช่อง
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(6, (index) {
@@ -201,8 +203,6 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
                 }),
               ),
               const SizedBox(height: 40),
-
-              // แผงปุ่มกดตัวเลข (โทนเหลือง-แดง)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: Column(
@@ -281,7 +281,7 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
 }
 
 // ==========================================
-// MAIN NAVIGATION SCREEN (แดชบอร์ดหลัก)
+// MAIN NAVIGATION SCREEN (แดชบอร์ดหลัก พร้อมฟังก์ชันล็อกเมื่อออกจากแอป)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -290,7 +290,7 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
@@ -299,8 +299,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _listenToActiveAccount();
     _listenToAlertsCount();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ตรวจจับเมื่อผู้ใช้พับแอปออกไปเบื้องหลัง (Background/Inactive) ให้เด้งกลับมาหน้าใส่ PIN ทันที
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PinCheckOrSetupScreen()),
+        );
+      }
+    }
   }
 
   void _listenToActiveAccount() {
