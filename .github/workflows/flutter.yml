@@ -20,7 +20,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # ใช้ช่อง stable และปล่อยให้ระบบดึงตัวล่าสุดให้อัตโนมัติ
+          channel: 'stable'
 
       - name: Create Android & Gradle structure if missing
         run: |
@@ -37,11 +37,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
+          name: release-apk-v2  # เปลี่ยนชื่อตรงนี้ไม่ให้ซ้ำกับรอบก่อนหน้า
           path: build/app/outputs/flutter-apk/app-release.apk
