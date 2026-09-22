@@ -290,7 +290,8 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+// [แก้จุดที่ 2] เพิ่ม WidgetsBindingObserver เพื่อตรวจจับการสลับแอปออกไปเบื้องหลัง (Background)
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
@@ -299,8 +300,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // ลงทะเบียนตัวสังเกตการณ์วงจรชีวิตแอป
     _listenToActiveAccount();
     _listenToAlertsCount();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ถอดถอนเมื่อหน้าจอถูกทำลาย
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // เมื่อผู้ใช้กดออกจากแอปไปอยู่เบื้องหลัง (paused หรือ detached) ให้เคลียร์รหัส PIN ที่จำไว้
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _PinLoginScreenState.temporarySavedPin = null;
+    }
   }
 
   void _listenToActiveAccount() {
@@ -355,6 +372,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _logoutToPinScreen() {
+    // เมื่อกดล็อคเอาท์ ให้เคลียร์ PIN ด้วยเช่นกัน
+    _PinLoginScreenState.temporarySavedPin = null;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const PinLoginScreen()),
@@ -539,12 +558,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // [แก้จุดที่ 1] ปรับปรุงคำสั่งปิดออเดอร์ทั้งหมดให้ส่งค่าตามรูปแบบที่ EA รองรับอย่างถูกต้องสมบูรณ์
   void _closeAllOrders() {
     try {
-      _dbRef?.update({
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      
+      // ส่งคำสั่งไปที่ node 'status' และ node แยก 'commands' เพื่อให้มั่นใจว่า EA จะได้รับคำสั่งแน่นอน
+      database.ref('status').update({
         'close_all': true,
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
+
+      database.ref('commands').set({
+        'action': 'CLOSE_ALL',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
       );
@@ -565,7 +597,6 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              // กรอบหัวข้อด้านบน (ลบโลโก้ออกเรียบร้อยแล้ว)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
