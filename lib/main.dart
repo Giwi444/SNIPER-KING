@@ -39,12 +39,12 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const MainNavigationScreen(),
+      home: const PinLoginScreen(), // เริ่มต้นด้วยหน้ากรอก PIN
     );
   }
 }
 
-// วิดเจ็ตสำหรับทำภาพพื้นหลังหุ่นยนต์ทุกหน้า
+// วิดเจ็ตภาพพื้นหลังโรบอทสำหรับทุกหน้า
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -70,6 +70,259 @@ class RobotBackground extends StatelessWidget {
   }
 }
 
+// ==========================================
+// 0. PIN LOGIN SCREEN (หน้ากรอก PIN 6 หลักเดิม)
+// ==========================================
+class PinLoginScreen extends StatefulWidget {
+  const PinLoginScreen({super.key});
+
+  @override
+  State<PinLoginScreen> createState() => _PinLoginScreenState();
+}
+
+class _PinLoginScreenState extends State<PinLoginScreen> {
+  String enteredPin = "";
+  final String correctPin = "123456"; // สามารถเปลี่ยนรหัส PIN ได้ที่นี่
+
+  void _onNumberTap(String number) {
+    if (enteredPin.length < 6) {
+      setState(() {
+        enteredPin += number;
+      });
+
+      if (enteredPin.length == 6) {
+        if (enteredPin == correctPin) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
+          );
+          setState(() {
+            enteredPin = "";
+          });
+        }
+      }
+    }
+  }
+
+  void _onDeleteTap() {
+    if (enteredPin.isNotEmpty) {
+      setState(() {
+        enteredPin = enteredPin.substring(0, enteredPin.length - 1);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RobotBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const IronManLogo(size: 90),
+              const SizedBox(height: 24),
+              const Text(
+                'กรุณากรอก PIN ของคุณ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // จุดแสดงสถานะ PIN 6 หลัก
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(6, (index) {
+                  bool isFilled = index < enteredPin.length;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
+                      border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 40),
+              // แผงปุ่มกดตัวเลข (Keypad)
+              _buildKeypadRow(['1', '2', '3']),
+              const SizedBox(height: 16),
+              _buildKeypadRow(['4', '5', '6']),
+              const SizedBox(height: 16),
+              _buildKeypadRow(['7', '8', '9']),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 80, height: 80), // เว้นช่องว่างให้ตรงล็อก
+                  const SizedBox(width: 24),
+                  _buildKeypadButton('0'),
+                  const SizedBox(width: 24),
+                  SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: ElevatedButton(
+                      onPressed: _onDeleteTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF161619).withOpacity(0.8),
+                        shape: const CircleBorder(),
+                        side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                      ),
+                      child: const Icon(Icons.backspace_outlined, color: Colors.redAccent),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKeypadRow(List<String> numbers) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: numbers.map((num) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: _buildKeypadButton(num),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildKeypadButton(String number) {
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: ElevatedButton(
+        onPressed: () => _onNumberTap(number),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF161619).withOpacity(0.85),
+          shape: const CircleBorder(),
+          side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+          elevation: 5,
+        ),
+        child: Text(
+          number,
+          style: const TextStyle(
+            color: Color(0xFFFFB300),
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// IRON MAN ROBOT LOGO WIDGET
+// ==========================================
+class IronManLogo extends StatelessWidget {
+  final double size;
+  const IronManLogo({super.key, this.size = 60.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const RadialGradient(
+          colors: [Color(0xFFB71C1C), Color(0xFF161619)],
+          radius: 0.8,
+        ),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFB300).withOpacity(0.4),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size * 0.65,
+            height: size * 0.75,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD32F2F),
+              borderRadius: BorderRadius.circular(size * 0.2),
+              border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+            ),
+          ),
+          Positioned(
+            top: size * 0.18,
+            child: Container(
+              width: size * 0.35,
+              height: size * 0.45,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB300),
+                borderRadius: BorderRadius.circular(size * 0.1),
+              ),
+            ),
+          ),
+          Positioned(
+            top: size * 0.35,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: size * 0.1,
+                  height: size * 0.05,
+                  decoration: BoxDecoration(
+                    color: Colors.cyanAccent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 6, spreadRadius: 1)],
+                  ),
+                ),
+                SizedBox(width: size * 0.08),
+                Container(
+                  width: size * 0.1,
+                  height: size * 0.05,
+                  decoration: BoxDecoration(
+                    color: Colors.cyanAccent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 6, spreadRadius: 1)],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: size * 0.12,
+            child: Container(
+              width: size * 0.12,
+              height: size * 0.12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.cyanAccent,
+                boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 8, spreadRadius: 2)],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -79,7 +332,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  String currentLogin = "8111175"; // รองรับรหัสบัญชีเทรดเดิม
+  String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
 
@@ -156,9 +409,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      body: SafeArea(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: pages,
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -335,8 +590,8 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isProfit = profitLoss >= 0;
 
     return RobotBackground(
-      child: SafeArea(
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,70 +608,85 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 1.5,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                        SizedBox(width: 8),
-                        Text(
-                          'SNIPER KING ROBOT',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFFFB300),
-                            letterSpacing: 1.2,
-                          ),
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Opacity(
+                          opacity: 0.12,
+                          child: const IronManLogo(size: 130),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isConnected ? Icons.bolt : Icons.wifi_off,
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+                            SizedBox(width: 8),
                             Text(
-                              isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                              'SNIPER KING ROBOT',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFFFFB300),
+                                letterSpacing: 1.2,
                               ),
                             ),
+                            SizedBox(width: 8),
+                            Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.amberAccent,
-                        fontWeight: FontWeight.w500,
-                      ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isConnected ? Icons.bolt : Icons.wifi_off,
+                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                                  style: TextStyle(
+                                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.amberAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -447,6 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
                         fontSize: 34,
                         fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
@@ -559,7 +830,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20), // ป้องกันบังขอบล่าง
             ],
           ),
         ),
@@ -845,7 +1115,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -1461,7 +1730,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      print("Delete alert error: `e`");
+      print("Delete alert error: $e");
     }
   }
 
