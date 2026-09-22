@@ -1356,7 +1356,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
                                       style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
                                     ),
-                                    const SizedBox(2),
+                                    const SizedBox(height:2),
                                     Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                   ],
                                 ),
