@@ -84,7 +84,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomeScreen(accountLogin: currentLogin),
-      SettingsScreen(accountLogin: currentLogin),
+      const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
       const AlertsScreen(),
@@ -626,21 +626,16 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (ลบส่วน MT5 Account ออกแล้ว เหลือเฉพาะส่วนตั้งค่า Parameter)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
-  final String accountLogin;
-  const SettingsScreen({super.key, required this.accountLogin});
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String brokerText = 'Loading...';
-  String loginText = 'Loading...';
-  String serverText = 'Loading...';
-
   String lotMode = 'Double';
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
@@ -675,10 +670,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            brokerText = data['broker']?.toString() ?? 'Unknown Broker';
-            loginText = data['login']?.toString() ?? widget.accountLogin;
-            serverText = data['server']?.toString() ?? 'Unknown Server';
-            
             lotMode = data['lot_mode']?.toString() ?? 'Double';
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
@@ -733,7 +724,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('EA Parameters (${widget.accountLogin})'),
+        title: const Text('EA Parameters Settings'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -742,31 +733,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'MT5 ACCOUNT CONNECTION',
-              style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildReadOnlyField('Broker', brokerText),
-                  const SizedBox(height: 12),
-                  _buildReadOnlyField('Login (Account)', loginText),
-                  const SizedBox(height: 12),
-                  _buildReadOnlyField('Server', serverText),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
             const Text(
               'LIQUIDITY SWEEP V.3 PARAMETERS',
               style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
@@ -909,33 +875,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
