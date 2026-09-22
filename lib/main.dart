@@ -13,7 +13,7 @@ void main() async {
         appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
         messagingSenderId: "155532929563",
         projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+        storageBucket: "liquidity-b8739-firebasestorage.app",
         databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
       ),
     );
@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN CHECK OR SETUP SCREEN (ระบบ PIN พร้อมตรวจสอบการออกจากแอป)
+// PIN CHECK OR SETUP SCREEN
 // ==========================================
 class PinCheckOrSetupScreen extends StatefulWidget {
   const PinCheckOrSetupScreen({super.key});
@@ -55,7 +55,7 @@ class PinCheckOrSetupScreen extends StatefulWidget {
   State<PinCheckOrSetupScreen> createState() => _PinCheckOrSetupScreenState();
 }
 
-class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> with WidgetsBindingObserver {
+class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
   String enteredPin = "";
   String? savedPin;
   bool isSetupMode = false;
@@ -66,14 +66,7 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> with Widg
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _checkSavedPin();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   Future<void> _checkSavedPin() async {
@@ -281,7 +274,7 @@ class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> with Widg
 }
 
 // ==========================================
-// MAIN NAVIGATION SCREEN (แดชบอร์ดหลัก พร้อมฟังก์ชันล็อกเมื่อออกจากแอป)
+// MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -310,7 +303,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     super.dispose();
   }
 
-  // ตรวจจับเมื่อผู้ใช้พับแอปออกไปเบื้องหลัง (Background/Inactive) ให้เด้งกลับมาหน้าใส่ PIN ทันที
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
@@ -1282,7 +1274,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN
+// 4. TRADE HISTORY SCREEN (ดีไซน์เต็มรูปแบบตามรูปแรก)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1295,20 +1287,33 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<dynamic, dynamic>> allTradeHistory = [];
   DatabaseReference? _historyRef;
+  
+  String selectedFilter = 'วันนี้';
+  final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
 
   @override
   void initState() {
     super.initState();
-    _listenToHistory();
+    _listenToHistory(widget.accountLogin);
   }
 
-  void _listenToHistory() {
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountLogin != widget.accountLogin) {
+      _listenToHistory(widget.accountLogin);
+    }
+  }
+
+  void _listenToHistory(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+
       _historyRef = database.ref('history');
+
       _historyRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -1316,34 +1321,208 @@ class _HistoryScreenState extends State<HistoryScreen> {
             allTradeHistory.clear();
             if (data is Map) {
               data.forEach((key, value) {
-                if (value is Map) allTradeHistory.add(Map<dynamic, dynamic>.from(value));
+                if (value is Map) {
+                  allTradeHistory.add(Map<dynamic, dynamic>.from(value));
+                } else if (value is List) {
+                  for (var item in value) {
+                    if (item is Map) {
+                      allTradeHistory.add(Map<dynamic, dynamic>.from(item));
+                    }
+                  }
+                }
               });
+            } else if (data is List) {
+              for (var e in data) {
+                if (e is Map) {
+                  allTradeHistory.add(Map<dynamic, dynamic>.from(e));
+                }
+              }
             }
+
+            allTradeHistory.sort((a, b) {
+              String timeA = a['close_time']?.toString() ?? a['time']?.toString() ?? '';
+              String timeB = b['close_time']?.toString() ?? b['time']?.toString() ?? '';
+              return timeB.compareTo(timeA);
+            });
           });
         }
       });
     } catch (e) {
-      print("History error: $e");
+      print("History listen error: $e");
     }
+  }
+
+  List<Map<dynamic, dynamic>> _getFilteredHistory() {
+    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
+
+    DateTime now = DateTime.now();
+    return allTradeHistory.where((trade) {
+      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+      DateTime? tradeDate = DateTime.tryParse(timeStr.replaceAll('.', '-'));
+      if (tradeDate == null) return false;
+
+      if (selectedFilter == 'วันนี้') {
+        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
+      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
+        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
+      } else if (selectedFilter == 'เดือนล่าสุด') {
+        return tradeDate.year == now.year && tradeDate.month == now.month;
+      } else if (selectedFilter == '3 เดือนล่าสุด') {
+        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+        return tradeDate.isAfter(threeMonthsAgo);
+      }
+      return true;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
+
+    double totalProfit = filteredHistory.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+
     return Scaffold(
-      appBar: AppBar(title: Text('History (${widget.accountLogin})'), backgroundColor: const Color(0xFF0B0B0E)),
-      body: allTradeHistory.isEmpty
-          ? const Center(child: Text('No closed trade history', style: TextStyle(color: Colors.grey)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: allTradeHistory.length,
+      appBar: AppBar(
+        title: Text('History (${widget.accountLogin})'),
+        backgroundColor: const Color(0xFF0B0B0E),
+      ),
+      body: Column(
+        children: [
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              itemCount: filterOptions.length,
               itemBuilder: (context, index) {
-                final trade = allTradeHistory[index];
-                return ListTile(
-                  title: Text(trade['symbol']?.toString() ?? 'XAUUSD', style: const TextStyle(color: Colors.white)),
-                  trailing: Text('\$${trade['profit'] ?? '0.00'}', style: const TextStyle(color: Color(0xFF00C853))),
+                String filter = filterOptions[index];
+                bool isSelected = selectedFilter == filter;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(filter),
+                    selected: isSelected,
+                    selectedColor: const Color(0xFFFFB300),
+                    backgroundColor: const Color(0xFF161619),
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    onSelected: (bool selected) {
+                      setState(() {
+                        selectedFilter = filter;
+                      });
+                    },
+                  ),
                 );
               },
             ),
+          ),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161619),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: filteredHistory.isEmpty
+                ? const Center(
+                    child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey)),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filteredHistory.length,
+                    itemBuilder: (context, index) {
+                      final trade = filteredHistory[index];
+                      final String type = trade['type']?.toString() ?? 'BUY';
+                      final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
+                      final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
+                      final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
+                      final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
+                      final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                      final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                      bool isBuy = type.toUpperCase().contains('BUY');
+                      bool isProfit = profit >= 0;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161619),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white12, width: 1),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    type,
+                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
+                                      style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
