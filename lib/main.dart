@@ -100,7 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             total = data.where((e) => e != null).length;
           }
           setState(() {
-            if (_currentIndex != 4) {
+            if (_currentIndex != 5) { // ปรับ index เป็น 5 เนื่องจากเพิ่มหน้า Trade เข้ามา
               unreadAlertsCount = total;
             }
           });
@@ -119,6 +119,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomeScreen(accountLogin: currentLogin),
+      const TradeChartScreen(), // <--- หน้าเทรดใหม่ที่เพิ่มเข้ามาตามรีเควส
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
@@ -151,7 +152,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onTap: (index) {
             setState(() {
               _currentIndex = index;
-              if (index == 4) {
+              if (index == 5) {
                 unreadAlertsCount = 0;
               }
             });
@@ -162,6 +163,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           unselectedItemColor: Colors.grey.shade600,
           items: [
             const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+            const BottomNavigationBarItem(icon: Icon(Icons.candlestick_chart), label: 'Trade'), // <--- ปุ่มเมนู Trade
             const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
@@ -695,6 +697,467 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// ==========================================
+// 2. TRADE CHART & QUICK TRADE SCREEN (เพิ่มใหม่ตามภาพอ้างอิง)
+// ==========================================
+class TradeChartScreen extends StatefulWidget {
+  const TradeChartScreen({super.key});
+
+  @override
+  State<TradeChartScreen> createState() => _TradeChartScreenState();
+}
+
+class _TradeChartScreenState extends State<TradeChartScreen> {
+  String symbol = "XAUUSD";
+  String selectedTimeframe = "1m";
+  final List<String> timeframes = ["Tick", "1m", "15m", "1h", "1D"];
+  
+  double currentPrice = 4330.70;
+  double changeAmount = -12.83;
+  double changePercent = -0.30;
+  double highPrice = 4376.03;
+  double lowPrice = 4291.58;
+  double openPrice = 4344.70;
+
+  double lotSize = 0.01;
+  DatabaseReference? _statusRef;
+  DatabaseReference? _tradeRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFirebaseConnection();
+  }
+
+  void _initFirebaseConnection() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _statusRef = database.ref('status');
+      _tradeRef = database.ref('trade_actions');
+
+      _statusRef?.onValue.listen((event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            symbol = data['symbol']?.toString() ?? 'XAUUSD';
+            selectedTimeframe = data['timeframe']?.toString() ?? '1m';
+            currentPrice = (data['bid'] ?? data['price'] ?? 4330.70).toDouble();
+            highPrice = (data['high'] ?? 4376.03).toDouble();
+            lowPrice = (data['low'] ?? 4291.58).toDouble();
+            openPrice = (data['open'] ?? 4344.70).toDouble();
+            changePercent = (data['change_pct'] ?? -0.30).toDouble();
+            changeAmount = (data['change_amt'] ?? -12.83).toDouble();
+          });
+        }
+      });
+    } catch (e) {
+      print("Trade screen firebase error: $e");
+    }
+  }
+
+  void _updateTimeframe(String tf) {
+    setState(() {
+      selectedTimeframe = tf;
+    });
+    try {
+      _statusRef?.update({'timeframe': tf});
+    } catch (e) {
+      print("Update timeframe error: $e");
+    }
+  }
+
+  void _executeManualTrade(String actionType) {
+    try {
+      _tradeRef?.push().set({
+        'action': actionType, // 'BUY' หรือ 'SELL'
+        'symbol': symbol,
+        'lot': lotSize,
+        'price': currentPrice,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$actionType Executed Successfully (Lot: $lotSize)!'),
+          backgroundColor: actionType == 'BUY' ? const Color(0xFF00C853) : Colors.redAccent,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } catch (e) {
+      print("Execute manual trade error: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool isNeg = changePercent < 0;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(symbol, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, color: Colors.grey),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0B0B0E),
+        actions: [
+          IconButton(icon: const Icon(Icons.star_border, color: Colors.amber), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.open_in_new, color: Colors.white), onPressed: () {}),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sub Header: ราคาปัจจุบัน และ High/Low
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentPrice.toStringAsFixed(2),
+                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${isNeg ? "" : "+"}$changeAmount (${isNeg ? "" : "+"}${changePercent.toStringAsFixed(2)}%)',
+                      style: TextStyle(color: isNeg ? Colors.redAccent : const Color(0xFF00C853), fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text('09/22 12:00:11 GMT+3', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('เปิด  ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        Text(openPrice.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Text('สูง  ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        Text(highPrice.toStringAsFixed(2), style: const TextStyle(color: const Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Text('ปิด  ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        Text(currentPrice.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Text('ต่ำ  ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        Text(lowPrice.toStringAsFixed(2), style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // แถบ Timeframe
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.white12, width: 0.5)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: timeframes.map((tf) {
+                    bool isSelected = selectedTimeframe == tf;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: InkWell(
+                        onTap: () => _updateTimeframe(tf),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white24 : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            tf,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.grey,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                Row(
+                  children: const [
+                    Icon(Icons.fullscreen, color: Colors.grey, size: 20),
+                    SizedBox(width: 12),
+                    Icon(Icons.bar_chart, color: Colors.grey, size: 20),
+                    SizedBox(width: 12),
+                    Icon(Icons.settings_outlined, color: Colors.grey, size: 20),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // พื้นที่จำลองกราฟ Candlestick ชาร์ต
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              color: const Color(0xFF0B0B0E),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Text(
+                      '$symbol · 1 · Exchange',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                  Positioned(
+                    top: 36,
+                    left: 16,
+                    child: Text(
+                      currentPrice.toStringAsFixed(2),
+                      style: const TextStyle(color: const Color(0xFF00C853), fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  // เส้นกราฟจำลองแนวโน้มขาขึ้น (Candlestick UI Simulation)
+                  Center(
+                    child: CustomPaint(
+                      size: const Size(double.infinity, 220),
+                      painter: ChartPainter(),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 16,
+                    child: const Text('15:40                  15:50                  16:00', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // แผงควบคุมการซื้อขายด่วน (Quick Trade Panel ด้านล่างสุด)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFF161619),
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+              border: Border(top: BorderSide(color: Colors.white12, width: 1)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: const [
+                        Text('แตะครั้งเดียว', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Icon(Icons.arrow_drop_down, color: Colors.grey, size: 16),
+                      ],
+                    ),
+                    Row(
+                      children: const [
+                        Text('ต่ำ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        SizedBox(width: 8),
+                        Icon(Icons.swap_vert, color: Colors.grey, size: 16),
+                        SizedBox(width: 8),
+                        Text('สูง', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // กล่องปรับเพิ่ม/ลด Lot Size
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B0B0E),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.white70, size: 18),
+                        onPressed: () {
+                          setState(() {
+                            if (lotSize > 0.01) lotSize = double.parse((lotSize - 0.01).toStringAsFixed(2));
+                          });
+                        },
+                      ),
+                      Column(
+                        children: [
+                          const Text('ล็อต', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                          Text(
+                            lotSize.toStringAsFixed(2),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white70, size: 18),
+                        onPressed: () {
+                          setState(() {
+                            lotSize = double.parse((lotSize + 0.01).toStringAsFixed(2));
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('ค่าต่ำสุด:0.01 ล็อต', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                ),
+                const SizedBox(height: 10),
+
+                // ปุ่ม SELL / BUY ขนาดใหญ่
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _executeManualTrade('SELL'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD50000),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('ขาย', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              (currentPrice - 0.11).toStringAsFixed(2),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _executeManualTrade('BUY'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00C853),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('ซื้อ', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              (currentPrice + 0.11).toStringAsFixed(2),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// คลาสวาดเส้นกราฟแท่งเทียนจำลองในหน้า Trade
+class ChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintGreen = Paint()
+      ..color = const Color(0xFF00C853)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final paintRed = Paint()
+      ..color = Colors.redAccent
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final fillGreen = Paint()
+      ..color = const Color(0xFF00C853)
+      ..style = PaintingStyle.fill;
+
+    final fillRed = Paint()
+      ..color = Colors.redAccent
+      ..style = PaintingStyle.fill;
+
+    // ข้อมูลจำลองพิกัดแท่งเทียน
+    final candles = [
+      {'x': 30.0, 'open': 100.0, 'close': 80.0, 'high': 110.0, 'low': 70.0, 'isGreen': false},
+      {'x': 60.0, 'open': 80.0, 'close': 95.0, 'high': 100.0, 'low': 75.0, 'isGreen': true},
+      {'x': 90.0, 'open': 95.0, 'close': 90.0, 'high': 105.0, 'low': 85.0, 'isGreen': false},
+      {'x': 120.0, 'open': 90.0, 'close': 110.0, 'high': 115.0, 'loc': 88.0, 'isGreen': true},
+      {'x': 150.0, 'open': 110.0, 'close': 105.0, 'high': 120.0, 'low': 100.0, 'isGreen': false},
+      {'x': 180.0, 'open': 105.0, 'close': 130.0, 'high': 135.0, 'low': 102.0, 'isGreen': true},
+      {'x': 210.0, 'open': 130.0, 'close': 150.0, 'high': 155.0, 'low': 125.0, 'isGreen': true},
+      {'x': 240.0, 'open': 150.0, 'close': 140.0, 'high': 160.0, 'low': 135.0, 'isGreen': false},
+      {'x': 270.0, 'open': 140.0, 'close': 165.0, 'high': 170.0, 'low': 138.0, 'isGreen': true},
+    ];
+
+    for (var c in candles) {
+      double x = c['x'] as double;
+      double open = c['open'] as double;
+      double close = c['close'] as double;
+      double high = c['high'] as double;
+      double low = c['low'] as double;
+      bool isGreen = c['isGreen'] as bool;
+
+      Paint paint = isGreen ? paintGreen : paintRed;
+      Paint fill = isGreen ? fillGreen : fillRed;
+
+      // วาดไส้เทียน
+      canvas.drawLine(Offset(x, size.height - high), Offset(x, size.height - low), paint);
+
+      // วาดตัวแท่งเทียน
+      double top = size.height - (open > close ? open : close);
+      double height = (open - close).abs();
+      if (height < 2) height = 2;
+
+      canvas.drawRect(Rect.fromLTWH(x - 4, top, 8, height), fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ==========================================
@@ -1487,7 +1950,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN (อัปเดตระบบดึงข้อมูลและปุ่มลบข้อความ)
+// 5. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -1551,7 +2014,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  // ฟังก์ชันลบข้อความแจ้งเตือนทีละรายการ
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
@@ -1563,7 +2025,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  // ฟังก์ชันลบข้อความแจ้งเตือนทั้งหมด
   void _clearAllAlerts() {
     try {
       _alertsRef?.remove();
