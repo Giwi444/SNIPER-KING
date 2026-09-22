@@ -1,4 +1,4 @@
-Name: sniperking
+name: sniperking
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -9,13 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
   firebase_core: ^3.12.0
   firebase_database: ^11.3.0
-  shared_preferences: ^2.2.2   # <-- เพิ่มบรรทัดนี้เข้าไปครับ
-
+  shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
-
 
 dev_dependencies:
   flutter_test:
