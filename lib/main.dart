@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,11 +83,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  Future<void> _listenToAlertsCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    // ดึงเวลาล่าสุดที่ผู้ใช้เปิดอ่านข้อความ (เก็บเป็น Milliseconds)
-    int lastSeenTime = prefs.getInt('last_seen_alert_time') ?? 0;
-
+  void _listenToAlertsCount() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
@@ -98,64 +93,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _alertsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted) {
-          int unreadCount = 0;
-          
-          void checkItem(dynamic key, dynamic value) {
-            if (value != null) {
-              String msg = value.toString();
-              // ดึงเวลาจากข้อความรูปแบบ [YYYY.MM.DD HH:MM:SS] ถ้ามี
-              int msgTime = _extractTimestamp(msg);
-              
-              // ถ้านับเวลาข้อความใหม่กว่าเวลาที่เปิดดูล่าสุด และไม่ได้อยู่หน้า Alerts
-              if (msgTime > lastSeenTime && _currentIndex != 4) {
-                unreadCount++;
-              }
-            }
-          }
-
+          int total = 0;
           if (data is Map) {
-            data.forEach((key, value) => checkItem(key, value));
+            total = data.length;
           } else if (data is List) {
-            for (var e in data) {
-              checkItem(null, e);
-            }
+            total = data.where((e) => e != null).length;
           }
-
           setState(() {
             if (_currentIndex != 4) {
-              unreadAlertsCount = unreadCount;
+              unreadAlertsCount = total;
             }
+          });
+        } else if (data == null && mounted) {
+          setState(() {
+            unreadAlertsCount = 0;
           });
         }
       });
     } catch (e) {
       print("Alerts count error: $e");
     }
-  }
-
-  // ฟังก์ชันช่วยแกะเวลาออกจากข้อความ แจ้งเตือนรูปแบบ [2026.09.22 11:15:19]
-  int _extractTimestamp(String message) {
-    try {
-      if (message.startsWith('[')) {
-        int endIndex = message.indexOf(']');
-        if (endIndex != -1) {
-          String dateStr = message.substring(1, endIndex);
-          DateTime? dt = DateTime.tryParse(dateStr.replaceAll('.', '-'));
-          if (dt != null) {
-            return dt.millisecondsSinceEpoch;
-          }
-        }
-      }
-    } catch (_) {}
-    return 0;
-  }
-
-  void _markAlertsAsRead() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('last_seen_alert_time', DateTime.now().millisecondsSinceEpoch);
-    setState(() {
-      unreadAlertsCount = 0;
-    });
   }
 
   @override
@@ -165,7 +122,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
-      AlertsScreen(onAlertsRead: _markAlertsAsRead),
+      AlertsScreen(onAlertsRead: () {
+        setState(() {
+          unreadAlertsCount = 0;
+        });
+      }),
     ];
 
     return Scaffold(
@@ -191,7 +152,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             setState(() {
               _currentIndex = index;
               if (index == 4) {
-                _markAlertsAsRead();
+                unreadAlertsCount = 0;
               }
             });
           },
@@ -1526,7 +1487,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// 5. ALERTS SCREEN (อัปเดตระบบดึงข้อมูลและปุ่มลบข้อความ)
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -1537,13 +1498,13 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
-  List<MapEntry<String, String>> alertItems = [];
+  List<Map<String, dynamic>> alertItems = [];
   DatabaseReference? _alertsRef;
 
   @override
   void initState() {
     super.initState();
-    widget.onAlertsRead(); // เคลียร์สถานะเมื่อเปิดเข้ามา
+    widget.onAlertsRead();
     _listenToAlerts();
   }
 
@@ -1564,19 +1525,24 @@ class _AlertsScreenState extends State<AlertsScreen> {
             if (data is Map) {
               data.forEach((key, value) {
                 if (value != null) {
-                  alertItems.add(MapEntry(key.toString(), value.toString()));
+                  alertItems.add({
+                    'key': key.toString(),
+                    'message': value.toString(),
+                  });
                 }
               });
             } else if (data is List) {
               for (int i = 0; i < data.length; i++) {
                 if (data[i] != null) {
-                  alertItems.add(MapEntry(i.toString(), data[i].toString()));
+                  alertItems.add({
+                    'key': i.toString(),
+                    'message': data[i].toString(),
+                  });
                 }
               }
             }
 
-            // เรียงลำดับจากใหม่ไปเก่า
-            alertItems.sort((a, b) => b.value.compareTo(a.value));
+            alertItems.sort((a, b) => b['message'].compareTo(a['message']));
           });
         }
       });
@@ -1585,10 +1551,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  // ฟังก์ชันลบข้อความแจ้งเตือนทีละข้อความ
+  // ฟังก์ชันลบข้อความแจ้งเตือนทีละรายการ
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
+      );
     } catch (e) {
       print("Delete alert error: $e");
     }
@@ -1601,6 +1570,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
       setState(() {
         alertItems.clear();
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cleared all alerts successfully'), duration: Duration(seconds: 1)),
+      );
     } catch (e) {
       print("Clear all alerts error: $e");
     }
@@ -1616,30 +1588,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
           if (alertItems.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-              tooltip: 'ลบทั้งหมด',
-              onPressed: () {
-                showDialog(
-                  context: DialogContextHelper.context ?? context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: const Color(0xFF161619),
-                    title: const Text('ลบการแจ้งเตือนทั้งหมด', style: TextStyle(color: Colors.white)),
-                    content: const Text('คุณต้องการลบข้อความแจ้งเตือนทั้งหมดใช่หรือไม่?', style: TextStyle(color: Colors.grey)),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _clearAllAlerts();
-                        },
-                        child: const Text('ลบทั้งหมด', style: TextStyle(color: Colors.redAccent)),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onPressed: _clearAllAlerts,
+              tooltip: 'Clear All Alerts',
             ),
         ],
       ),
@@ -1649,17 +1599,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
               padding: const EdgeInsets.all(16),
               itemCount: alertItems.length,
               itemBuilder: (context, index) {
-                final entry = alertItems[index];
+                final alert = alertItems[index];
                 return Card(
                   color: const Color(0xFF161619),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
                     leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                    title: Text(entry.value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                    title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
                     trailing: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey, size: 18),
-                      onPressed: () => _deleteAlert(entry.key),
+                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                      onPressed: () => _deleteAlert(alert['key']),
                     ),
                   ),
                 );
@@ -1667,8 +1617,4 @@ class _AlertsScreenState extends State<AlertsScreen> {
             ),
     );
   }
-}
-
-class DialogContextHelper {
-  static BuildContext? context;
 }
