@@ -153,9 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String broker = "";
   String server = "";
   int loginAccount = 0;
-  
-  String activeSymbol = 'XAUUSD';
-  String activeTimeframe = 'M1';
 
   DatabaseReference? _dbRef;
 
@@ -206,9 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
             broker = data['broker']?.toString() ?? '';
             server = data['server']?.toString() ?? '';
             loginAccount = int.tryParse(data['login']?.toString() ?? login) ?? 0;
-            
-            activeSymbol = data['symbol']?.toString() ?? 'BTCUSD';
-            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
           });
         }
       });
@@ -399,62 +393,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 10),
                 Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
               ],
-            ),
-            const SizedBox(height: 20),
-
-            Row(
-              children: const [
-                Icon(Icons.candlestick_chart, color: Color(0xFFFFB300), size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'ACTIVE SYMBOL & TIMEFRAME',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeSymbol,
-                          style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeTimeframe,
-                          style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Text('Live Sync', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
             ),
             const SizedBox(height: 20),
 
