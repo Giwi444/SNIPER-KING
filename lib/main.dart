@@ -1,25 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  try {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-        appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-        messagingSenderId: "155532929563",
-        projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739.firebasestorage.app",
-        databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-      ),
-    );
-  } catch (e) {
-    print("Firebase init error: $e");
-  }
-
+void main() {
   runApp(const LiquiditySweepApp());
 }
 
@@ -29,14 +10,15 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MT5 Control - Sniper King Robot',
+      title: 'Liquidity Sweep Control',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0B0B0E),
-        cardColor: const Color(0xFF161619),
+        scaffoldBackgroundColor: const Color(0xFF0F1416),
+        cardColor: const Color(0xFF181F22),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00C853),
-          secondary: Color(0xFFFFB300),
+          primary: Color(0xFF00E676),
+          secondary: Color(0xFFFF5252),
+          surface: Color(0xFF181F22),
         ),
       ),
       home: const MainNavigationScreen(),
@@ -53,1039 +35,391 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  String currentLogin = "8111175";
 
-  @override
-  void initState() {
-    super.initState();
-    _listenToActiveAccount();
-  }
-
-  void _listenToActiveAccount() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('status/login').onValue.listen((event) {
-        final val = event.snapshot.value?.toString();
-        if (val != null && val.isNotEmpty && mounted) {
-          setState(() {
-            currentLogin = val;
-          });
-        }
-      });
-    } catch (e) {
-      print("Account listen error: $e");
-    }
-  }
+  final List<Widget> _pages = [
+    const DashboardTab(),
+    const SettingsTab(),
+    const LogsTab(),
+    const AlertsTab(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // เพิ่มหน้า Orders เป็นเมนูแยกใหม่ต่อจาก Settings
-    final List<Widget> pages = [
-      HomeScreen(accountLogin: currentLogin),
-      SettingsScreen(accountLogin: currentLogin),
-      OrdersScreen(accountLogin: currentLogin),
-      HistoryScreen(accountLogin: currentLogin),
-      const AlertsScreen(),
-    ];
-
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF101014),
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.grey.shade600,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications_active), label: 'Alerts'),
-          ],
-        ),
+      body: SafeArea(child: _pages[_currentIndex]),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF12181B),
+        selectedItemColor: const Color(0xFF00E676),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.tune_rounded), label: 'Settings'),
+          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Logs'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Alerts'),
+        ],
       ),
     );
   }
 }
 
-// ==========================================
-// 1. HOME SCREEN (Graphic Modern UI)
-// ==========================================
-class HomeScreen extends StatefulWidget {
-  final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
+class DashboardTab extends StatefulWidget {
+  const DashboardTab({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<DashboardTab> createState() => _DashboardTabState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  bool isRunning = false;
-  bool isConnected = false; 
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
-  double profitLoss = 0.0;
-  String broker = "";
-  String server = "";
-  int loginAccount = 0;
-  
-  String activeSymbol = 'XAUUSD';
-  String activeTimeframe = 'M1';
-
-  DatabaseReference? _dbRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _initFirebaseAndListen(widget.accountLogin);
-  }
-
-  @override
-  void didUpdateWidget(covariant HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _initFirebaseAndListen(widget.accountLogin);
-    }
-  }
-
-  void _initFirebaseAndListen(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _dbRef = database.ref('status');
-
-      final connectedRef = database.ref('.info/connected');
-      connectedRef.onValue.listen((event) {
-        final connected = event.snapshot.value as bool? ?? false;
-        if (mounted) {
-          setState(() {
-            isConnected = connected;
-          });
-        }
-      });
-
-      _dbRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-
-        if (data != null && mounted) {
-          setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
-            profitLoss = (data['profit'] ?? 0.0).toDouble();
-            isRunning = data['is_running'] ?? false;
-            broker = data['broker']?.toString() ?? '';
-            server = data['server']?.toString() ?? '';
-            loginAccount = int.tryParse(data['login']?.toString() ?? login) ?? 0;
-            
-            activeSymbol = data['symbol']?.toString() ?? 'BTCUSD';
-            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
-          });
-        }
-      });
-    } catch (e) {
-      print("Database listen error: $e");
-    }
-  }
-
-  void _toggleBotStatus(bool status) {
-    try {
-      _dbRef?.update({'is_running': status});
-    } catch (e) {
-      print("Toggle bot error: $e");
-    }
-  }
-
-  void _closeAllOrders() {
-    try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
-      );
-    } catch (e) {
-      print("Close all error: $e");
-    }
-  }
+class _DashboardTabState extends State<DashboardTab> {
+  bool isTradingPaused = false;
 
   @override
   Widget build(BuildContext context) {
-    bool isProfit = profitLoss >= 0;
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E1E24), Color(0xFF121215)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: const Color(0xFFFFB300).withOpacity(0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    '🎯 SNIPER KING ROBOT 👑',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFFFB300),
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.3),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isConnected ? Icons.bolt : Icons.wifi_off,
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                            style: TextStyle(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.amberAccent,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isProfit
-                      ? [const Color(0xFF00C853).withOpacity(0.15), const Color(0xFF161619)]
-                      : [const Color(0xFFD50000).withOpacity(0.15), const Color(0xFF161619)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.12),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'FLOATING PROFIT / LOSS',
-                    style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Row(
+            const Row(
               children: [
-                Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                const SizedBox(width: 10),
-                Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                Icon(Icons.show_chart, color: Color(0xFF00E676)),
+                SizedBox(width: 8),
+                Text('Liquidity Sweep', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                const SizedBox(width: 10),
-                Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            Row(
-              children: const [
-                Icon(Icons.candlestick_chart, color: Color(0xFFFFB300), size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'ACTIVE SYMBOL & TIMEFRAME',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF161619),
+                color: const Color(0xFF00E676).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
+                border: Border.all(color: const Color(0xFF00E676)),
               ),
-              child: Row(
+              child: const Row(
+                children: [
+                  CircleAvatar(radius: 4, backgroundColor: Color(0xFF00E676)),
+                  SizedBox(width: 6),
+                  Text('CONNECTED', style: TextStyle(color: Color(0xFF00E676), fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildCard(
+          title: 'RECOVERY',
+          icon: Icons.history,
+          child: Row(
+            children: [
+              Expanded(child: _buildValueBox('BUY', '0 / 2', Colors.green, Icons.arrow_upward)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildValueBox('SELL', '0 / 2', Colors.red, Icons.arrow_downward)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildCard(
+          title: 'LAST SIGNAL',
+          icon: Icons.track_changes,
+          child: const Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFF233038),
+                child: Icon(Icons.blur_on, color: Colors.blueAccent),
+              ),
+              SizedBox(width: 12),
+              Column(
+                crossAlignment: CrossAlignment.start,
+                children: [
+                  Text('NONE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Waiting for liquidity sweep...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              )
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildCard(
+          title: 'BOT CONTROL',
+          icon: Icons.smart_toy_outlined,
+          child: Column(
+            children: [
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  const Column(
+                    crossAlignment: CrossAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeSymbol,
-                          style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeTimeframe,
-                          style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
+                      Text('Trading Pause', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('EA สามารถทำงานตามระบบได้', style: TextStyle(color: Colors.grey, fontSize: 12)),
                     ],
                   ),
-                  const Text('Live Sync', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Switch(
+                    value: isTradingPaused,
+                    onChanged: (val) => setState(() => isTradingPaused = val),
+                    activeColor: const Color(0xFF00E676),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-
-            Row(
-              children: const [
-                Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'BOT & ORDER CONTROL',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Column(
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(true),
-                          icon: const Icon(Icons.play_arrow, color: Colors.white),
-                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00C853),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(false),
-                          icon: const Icon(Icons.stop, color: Colors.white),
-                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD50000),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
+                  Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: _closeAllOrders,
-                      icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                      label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFB300),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
+                      onPressed: () {},
+                      icon: const Icon(Icons.play_arrow, color: Colors.black),
+                      label: const Text('START', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), padding: const EdgeInsets.symmetric(vertical: 12)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.stop, color: Colors.white),
+                      label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5252), padding: const EdgeInsets.symmetric(vertical: 12)),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon) {
+  Widget _buildCard({required String title, required IconData icon, required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(12)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAlignment: CrossAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.grey, size: 15),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+              Icon(icon, color: Colors.orangeAccent, size: 18),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValueBox(String label, String value, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFF101416), borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        crossAlignment: CrossAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey, size: 14),
+              const SizedBox(width: 4),
+              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
           ),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 }
 
-// ==========================================
-// 2. SETTINGS SCREEN
-// ==========================================
-class SettingsScreen extends StatefulWidget {
-  final String accountLogin;
-  const SettingsScreen({super.key, required this.accountLogin});
+class SettingsTab extends StatefulWidget {
+  const SettingsTab({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<SettingsTab> createState() => _SettingsTabState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  String brokerText = 'Loading...';
-  String loginText = 'Loading...';
-  String serverText = 'Loading...';
-
-  String lotMode = 'Double';
-  final TextEditingController initialLotController = TextEditingController();
-  final TextEditingController maxRecoveryController = TextEditingController();
-  final TextEditingController swingBarsController = TextEditingController();
-  final TextEditingController slPointsController = TextEditingController();
-  final TextEditingController riskRewardController = TextEditingController();
-
+class _SettingsTabState extends State<SettingsTab> {
   bool enableDailyTarget = true;
-  final TextEditingController dailyTargetController = TextEditingController();
-  
-  bool enableDailyLoss = false;
-  final TextEditingController dailyLossController = TextEditingController();
-
-  DatabaseReference? _settingsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettingsFromFirebase();
-  }
-
-  void _loadSettingsFromFirebase() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _settingsRef = database.ref('status');
-
-      _settingsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            brokerText = data['broker']?.toString() ?? 'Unknown Broker';
-            loginText = data['login']?.toString() ?? widget.accountLogin;
-            serverText = data['server']?.toString() ?? 'Unknown Server';
-            
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
-            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
-            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
-            slPointsController.text = data['sl_points']?.toString() ?? '500';
-            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
-
-            enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
-
-            enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
-          });
-        }
-      });
-    } catch (e) {
-      print("Load settings error: $e");
-    }
-  }
-
-  void _saveSettingsToFirebase() {
-    try {
-      _settingsRef?.update({
-        'lot_mode': lotMode,
-        'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
-        'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
-        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
-        'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
-        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
-        'enable_daily_target': enableDailyTarget,
-        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
-        'enable_daily_loss': enableDailyLoss,
-        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Parameters Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFFFFB300),
-        ),
-      );
-    } catch (e) {
-      print("Save settings error: $e");
-    }
-  }
+  bool enableDailyLoss = true;
+  bool showArrows = true;
+  bool mobilePush = true;
 
   @override
   Widget build(BuildContext context) {
-    double sl = double.tryParse(slPointsController.text) ?? 500;
-    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
-    double calculatedTP = sl * rr;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('EA Parameters (${widget.accountLogin})'),
-        backgroundColor: const Color(0xFF0B0B0E),
+        title: const Text('Liquidity Sweep Settings'),
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.save, color: Color(0xFF00E676))),
+        ],
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'MT5 ACCOUNT CONNECTION',
-              style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildReadOnlyField('Broker', brokerText),
-                  const SizedBox(height: 12),
-                  _buildReadOnlyField('Login (Account)', loginText),
-                  const SizedBox(height: 12),
-                  _buildReadOnlyField('Server', serverText),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            const Text(
-              'LIQUIDITY SWEEP V.3 PARAMETERS',
-              style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 8),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B0B0E),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white12, width: 1),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: lotMode,
-                        isExpanded: true,
-                        dropdownColor: const Color(0xFF161619),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        items: ['Fixed', 'Step', 'Double'].map((String item) {
-                          return DropdownMenuItem<String>(value: item, child: Text(item));
-                        }).toList(),
-                        onChanged: (val) => setState(() => lotMode = val!),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white12, width: 1),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${calculatedTP.toStringAsFixed(1)} Points',
-                                style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(color: Colors.white12),
-                  const SizedBox(height: 8),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      Switch(
-                        value: enableDailyTarget,
-                        activeColor: const Color(0xFF00C853),
-                        onChanged: (val) => setState(() => enableDailyTarget = val),
-                      ),
-                    ],
-                  ),
-                  if (enableDailyTarget) ...[
-                    const SizedBox(height: 6),
-                    _buildControllerInputField('Daily Target (\$)', dailyTargetController, TextInputType.number),
-                  ],
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      Switch(
-                        value: enableDailyLoss,
-                        activeColor: Colors.redAccent,
-                        onChanged: (val) => setState(() => enableDailyLoss = val),
-                      ),
-                    ],
-                  ),
-                  if (enableDailyLoss) ...[
-                    const SizedBox(height: 6),
-                    _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _saveSettingsToFirebase,
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB300),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {}),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// 3. ORDERS SCREEN (หน้าเมนูคำสั่งซื้อขายแยกต่างหาก)
-// ==========================================
-class OrdersScreen extends StatefulWidget {
-  final String accountLogin;
-  const OrdersScreen({super.key, required this.accountLogin});
-
-  @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
-}
-
-class _OrdersScreenState extends State<OrdersScreen> {
-  List<Map<dynamic, dynamic>> activeOrders = [];
-  DatabaseReference? _ordersRef;
-  String activeSymbol = 'XAUUSD';
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToOrders();
-  }
-
-  void _listenToOrders() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _ordersRef = database.ref('orders');
-
-      _ordersRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            activeOrders.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Orders listen error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isTotalProfit = totalOrdersProfit >= 0;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Active Orders (${widget.accountLogin})'),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161619),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+          _buildSectionHeader('SIGNAL', 'Liquidity Sweep detection'),
+          _buildInputTile('Swing Bars', 'จำนวนแท่งย้อนหลังสำหรับหา Swing High / Swing Low', '15'),
+          const SizedBox(height: 16),
+          _buildSectionHeader('RISK / SL / TP', 'Stop Loss และ Take Profit'),
+          _buildInputTile('Stop Loss', 'SL Points', '5000'),
+          _buildInputTile('Take Profit', 'TP Points', '5000'),
+          const SizedBox(height: 16),
+          _buildSectionHeader('LOT / RECOVERY', 'ระบบเพิ่ม Lot หลังโดน Stop Loss'),
+          _buildDropdownTile('Lot Mode', 'รูปแบบการคำนวณ Lot', 'Step'),
+          _buildInputTile('Initial Lot', 'Lot เริ่มต้น', '0.01'),
+          _buildInputTile('Recovery Multiplier', 'ตัวคูณ Lot Recovery', '2.00'),
+          _buildInputTile('Max Lot', 'Lot สูงสุดที่ EA อนุญาต', '0.05'),
+          _buildInputTile('Max Recovery Orders', 'จำนวน Recovery สูงสุดต่อฝั่ง', '2'),
+          const SizedBox(height: 16),
+          _buildSectionHeader('DAILY CONTROL', 'หยุดการเทรดเมื่อถึงกำไร/ขาดทุนประจำวัน'),
+          _buildSwitchTile('Enable Daily Target', 'หยุดเมื่อกำไรถึง 500.00', enableDailyTarget, (v) => setState(() => enableDailyTarget = v)),
+          _buildSwitchTile('Enable Daily Loss', 'หยุดเมื่อขาดทุนถึง 500.00', enableDailyLoss, (v) => setState(() => enableDailyLoss = v)),
+          _buildInputTile('Daily Loss', 'ขาดทุนสูงสุดต่อวัน', '500.00'),
+          const SizedBox(height: 16),
+          _buildSectionHeader('NOTIFICATIONS', 'การแจ้งเตือนและกราฟ'),
+          _buildSwitchTile('Show Arrows', 'แสดงลูกศร Buy / Sell บนกราฟ MT5', showArrows, (v) => setState(() => showArrows = v)),
+          _buildSwitchTile('Mobile Push', 'ส่งสัญญาณเข้าโทรศัพท์', mobilePush, (v) => setState(() => mobilePush = v)),
+          _buildInputTile('Telegram Poll Seconds', 'ความถี่ในการตรวจคำสั่ง Telegram', '2'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.save, color: Colors.black),
+            label: const Text('SAVE LIQUIDITY SWEEP SETTINGS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E676),
+              padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAlignment: CrossAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildInputTile(String title, String subtitle, String val) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAlignment: CrossAlignment.start,
               children: [
-                const Text('Total Open Orders Profit', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                Text(
-                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
               ],
             ),
           ),
-          Expanded(
-            child: activeOrders.isEmpty
-                ? const Center(
-                    child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = activeOrders[index];
-                      final String type = order['type']?.toString() ?? 'BUY';
-                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool orderProfit = profit >= 0;
+          Chip(
+            label: Text(val, style: const TextStyle(color: Color(0xFF00E676))),
+            backgroundColor: const Color(0xFF101416),
+            avatar: const Icon(Icons.edit, size: 12, color: Color(0xFF00E676)),
+          )
+        ],
+      ),
+    );
+  }
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    const SizedBox(height: 2),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+  Widget _buildSwitchTile(String title, String subtitle, bool val, ValueChanged<bool> onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAlignment: CrossAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+          Switch(value: val, onChanged: onChanged, activeColor: const Color(0xFF00E676)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownTile(String title, String subtitle, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAlignment: CrossAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class LogsTab extends StatelessWidget {
+  const LogsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('System Logs'), backgroundColor: Colors.transparent, elevation: 0),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep parameters updated', '7:24 AM'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep BOT STARTED', '7:24 AM'),
+          _buildLogItem(Icons.warning_amber_rounded, Colors.orange, 'Trading PAUSED', '7:24 AM'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep initialized', '18:02:15'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'Connected to MT5 Server', '18:00:00'),
+          _buildLogItem(Icons.info, Colors.blue, 'EA Magic: 20260915', '17:58:30'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogItem(IconData icon, Color color, String message, String time) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAlignment: CrossAlignment.start,
+              children: [
+                Text(message, style: const TextStyle(fontSize: 14)),
+                Text(time, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+              ],
+            ),
           ),
         ],
       ),
@@ -1093,334 +427,44 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-// ==========================================
-// 4. TRADE HISTORY SCREEN
-// ==========================================
-class HistoryScreen extends StatefulWidget {
-  final String accountLogin;
-  const HistoryScreen({super.key, required this.accountLogin});
-
-  @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  List<Map<dynamic, dynamic>> allTradeHistory = [];
-  DatabaseReference? _historyRef;
-  
-  String selectedFilter = 'วันนี้';
-  final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToHistory(widget.accountLogin);
-  }
-
-  @override
-  void didUpdateWidget(covariant HistoryScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _listenToHistory(widget.accountLogin);
-    }
-  }
-
-  void _listenToHistory(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _historyRef = database.ref('history');
-
-      _historyRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            allTradeHistory.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(value));
-                } else if (value is List) {
-                  for (var item in value) {
-                    if (item is Map) {
-                      allTradeHistory.add(Map<dynamic, dynamic>.from(item));
-                    }
-                  }
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-
-            allTradeHistory.sort((a, b) {
-              String timeA = a['close_time']?.toString() ?? a['time']?.toString() ?? '';
-              String timeB = b['close_time']?.toString() ?? b['time']?.toString() ?? '';
-              return timeB.compareTo(timeA);
-            });
-          });
-        }
-      });
-    } catch (e) {
-      print("History listen error: $e");
-    }
-  }
-
-  List<Map<dynamic, dynamic>> _getFilteredHistory() {
-    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
-
-    DateTime now = DateTime.now();
-    return allTradeHistory.where((trade) {
-      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      DateTime? tradeDate = DateTime.tryParse(timeStr.replaceAll('.', '-'));
-      if (tradeDate == null) return false;
-
-      if (selectedFilter == 'วันนี้') {
-        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
-      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
-        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
-      } else if (selectedFilter == 'เดือนล่าสุด') {
-        return tradeDate.year == now.year && tradeDate.month == now.month;
-      } else if (selectedFilter == '3 เดือนล่าสุด') {
-        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-        return tradeDate.isAfter(threeMonthsAgo);
-      }
-      return true;
-    }).toList();
-  }
+class AlertsTab extends StatelessWidget {
+  const AlertsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
-
-    double totalProfit = filteredHistory.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('History (${widget.accountLogin})'),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Column(
+      appBar: AppBar(title: const Text('Notifications'), backgroundColor: Colors.transparent, elevation: 0),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              itemCount: filterOptions.length,
-              itemBuilder: (context, index) {
-                String filter = filterOptions[index];
-                bool isSelected = selectedFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFFFFB300),
-                    backgroundColor: const Color(0xFF161619),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    onSelected: (bool selected) {
-                      setState(() {
-                        selectedFilter = filter;
-                      });
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161619),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                Text(
-                  '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: filteredHistory.isEmpty
-                ? const Center(
-                    child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey)),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredHistory.length,
-                    itemBuilder: (context, index) {
-                      final trade = filteredHistory[index];
-                      final String type = trade['type']?.toString() ?? 'BUY';
-                      final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
-                      final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
-                      final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                      final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool isProfit = profit >= 0;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white12, width: 1),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                      style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
+          _buildAlertItem('Liquidity Sweep', 'Waiting for sweep signal...', 'Now'),
+          _buildAlertItem('Connection Stable', 'MT5 connection is active', '1 min ago'),
         ],
       ),
     );
   }
-}
 
-// ==========================================
-// 5. ALERTS SCREEN
-// ==========================================
-class AlertsScreen extends StatefulWidget {
-  const AlertsScreen({super.key});
-
-  @override
-  State<AlertsScreen> createState() => _AlertsScreenState();
-}
-
-class _AlertsScreenState extends State<AlertsScreen> {
-  List<String> alertMessages = [];
-  DatabaseReference? _alertsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToAlerts();
-  }
-
-  void _listenToAlerts() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _alertsRef = database.ref('alerts');
-
-      _alertsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted) {
-          setState(() {
-            alertMessages.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value != null) alertMessages.add(value.toString());
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e != null) alertMessages.add(e.toString());
-              }
-            }
-
-            alertMessages.sort((a, b) => b.compareTo(a));
-          });
-        }
-      });
-    } catch (e) {
-      print("Alerts listen error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mobile Push Alerts'), backgroundColor: const Color(0xFF0B0B0E)),
-      body: alertMessages.isEmpty
-          ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: alertMessages.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  color: const Color(0xFF161619),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                    title: Text(alertMessages[index], style: const TextStyle(color: Colors.white, fontSize: 13)),
-                  ),
-                );
-              },
+  Widget _buildAlertItem(String title, String subtitle, String time) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        children: [
+          const Icon(Icons.notifications_active, color: Colors.orangeAccent, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAlignment: CrossAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
             ),
+          ),
+          Text(time, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+        ],
+      ),
     );
   }
 }
