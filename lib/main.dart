@@ -132,7 +132,102 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (Graphic Modern UI)
+// IRON MAN ROBOT LOGO WIDGET
+// ==========================================
+class IronManLogo extends StatelessWidget {
+  final double size;
+  const IronManLogo({super.key, this.size = 60.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const RadialGradient(
+          colors: [Color(0xFFB71C1C), Color(0xFF161619)],
+          radius: 0.8,
+        ),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFB300).withOpacity(0.4),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size * 0.65,
+            height: size * 0.75,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD32F2F),
+              borderRadius: BorderRadius.circular(size * 0.2),
+              border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+            ),
+          ),
+          Positioned(
+            top: size * 0.18,
+            child: Container(
+              width: size * 0.35,
+              height: size * 0.45,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB300),
+                borderRadius: BorderRadius.circular(size * 0.1),
+              ),
+            ),
+          ),
+          Positioned(
+            top: size * 0.35,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: size * 0.1,
+                  height: size * 0.05,
+                  decoration: BoxDecoration(
+                    color: Colors.cyanAccent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 6, spreadRadius: 1)],
+                  ),
+                ),
+                SizedBox(width: size * 0.08),
+                Container(
+                  width: size * 0.1,
+                  height: size * 0.05,
+                  decoration: BoxDecoration(
+                    color: Colors.cyanAccent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 6, spreadRadius: 1)],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: size * 0.12,
+            child: Container(
+              width: size * 0.12,
+              height: size * 0.12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.cyanAccent,
+                boxShadow: const [BoxShadow(color: Colors.cyan, blurRadius: 8, spreadRadius: 2)],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -270,6 +365,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // เพิ่มโลโก้หุ่นยนต์ไอเอิร์นแมนไว้ตรงนี้
+                  const IronManLogo(size: 55),
+                  const SizedBox(height: 8),
                   const Text(
                     '🎯 SNIPER KING ROBOT 👑',
                     textAlign: TextAlign.center,
@@ -291,12 +389,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: isConnected ? const Color(0xFF00C853) : Colors.red,
                           width: 1,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.3),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -350,13 +442,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
                   width: 1.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.12),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ],
               ),
               child: Column(
                 children: [
@@ -964,13 +1049,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 color: const Color(0xFF161619),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1027,13 +1105,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                 width: 1.5,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.25),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
