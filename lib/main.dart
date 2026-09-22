@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,50 +40,103 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const PinLockScreen(),
+      home: const PinCheckOrSetupScreen(),
     );
   }
 }
 
 // ==========================================
-// PIN LOCK SCREEN (รหัสผ่าน 6 หลัก พื้นหลังดำ-เขียว ปุ่มเหลือง-แดง)
+// PIN CHECK OR SETUP SCREEN (ตรวจสอบหรือสร้าง PIN ใหม่)
 // ==========================================
-class PinLockScreen extends StatefulWidget {
-  const PinLockScreen({super.key});
+class PinCheckOrSetupScreen extends StatefulWidget {
+  const PinCheckOrSetupScreen({super.key});
 
   @override
-  State<PinLockScreen> createState() => _PinLockScreenState();
+  State<PinCheckOrSetupScreen> createState() => _PinCheckOrSetupScreenState();
 }
 
-class _PinLockScreenState extends State<PinLockScreen> {
+class _PinCheckOrSetupScreenState extends State<PinCheckOrSetupScreen> {
   String enteredPin = "";
-  final String correctPin = "123456"; // รหัสผ่านเริ่มต้น (สามารถเปลี่ยนได้ที่นี่)
+  String? savedPin;
+  bool isSetupMode = false;
+  bool isConfirmStep = false;
+  String tempPin = "";
+  bool isLoading = true;
 
-  void _onNumberTap(String number) {
+  @override
+  void initState() {
+    super.initState();
+    _checkSavedPin();
+  }
+
+  Future<void> _checkSavedPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? pin = prefs.getString('user_app_pin');
+    setState(() {
+      savedPin = pin;
+      isSetupMode = (pin == null || pin.isEmpty);
+      isLoading = false;
+    });
+  }
+
+  Future<void> _savePinToDevice(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_app_pin', pin);
+  }
+
+  void _onNumberTap(String number) async {
     if (enteredPin.length < 6) {
       setState(() {
         enteredPin += number;
       });
 
       if (enteredPin.length == 6) {
-        if (enteredPin == correctPin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('PIN ไม่ถูกต้อง (รหัสเริ่มต้น: 123456)'),
-              backgroundColor: Colors.redAccent,
-              duration: Duration(seconds: 1),
-            ),
-          );
-          Future.delayed(const Duration(milliseconds: 500), () {
+        if (isSetupMode) {
+          if (!isConfirmStep) {
+            // ขั้นตอนที่ 1: บันทึก PIN ชั่วคราว แล้วให้ยืนยันอีกครั้ง
             setState(() {
+              tempPin = enteredPin;
+              isConfirmStep = true;
               enteredPin = "";
             });
-          });
+          } else {
+            // ขั้นตอนที่ 2: ยืนยัน PIN ว่าตรงกันไหม
+            if (enteredPin == tempPin) {
+              await _savePinToDevice(enteredPin);
+              if (!mounted) return;
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งใหม่อีกครั้ง'), backgroundColor: Colors.redAccent),
+              );
+              setState(() {
+                isConfirmStep = false;
+                tempPin = "";
+                enteredPin = "";
+              });
+            }
+          }
+        } else {
+          // โหมดกรอกรหัสผ่านเข้าใช้งานปกติ
+          if (enteredPin == savedPin) {
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('PIN ไม่ถูกต้อง'), backgroundColor: Colors.redAccent, duration: Duration(seconds: 1)),
+            );
+            Future.delayed(const Duration(milliseconds: 500), () {
+              setState(() {
+                enteredPin = "";
+              });
+            });
+          }
         }
       }
     }
@@ -98,11 +152,20 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))));
+    }
+
+    String titleText = "กรุณากรอก PIN ของคุณ";
+    if (isSetupMode) {
+      titleText = isConfirmStep ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "สร้างรหัส PIN 6 หลักใหม่";
+    }
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0B0B0E), Color(0xFF002A12)], // ไล่สีจากดำ สู่ เขียวเข้ม
+            colors: [Color(0xFF0B0B0E), Color(0xFF002A12)], // พื้นหลังไล่สี ดำ ไป เขียวเข้ม
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -113,14 +176,9 @@ class _PinLockScreenState extends State<PinLockScreen> {
             children: [
               const IronManLogo(size: 80),
               const SizedBox(height: 20),
-              const Text(
-                'กรุณากรอก PIN ของคุณ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+              Text(
+                titleText,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.2),
               ),
               const SizedBox(height: 30),
 
@@ -136,13 +194,8 @@ class _PinLockScreenState extends State<PinLockScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
-                      border: Border.all(
-                        color: const Color(0xFFFFB300),
-                        width: 2,
-                      ),
-                      boxShadow: isFilled
-                          ? [const BoxShadow(color: Color(0xFFFFB300), blurRadius: 8, spreadRadius: 1)]
-                          : [],
+                      border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                      boxShadow: isFilled ? [const BoxShadow(color: Color(0xFFFFB300), blurRadius: 8, spreadRadius: 1)] : [],
                     ),
                   );
                 }),
@@ -220,11 +273,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
         ),
         child: Text(
           number,
-          style: const TextStyle(
-            color: Color(0xFFFFB300),
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: Color(0xFFFFB300), fontSize: 28, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -290,7 +339,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             total = data.where((e) => e != null).length;
           }
           setState(() {
-            if (_currentIndex != 4) { // Index 4 คือหน้า Alerts
+            if (_currentIndex != 4) {
               unreadAlertsCount = total;
             }
           });
@@ -330,7 +379,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onPressed: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const PinLockScreen()),
+                MaterialPageRoute(builder: (context) => const PinCheckOrSetupScreen()),
               );
             },
           ),
