@@ -20,8 +20,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable' # เปลี่ยนเป็น stable เพื่อรองรับ Firebase และแพ็กเกจใหม่ๆ
-          channel: 'stable'
+          channel: 'stable' # ใช้ช่อง stable และปล่อยให้ระบบดึงตัวล่าสุดให้อัตโนมัติ
 
       - name: Create Android & Gradle structure if missing
         run: |
@@ -34,6 +33,12 @@ jobs:
 
       - name: Build APK
         run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
