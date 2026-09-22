@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+void main() {
   runApp(const MyApp());
 }
 
@@ -33,32 +29,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  String currentLogin = "8111175";
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToActiveAccount();
-  }
-
-  void _listenToActiveAccount() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('status/login').onValue.listen((event) {
-        final val = event.snapshot.value?.toString();
-        if (val != null && val.isNotEmpty && mounted) {
-          setState(() {
-            currentLogin = val;
-          });
-        }
-      });
-    } catch (e) {
-      print("Account listen error: $e");
-    }
-  }
+  final String currentLogin = "8111175";
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +42,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      // ใช้ SafeArea เพื่อป้องกันไม่ให้เนื้อหาไปทับกับแถบสถานะ (Status Bar) ด้านบน
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
@@ -111,8 +81,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
-
-// ----------------- หน้าจอตัวอย่างย่อยทั้ง 5 หน้า -----------------
 
 class HomeScreen extends StatelessWidget {
   final String accountLogin;
