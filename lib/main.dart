@@ -54,11 +54,14 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   String currentLogin = "8111175";
+  int unreadAlertsCount = 0;
+  DatabaseReference? _alertsRef;
 
   @override
   void initState() {
     super.initState();
     _listenToActiveAccount();
+    _listenToAlertsCount();
   }
 
   void _listenToActiveAccount() {
@@ -80,6 +83,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  void _listenToAlertsCount() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _alertsRef = database.ref('alerts');
+      _alertsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (data != null && mounted) {
+          int total = 0;
+          if (data is Map) {
+            total = data.length;
+          } else if (data is List) {
+            total = data.where((e) => e != null).length;
+          }
+          setState(() {
+            // ถ้ายังไม่ได้อยู่หน้า Alerts ให้เพิ่มจำนวนแจ้งเตือนที่ยังไม่อ่าน
+            if (_currentIndex != 4) {
+              unreadAlertsCount = total;
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("Alerts count error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -87,7 +119,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
-      const AlertsScreen(),
+      AlertsScreen(onAlertsRead: () {
+        setState(() {
+          unreadAlertsCount = 0;
+        });
+      }),
     ];
 
     return Scaffold(
@@ -112,18 +148,53 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onTap: (index) {
             setState(() {
               _currentIndex = index;
+              if (index == 4) {
+                unreadAlertsCount = 0; // กดเข้าหน้า Alerts แล้วเคลียร์เป็นศูนย์ทันที
+              }
             });
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF101014),
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.grey.shade600,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications_active), label: 'Alerts'),
+          items: [
+            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
+            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+            BottomNavigationBarItem(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.notifications_active),
+                  if (unreadAlertsCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$unreadAlertsCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Alerts',
+            ),
           ],
         ),
       ),
@@ -227,7 +298,7 @@ class IronManLogo extends StatelessWidget {
 }
 
 // ==========================================
-// 1. HOME SCREEN (พร้อมลายน้ำหุ่นยนต์ไอรอนแมนในกล่อง)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -274,8 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _dbRef = database.ref('status');
 
-      final connectedRef = database.ref('.info/connected');
-      connectedRef.onValue.listen((event) {
+      database.ref('.info/connected').onValue.listen((event) {
         final connected = event.snapshot.value as bool? ?? false;
         if (mounted) {
           setState(() {
@@ -339,7 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // กล่องหัวข้อหลักที่มีการใส่ลายน้ำหุ่นยนต์ไอรอนแมนเป็นพื้นหลัง
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -626,7 +695,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN (ลบส่วน MT5 Account ออกแล้ว เหลือเฉพาะส่วนตั้งค่า Parameter)
+// 2. SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1418,7 +1487,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 // 5. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
-  const AlertsScreen({super.key});
+  final VoidCallback onAlertsRead;
+  const AlertsScreen({super.key, required this.onAlertsRead});
 
   @override
   State<AlertsScreen> createState() => _AlertsScreenState();
@@ -1431,6 +1501,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   void initState() {
     super.initState();
+    widget.onAlertsRead(); // เปิดเข้ามาเคลียร์ค่า badge ทันที
     _listenToAlerts();
   }
 
