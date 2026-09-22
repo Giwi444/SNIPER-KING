@@ -657,7 +657,6 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              // ปรับกราฟิกกรอบบนสุดตามรูป
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -763,7 +762,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ปรับแต่งการไล่เฉดสี (Gradient) ของ Profit/Loss ให้สวยงามตามแบบฉบับในรูป
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -1378,7 +1376,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
 
-            // ปรับแต่งการไล่เฉดสีของ Total Open Profit ให้สวยงามกลมกลืน
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(16),
@@ -1729,7 +1726,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
                                         style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
                                       ),
-                                      const SizedBox(2),
+                                      const SizedBox(height: 2),
                                       Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                     ],
                                   ),
