@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8), // เว้นระยะด้านบนไม่ให้ชนขอบจอ/นาฬิกา
+            const SizedBox(height: 8),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
@@ -926,7 +926,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN (ย้าย Active Symbol ไว้บนสุด + ปรับแต่งกล่อง Total Profit เรืองแสงสวยงาม)
+// 3. ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1018,7 +1018,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ),
       body: Column(
         children: [
-          // 1. Active Symbol & Timeframe อยู่บนสุด
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Container(
@@ -1073,7 +1072,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ),
 
-          // 2. กล่อง Total Open Orders Profit แบบเรืองแสงสวยงาม
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(16),
@@ -1104,7 +1102,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               children: [
                 const Text(
                   'TOTAL OPEN PROFIT',
-                  style: TextStyle(color: Colors.white75, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                 ),
                 Text(
                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
@@ -1118,7 +1116,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ),
 
-          // 3. รายการออร์เดอร์
           Expanded(
             child: activeOrders.isEmpty
                 ? const Center(
@@ -1484,7 +1481,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             alertMessages.clear();
             if (data is Map) {
               data.forEach((key, value) {
-                if (value != null) alertMessages.app(value.toString());
+                if (value != null) alertMessages.add(value.toString());
               });
             } else if (data is List) {
               for (var e in data) {
