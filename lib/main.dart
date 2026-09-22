@@ -42,40 +42,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: pages,
-        ),
+      // เอา SafeArea ออกจาก body เพื่อไม่ให้ดันเนื้อหาผิดเพี้ยน แล้วให้ Scaffold จัดการแทน
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF101014),
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.grey.shade600,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications_active), label: 'Alerts'),
-          ],
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: const Color(0xFF101014),
+            selectedItemColor: const Color(0xFFFFB300),
+            unselectedItemColor: Colors.grey.shade600,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+              BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
+              BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+              BottomNavigationBarItem(icon: Icon(Icons.notifications_active), label: 'Alerts'),
+            ],
+          ),
         ),
       ),
     );
