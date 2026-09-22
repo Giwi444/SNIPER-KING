@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const LiquiditySweepApp());
+  runApp(const SniperKingApp());
 }
 
-class LiquiditySweepApp extends StatelessWidget {
-  const LiquiditySweepApp({super.key});
+class SniperKingApp extends StatelessWidget {
+  const SniperKingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Liquidity Sweep Control',
+      title: 'SNIPER KING Control',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0F1416),
@@ -87,7 +87,7 @@ class _DashboardTabState extends State<DashboardTab> {
               children: [
                 Icon(Icons.show_chart, color: Color(0xFF00E676)),
                 SizedBox(width: 8),
-                Text('Liquidity Sweep', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text('SNIPER KING', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               ],
             ),
             Container(
@@ -132,10 +132,10 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
               SizedBox(width: 12),
               Column(
-                crossAlignment: CrossAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('NONE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('Waiting for liquidity sweep...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Waiting for SNIPER KING signal...', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               )
             ],
@@ -151,7 +151,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Column(
-                    crossAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Trading Pause', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       Text('EA สามารถทำงานตามระบบได้', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -198,7 +198,7 @@ class _DashboardTabState extends State<DashboardTab> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: const Color(0xFF181F22), borderRadius: BorderRadius.circular(12)),
       child: Column(
-        crossAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -219,7 +219,7 @@ class _DashboardTabState extends State<DashboardTab> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: const Color(0xFF101416), borderRadius: BorderRadius.circular(8)),
       child: Column(
-        crossAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -253,7 +253,7 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liquidity Sweep Settings'),
+        title: const Text('SNIPER KING Settings'),
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.save, color: Color(0xFF00E676))),
         ],
@@ -263,7 +263,7 @@ class _SettingsTabState extends State<SettingsTab> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionHeader('SIGNAL', 'Liquidity Sweep detection'),
+          _buildSectionHeader('SIGNAL', 'SNIPER KING signal detection'),
           _buildInputTile('Swing Bars', 'จำนวนแท่งย้อนหลังสำหรับหา Swing High / Swing Low', '15'),
           const SizedBox(height: 16),
           _buildSectionHeader('RISK / SL / TP', 'Stop Loss และ Take Profit'),
@@ -290,7 +290,7 @@ class _SettingsTabState extends State<SettingsTab> {
           ElevatedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.save, color: Colors.black),
-            label: const Text('SAVE LIQUIDITY SWEEP SETTINGS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            label: const Text('SAVE SNIPER KING SETTINGS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00E676),
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -303,7 +303,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Widget _buildSectionHeader(String title, String subtitle) {
     return Column(
-      crossAlignment: CrossAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold)),
         Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
@@ -322,7 +322,7 @@ class _SettingsTabState extends State<SettingsTab> {
         children: [
           Expanded(
             child: Column(
-              crossAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
@@ -348,7 +348,7 @@ class _SettingsTabState extends State<SettingsTab> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
-            crossAlignment: CrossAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
@@ -369,7 +369,7 @@ class _SettingsTabState extends State<SettingsTab> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
-            crossAlignment: CrossAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
@@ -392,10 +392,10 @@ class LogsTab extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep parameters updated', '7:24 AM'),
-          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep BOT STARTED', '7:24 AM'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'SNIPER KING parameters updated', '7:24 AM'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'SNIPER KING BOT STARTED', '7:24 AM'),
           _buildLogItem(Icons.warning_amber_rounded, Colors.orange, 'Trading PAUSED', '7:24 AM'),
-          _buildLogItem(Icons.check_circle, Colors.green, 'Liquidity Sweep initialized', '18:02:15'),
+          _buildLogItem(Icons.check_circle, Colors.green, 'SNIPER KING initialized', '18:02:15'),
           _buildLogItem(Icons.check_circle, Colors.green, 'Connected to MT5 Server', '18:00:00'),
           _buildLogItem(Icons.info, Colors.blue, 'EA Magic: 20260915', '17:58:30'),
         ],
@@ -414,7 +414,7 @@ class LogsTab extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message, style: const TextStyle(fontSize: 14)),
                 Text(time, style: const TextStyle(color: Colors.grey, fontSize: 10)),
@@ -437,7 +437,7 @@ class AlertsTab extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildAlertItem('Liquidity Sweep', 'Waiting for sweep signal...', 'Now'),
+          _buildAlertItem('SNIPER KING', 'Waiting for signal...', 'Now'),
           _buildAlertItem('Connection Stable', 'MT5 connection is active', '1 min ago'),
         ],
       ),
@@ -455,7 +455,7 @@ class AlertsTab extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
