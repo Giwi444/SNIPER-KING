@@ -803,7 +803,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'LIQUIDITY SWEEP V.3 PARAMETERS',
+              'LIQUIDITY SWEEP PARAMETERS',
               style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
             ),
             const SizedBox(height: 8),
