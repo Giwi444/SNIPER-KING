@@ -39,7 +39,7 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const PinLoginScreen(), // เริ่มต้นด้วยหน้ากรอก PIN
+      home: const PinLoginScreen(),
     );
   }
 }
@@ -71,7 +71,7 @@ class RobotBackground extends StatelessWidget {
 }
 
 // ==========================================
-// 0. PIN LOGIN SCREEN (หน้ากรอก PIN 6 หลักเดิม)
+// 0. PIN LOGIN & SETUP SCREEN
 // ==========================================
 class PinLoginScreen extends StatefulWidget {
   const PinLoginScreen({super.key});
@@ -82,27 +82,76 @@ class PinLoginScreen extends StatefulWidget {
 
 class _PinLoginScreenState extends State<PinLoginScreen> {
   String enteredPin = "";
-  final String correctPin = "123456"; // สามารถเปลี่ยนรหัส PIN ได้ที่นี่
+  static String? temporarySavedPin; 
+  String? firstEnteredPin; 
+  bool isSetupMode = false; 
+  bool isConfirmMode = false; 
+  String activeNumber = ""; 
 
-  void _onNumberTap(String number) {
-    if (enteredPin.length < 6) {
+  @override
+  void initState() {
+    super.initState();
+    isSetupMode = (temporarySavedPin == null || temporarySavedPin!.isEmpty);
+  }
+
+  void _onNumberTap(String number) async {
+    setState(() {
+      activeNumber = number;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 120));
+
+    if (mounted) {
       setState(() {
-        enteredPin += number;
+        activeNumber = "";
+        if (enteredPin.length < 6) {
+          enteredPin += number;
+        }
       });
 
       if (enteredPin.length == 6) {
-        if (enteredPin == correctPin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
+        if (isSetupMode) {
+          if (!isConfirmMode) {
+            setState(() {
+              firstEnteredPin = enteredPin;
+              enteredPin = "";
+              isConfirmMode = true;
+            });
+          } else {
+            if (enteredPin == firstEnteredPin) {
+              temporarySavedPin = enteredPin; 
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('สร้างรหัส PIN สำเร็จ!'), backgroundColor: Color(0xFF00C853)),
+              );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาสร้างใหม่อีกครั้ง'), backgroundColor: Colors.red),
+              );
+              setState(() {
+                enteredPin = "";
+                firstEnteredPin = null;
+                isConfirmMode = false;
+              });
+            }
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
-          );
-          setState(() {
-            enteredPin = "";
-          });
+          if (enteredPin == temporarySavedPin) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
+            );
+            setState(() {
+              enteredPin = "";
+            });
+          }
         }
       }
     }
@@ -118,6 +167,11 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String titleText = "กรุณากรอก PIN ของคุณ";
+    if (isSetupMode) {
+      titleText = isConfirmMode ? "ยืนยันรหัส PIN ของคุณ" : "สร้างรหัส PIN 6 หลัก";
+    }
+
     return RobotBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -125,19 +179,17 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const IronManLogo(size: 90),
-              const SizedBox(height: 24),
-              const Text(
-                'กรุณากรอก PIN ของคุณ',
-                style: TextStyle(
+              const SizedBox(height: 10),
+              Text(
+                titleText,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 24),
-              // จุดแสดงสถานะ PIN 6 หลัก
+              const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(6, (index) {
@@ -155,7 +207,6 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                 }),
               ),
               const SizedBox(height: 40),
-              // แผงปุ่มกดตัวเลข (Keypad)
               _buildKeypadRow(['1', '2', '3']),
               const SizedBox(height: 16),
               _buildKeypadRow(['4', '5', '6']),
@@ -165,7 +216,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 80, height: 80), // เว้นช่องว่างให้ตรงล็อก
+                  const SizedBox(width: 80, height: 80),
                   const SizedBox(width: 24),
                   _buildKeypadButton('0'),
                   const SizedBox(width: 24),
@@ -175,11 +226,11 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                     child: ElevatedButton(
                       onPressed: _onDeleteTap,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF161619).withOpacity(0.8),
+                        backgroundColor: const Color(0xFF161619).withOpacity(0.85),
                         shape: const CircleBorder(),
-                        side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                        side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
                       ),
-                      child: const Icon(Icons.backspace_outlined, color: Colors.redAccent),
+                      child: const Icon(Icons.backspace_outlined, color: Color(0xFFFFB300)),
                     ),
                   ),
                 ],
@@ -204,21 +255,25 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   }
 
   Widget _buildKeypadButton(String number) {
+    bool isPressed = activeNumber == number;
     return SizedBox(
       width: 80,
       height: 80,
       child: ElevatedButton(
         onPressed: () => _onNumberTap(number),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF161619).withOpacity(0.85),
+          backgroundColor: isPressed ? const Color(0xFF00695C) : const Color(0xFF161619).withOpacity(0.85),
           shape: const CircleBorder(),
-          side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+          side: BorderSide(
+            color: isPressed ? const Color(0xFF00C853) : const Color(0xFFFFB300), 
+            width: isPressed ? 2.5 : 1.5,
+          ),
           elevation: 5,
         ),
         child: Text(
           number,
-          style: const TextStyle(
-            color: Color(0xFFFFB300),
+          style: TextStyle(
+            color: isPressed ? Colors.white : const Color(0xFFFFB300),
             fontSize: 26,
             fontWeight: FontWeight.bold,
           ),
@@ -228,9 +283,6 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   }
 }
 
-// ==========================================
-// IRON MAN ROBOT LOGO WIDGET
-// ==========================================
 class IronManLogo extends StatelessWidget {
   final double size;
   const IronManLogo({super.key, this.size = 60.0});
@@ -394,10 +446,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  void _logoutToPinScreen() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const PinLoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      HomeScreen(accountLogin: currentLogin),
+      HomeScreen(accountLogin: currentLogin, onLogout: _logoutToPinScreen),
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
@@ -489,7 +548,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
+  final VoidCallback onLogout;
+  const HomeScreen({super.key, required this.accountLogin, required this.onLogout});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -597,6 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
+              // ปรับกราฟิกกรอบบนสุดตามรูป
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -611,6 +672,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.lock, color: Color(0xFFFFB300), size: 20),
+                        onPressed: widget.onLogout,
+                        tooltip: 'ล็อกอินใหม่',
+                      ),
+                    ),
                     Positioned.fill(
                       child: Align(
                         alignment: Alignment.center,
@@ -693,16 +763,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
+              // ปรับแต่งการไล่เฉดสี (Gradient) ของ Profit/Loss ให้สวยงามตามแบบฉบับในรูป
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
+                  gradient: LinearGradient(
+                    colors: isProfit
+                        ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
+                        : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
+                    color: isProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                     width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -714,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                         fontSize: 34,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
@@ -1294,17 +1378,31 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
 
+            // ปรับแต่งการไล่เฉดสีของ Total Open Profit ให้สวยงามกลมกลืน
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF161619).withOpacity(0.85),
+                gradient: LinearGradient(
+                  colors: isTotalProfit
+                      ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
+                      : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                   width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1316,7 +1414,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   Text(
                     '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                     style: TextStyle(
-                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1631,7 +1729,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
                                         style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(2),
                                       Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                     ],
                                   ),
