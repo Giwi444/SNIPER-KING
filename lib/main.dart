@@ -227,7 +227,7 @@ class IronManLogo extends StatelessWidget {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (พร้อมลายน้ำหุ่นยนต์ไอรอนแมนในกล่อง)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -339,9 +339,10 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
+            // กล่องหัวข้อหลักที่มีการใส่ลายน้ำหุ่นยนต์ไอรอนแมนเป็นพื้นหลัง
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF1E1E24), Color(0xFF121215)],
@@ -350,76 +351,96 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: const Color(0xFFFFB300).withOpacity(0.5),
+                  color: const Color(0xFFFFB300).withOpacity(0.6),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.08),
-                    blurRadius: 12,
+                    color: const Color(0xFFFFB300).withOpacity(0.12),
+                    blurRadius: 15,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // เพิ่มโลโก้หุ่นยนต์ไอเอิร์นแมนไว้ตรงนี้
-                  const IronManLogo(size: 55),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '🎯 SNIPER KING ROBOT 👑',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFFFB300),
-                      letterSpacing: 1.0,
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Opacity(
+                        opacity: 0.12,
+                        child: const IronManLogo(size: 130),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isConnected ? Icons.bolt : Icons.wifi_off,
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 4),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+                          SizedBox(width: 8),
                           Text(
-                            isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                            'SNIPER KING ROBOT',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFFB300),
+                              letterSpacing: 1.2,
                             ),
                           ),
+                          SizedBox(width: 8),
+                          Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.amberAccent,
-                      fontWeight: FontWeight.w500,
-                    ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isConnected ? Icons.bolt : Icons.wifi_off,
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                                style: TextStyle(
+                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.amberAccent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
