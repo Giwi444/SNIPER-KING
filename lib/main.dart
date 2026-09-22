@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sniperking App',
+      title: 'Liquidity App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0A0A0C),
@@ -163,11 +163,8 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. นาฬิการะบบไว้อยู่ด้านบนสุด ชัดเจนไม่ถูกบัง
               const Center(child: SystemClockWidget()),
               const SizedBox(height: 20),
-
-              // 2. กล่องโปรไฟล์ Sniper ถูกเลื่อนลงมาด้านล่างตามสั่ง
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -219,20 +216,6 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              
-              // ตัวอย่างเนื้อหาหน้า Home เพิ่มเติม
-              Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.home_filled, size: 48, color: Color(0xFFFFB300)),
-                    const SizedBox(height: 8),
-                    const Text('หน้าหลัก (Home)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text('Account Login: $accountLogin', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -259,7 +242,6 @@ class OrdersScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. ย้าย Active Symbol & Timeframe มาไว้ที่นี่
             const Text(
               'ACTIVE SYMBOL & TIMEFRAME',
               style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2),
@@ -296,14 +278,12 @@ class OrdersScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 2. เปลี่ยนบล็อก Total Open Orders Profit ให้สวยเด่นชัดขึ้น
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFF1F1F2E), const Color(0xFF12121A)],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1F1F2E), Color(0xFF12121A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -318,7 +298,7 @@ class OrdersScreen extends StatelessWidget {
                 ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
                     'Total Open Orders Profit',
@@ -329,7 +309,7 @@ class OrdersScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '+$31.44',
+                    '+\$31.44', // แก้ไขเครื่องหมาย $ โดยเติม backslash เพื่อ escape
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -340,8 +320,6 @@ class OrdersScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // รายการออเดอร์จำลองด้านใน
             Expanded(
               child: ListView(
                 children: [
@@ -363,7 +341,7 @@ class OrdersScreen extends StatelessWidget {
                             Text('BUY | Lot: 0.08', style: TextStyle(color: Colors.grey, fontSize: 12)),
                           ],
                         ),
-                        Text('+$31.44', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('+\$31.44', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)), // แก้ไขเครื่องหมาย $
                       ],
                     ),
                   ),
