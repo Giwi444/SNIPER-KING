@@ -55,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. ส่วนแสดงยอดเงินรวมด้านบน
+                // 1. ส่วนแสดงยอดเงินรวมด้านบน (แก้ไขปัญหาเครื่องหมาย $)
                 Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
                     ),
                     child: const Text(
-                      '+$0.00',
+                      '+\$0.00',
                       style: TextStyle(color: Colors.greenAccent, fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -127,36 +127,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ).wrap(
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isBotRunning = true;
-                                  });
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                child: const Text('START', style: TextStyle(fontWeight: FontWeight.bold)),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isBotRunning = true;
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
+                              child: const Text('START', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepOrange,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ).wrap(
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isBotRunning = false;
-                                  });
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
-                                child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold)),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isBotRunning = false;
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepOrange,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
+                              child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                             ),
                           ),
                         ],
@@ -166,7 +162,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // คำสั่งปิดออเดอร์ทั้งหมด
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Close All Orders Triggered!')),
                             );
@@ -198,7 +193,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 });
               },
               onTap: () {
-                // กดแล้วเปิดหน้าแชท AI ขึ้นมา
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AiChatScreen()),
@@ -289,7 +283,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _messages.add({"sender": "user", "message": userText});
       _messageController.clear();
 
-      // จำลองการตอบกลับของ AI (คุณสามารถเชื่อมต่อ API เพิ่มเติมตรงนี้ได้)
       _messages.add({
         "sender": "ai",
         "message": "รับทราบคำถาม: \"$userText\" ระบบบริหารความเสี่ยงทำงานปกติ พอร์ตอยู่ในสถานะทรงตัวปลอดภัยดีครับ"
@@ -324,7 +317,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
       ),
       body: Column(
         children: [
-          // รายการแชท
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -351,8 +343,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
               },
             ),
           ),
-
-          // แถบพิมพ์ข้อความแชทด้านล่าง
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             color: const Color(0xFF202C33),
@@ -390,12 +380,5 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ],
       ),
     );
-  }
-}
-
-// Extension ช่วยอำนวยความสะดวกในการจัด Layout ปุ่มเล็กน้อย
-extension on ButtonStyle {
-  Widget wrap(Widget child) {
-    return child;
   }
 }
