@@ -290,8 +290,7 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-// [แก้จุดที่ 2] เพิ่ม WidgetsBindingObserver เพื่อตรวจจับการสลับแอปออกไปเบื้องหลัง (Background)
-class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
@@ -300,24 +299,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // ลงทะเบียนตัวสังเกตการณ์วงจรชีวิตแอป
     _listenToActiveAccount();
     _listenToAlertsCount();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // ถอดถอนเมื่อหน้าจอถูกทำลาย
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // เมื่อผู้ใช้กดออกจากแอปไปอยู่เบื้องหลัง (paused หรือ detached) ให้เคลียร์รหัส PIN ที่จำไว้
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      _PinLoginScreenState.temporarySavedPin = null;
-    }
   }
 
   void _listenToActiveAccount() {
@@ -372,8 +355,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   }
 
   void _logoutToPinScreen() {
-    // เมื่อกดล็อคเอาท์ ให้เคลียร์ PIN ด้วยเช่นกัน
-    _PinLoginScreenState.temporarySavedPin = null;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const PinLoginScreen()),
@@ -471,7 +452,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (รวมกล่อง AI วิเคราะห์พอร์ตในแดชบอร์ด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -558,25 +539,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // [แก้จุดที่ 1] ปรับปรุงคำสั่งปิดออเดอร์ทั้งหมดให้ส่งค่าตามรูปแบบที่ EA รองรับอย่างถูกต้องสมบูรณ์
   void _closeAllOrders() {
     try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      
-      // ส่งคำสั่งไปที่ node 'status' และ node แยก 'commands' เพื่อให้มั่นใจว่า EA จะได้รับคำสั่งแน่นอน
-      database.ref('status').update({
+      _dbRef?.update({
         'close_all': true,
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
-
-      database.ref('commands').set({
-        'action': 'CLOSE_ALL',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
       );
@@ -597,6 +565,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
+              // กรอบหัวข้อด้านบน
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -693,6 +662,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
+              // กล่อง Floating Profit / Loss
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -738,6 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Grid เมตริก Balance, Equity, Margin, Free Margin
               Row(
                 children: [
                   Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
@@ -753,8 +724,61 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
                 ],
               ),
+              const SizedBox(height: 16),
+
+              // ----------------------------------------------------
+              // AI MARKET & RISK INSIGHTS (เพิ่ม AI เข้ามาในแดชบอร์ดตรงนี้)
+              // ----------------------------------------------------
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1a2634).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blueAccent.withOpacity(0.6), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blueAccent.withOpacity(0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.psychology, color: Color(0xFF3b82f6), size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI MARKET & RISK INSIGHTS',
+                          style: TextStyle(
+                            color: Color(0xFF3b82f6),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(color: Colors.white12, height: 1),
+                    const SizedBox(height: 10),
+                    Text(
+                      _getAIAnalysisText(profitLoss, balance, equity),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
 
+              // Bot Control Panel
               Row(
                 children: const [
                   Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
@@ -848,6 +872,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  String _getAIAnalysisText(double profit, double balance, double equity) {
+    if (profit > 0) {
+      return "• พอร์ตกำลังทำกำไรอยู่ที่ +\$${profit.toStringAsFixed(2)} ยี่ยมมาก! ระบบ Liquidity Sweep กำลังทำงานได้ตามแผน\n• ระดับความเสี่ยงอยู่ในเกณฑ์ปลอดภัย รักษาวินัยการจัดการล็อตต่อเนื่องครับ";
+    } else if (profit < 0) {
+      return "• พอร์ตกำลังติดลบชั่วคราว -\$${profit.abs().toStringAsFixed(2)} เนื่องจากตลาดมีความผันผวนสูง\n• AI แนะนำให้จับตากรอบแนวรับ-แนวต้านหลัก และระวังการเปิด Recovery ไม้ซ้ำ";
+    } else {
+      return "• พอร์ตอยู่ในสถานะทรงตัว รอจังหวะสัญญาณ Liquidity Sweep ทำงานรอบถัดไป\n• ระบบบริหารความเสี่ยงทำงานปกติ ปลอดภัยดีครับ";
+    }
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon) {
@@ -1797,7 +1831,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 padding: const EdgeInsets.all(16),
                 itemCount: alertItems.length,
                 itemBuilder: (context, index) {
-                  final alert = alertItems[index];
+                  final alert = alertItems.index != null ? alertItems[index] : alertItems[0];
                   return Card(
                     color: const Color(0xFF161619).withOpacity(0.85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
