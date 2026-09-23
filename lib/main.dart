@@ -611,24 +611,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'SNIPER KING ROBOT',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFFFFB300),
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
-                                ],
-                              ),
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: const [
+    Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+    SizedBox(width: 8),
+    Text(
+      'SNIPER KING ROBOT',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFFFFB300),
+        letterSpacing: 1.2,
+      ),
+    ),
+    SizedBox(width: 8), // เว้นระยะห่างพอดี ไม่แน่นเกินไป
+    Icon(Icons.lock, color: Color(0xFFFFB300), size: 18), // ใช้ไอคอนกุญแจตัวเดียวจบ
+  ],
+),
                               const SizedBox(height: 8),
                               Center(
                                 child: Container(
@@ -654,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         isConnected ? 'CONNECTED' : 'NO CONNECTED',
                                         style: TextStyle(
                                           color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                          fontSize: 10,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -664,10 +664,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
+                                broker.isNotEmpty ? '$broker ($loginAccount) $server' : 'Liquidity Sweep (${widget.accountLogin})',
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: Colors.amberAccent,
                                   fontWeight: FontWeight.w500,
                                 ),
