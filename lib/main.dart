@@ -1838,10 +1838,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
                       leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                      title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      title: Text(alert?['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, color: Colors.grey, size: 20),
-                        onPressed: () => _deleteAlert(alert['key']),
+                        onPressed: () => _deleteAlert(alert?['key']),
                       ),
                     ),
                   );
