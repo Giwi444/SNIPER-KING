@@ -91,6 +91,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   @override
   void initState() {
     super.initState();
+    // ถ้าเปิดแอปใหม่ หรือออกจากระบบ ให้รีเซ็ตค่า temporarySavedPin เป็น null เพื่อบังคับสร้าง/กรอก PIN ใหม่เสมอ
     isSetupMode = (temporarySavedPin == null || temporarySavedPin!.isEmpty);
   }
 
@@ -355,6 +356,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _logoutToPinScreen() {
+    // เมื่อกดล็อกเอาต์ ให้เคลียร์รหัสชั่วคราว เพื่อบังคับให้ตั้งรหัส/กรอกใหม่เมื่อเข้าแอปครั้งถัดไป
+    _PinLoginScreenState.temporarySavedPin = null;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const PinLoginScreen()),
@@ -611,24 +614,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: const [
-    Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-    SizedBox(width: 8),
-    Text(
-      'SNIPER KING ROBOT',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w900,
-        color: Color(0xFFFFB300),
-        letterSpacing: 1.2,
-      ),
-    ),
-    SizedBox(width: 8), // เว้นระยะห่างพอดี ไม่แน่นเกินไป
-    Icon(Icons.lock, color: Color(0xFFFFB300), size: 18), // ใช้ไอคอนกุญแจตัวเดียวจบ
-  ],
-),
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'SNIPER KING ROBOT',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFFFFB300),
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  // ลบไอคอนกุญแจออกแล้วตามคำสั่ง
+                                ],
+                              ),
                               const SizedBox(height: 8),
                               Center(
                                 child: Container(
