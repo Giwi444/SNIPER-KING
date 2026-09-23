@@ -565,7 +565,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              // กรอบหัวข้อด้านบน พร้อมใส่รูปภาพโรบอททางซ้ายมือตามที่ต้องการ
+              // กรอบหัวข้อด้านบน ปรับรูปภาพโรบอททางซ้ายมือให้เป็นสี่เหลี่ยมมุมโค้ง
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
@@ -591,15 +591,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Row(
                       children: [
-                        // เพิ่มรูปภาพโรบอททางซ้ายในกรอบ
+                        // รูปภาพโรบอททรงสี่เหลี่ยมมุมโค้ง (Rounded Rectangle) สมดุลกับกรอบ
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 46,
+                          height: 46,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
                             image: const DecorationImage(
-                              image: AssetImage('IMG_20260922_194127.jpg'),
+                              image: AssetImage('assets/images/IMG_20260922_194127.jpg'),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -675,7 +675,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-                        // เว้นระยะขวาให้สมดุลกับปุ่มล็อกอินซ้าย-ขวา
                         const SizedBox(width: 32),
                       ],
                     ),
