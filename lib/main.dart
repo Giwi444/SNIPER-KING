@@ -1831,7 +1831,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 padding: const EdgeInsets.all(16),
                 itemCount: alertItems.length,
                 itemBuilder: (context, index) {
-                  final alert = alertItems.index != null ? alertItems[index] : alertItems[0];
+                  final alert = alertItems.isNotEmpty ? alertItems.first : null;
                   return Card(
                     color: const Color(0xFF161619).withOpacity(0.85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
