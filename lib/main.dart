@@ -565,10 +565,10 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              // กรอบหัวข้อด้านบน ปรับรูปภาพโรบอททางซ้ายมือให้เป็นสี่เหลี่ยมมุมโค้ง
+              // กรอบหัวข้อด้านบน ขยายขนาดรูปภาพโรบอททางซ้ายมือให้ใหญ่ขึ้นเป็น 68x68
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(22),
@@ -591,20 +591,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Row(
                       children: [
-                        // รูปภาพโรบอททรงสี่เหลี่ยมมุมโค้ง (Rounded Rectangle) สมดุลกับกรอบ
+                        // รูปภาพโรบอททรงสี่เหลี่ยมมุมโค้ง (Rounded Rectangle) ขนาดใหญ่ขึ้น (68x68)
                         Container(
-                          width: 46,
-                          height: 46,
+                          width: 78,
+                          height: 78,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFB300), width: 1.8),
                             image: const DecorationImage(
                               image: AssetImage('assets/images/IMG_20260922_194127.jpg'),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
