@@ -29,7 +29,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sniper King',
+      title: 'SniperKing',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.transparent,
@@ -452,7 +452,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (Compact Version)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -560,144 +560,186 @@ class _HomeScreenState extends State<HomeScreen> {
     return RobotBackground(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ส่วนหัวกระชับ (Compact Header)
+              const SizedBox(height: 8),
+              // กรอบหัวข้อด้านบน (ลบโลโก้ออกเรียบร้อยแล้ว)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: const Color(0xFFFFB300).withOpacity(0.6),
-                    width: 1,
+                    width: 1.5,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Row(
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.lock, color: Color(0xFFFFB300), size: 20),
+                        onPressed: widget.onLogout,
+                        tooltip: 'ล็อกอินใหม่',
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.circle, color: Color(0xFFFFB300), size: 8),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'SNIPER KING',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFFFB300),
-                            letterSpacing: 0.8,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+                            SizedBox(width: 8),
+                            Text(
+                              'SNIPER KING ROBOT',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFFFFB300),
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isConnected ? Icons.bolt : Icons.wifi_off,
+                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                                  style: TextStyle(
+                                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            isConnected ? 'CONNECTED' : 'NO CONN',
-                            style: TextStyle(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(height: 10),
+                        Text(
+                          broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.amberAccent,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.lock, color: Color(0xFFFFB300), size: 16),
-                      onPressed: widget.onLogout,
-                      tooltip: 'ล็อกอินใหม่',
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              // กล่องแสดงกำไร/ขาดทุนลอยตัว (Floating P/L ย่อส่วน)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isProfit
-                        ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619).withOpacity(0.9)]
-                        : [const Color(0xFFB71C1C).withOpacity(0.5), const Color(0xFF161619).withOpacity(0.9)],
+                        ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
+                        : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isProfit ? const Color(0xFF00C853).withOpacity(0.7) : const Color(0xFFD50000).withOpacity(0.7),
-                    width: 1,
+                    color: isProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                    width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
                     const Text(
-                      'FLOATING P/L',
-                      style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 0.8, fontWeight: FontWeight.bold),
+                      'FLOATING PROFIT / LOSS',
+                      style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 6),
                     Text(
                       '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                        fontSize: 22,
+                        fontSize: 34,
                         fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              // ข้อมูลบัญชีแบบตารางประหยัดพื้นที่ (Balance, Equity, Margin, Free Margin)
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildCompactMetric('Balance', '\$${balance.toStringAsFixed(2)}')),
-                        Expanded(child: _buildCompactMetric('Equity', '\$${equity.toStringAsFixed(2)}')),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: _buildCompactMetric('Margin', '\$${margin.toStringAsFixed(2)}')),
-                        Expanded(child: _buildCompactMetric('Free Margin', '\$${freeMargin.toStringAsFixed(2)}')),
-                      ],
-                    ),
-                  ],
-                ),
+              Row(
+                children: [
+                  Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
+                ],
+              ),
+              const SizedBox(height: 20),
 
-              // ส่วนควบคุมบอท (Bot Control แบบกระชับ)
+              Row(
+                children: const [
+                  Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'BOT & ORDER CONTROL',
+                    style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white12, width: 1),
                 ),
                 child: Column(
@@ -705,65 +747,65 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Bot Status', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                        Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                        const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isRunning ? 'RUNNING' : 'STOPPED',
+                            style: TextStyle(
+                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
-                          child: SizedBox(
-                            height: 36,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(true),
-                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 14),
-                              label: const Text('START', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00C853),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: EdgeInsets.zero,
-                              ),
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00C853),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: SizedBox(
-                            height: 36,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(false),
-                              icon: const Icon(Icons.stop, color: Colors.white, size: 14),
-                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD50000),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: EdgeInsets.zero,
-                              ),
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(false),
+                            icon: const Icon(Icons.stop, color: Colors.white),
+                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      height: 34,
                       child: ElevatedButton.icon(
                         onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 14),
-                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFB300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: EdgeInsets.zero,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -777,17 +819,31 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCompactMetric(String title, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ],
+  Widget _buildMetricCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey, size: 15),
+              const SizedBox(width: 6),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ],
+      ),
     );
   }
 }
