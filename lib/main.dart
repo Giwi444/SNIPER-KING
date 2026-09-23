@@ -24,12 +24,44 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
-class LiquiditySweepApp extends StatelessWidget {
+class LiquiditySweepApp extends StatefulWidget {
   const LiquiditySweepApp({super.key});
+
+  @override
+  State<LiquiditySweepApp> createState() => _LiquiditySweepAppState();
+}
+
+class _LiquiditySweepAppState extends State<LiquiditySweepApp> with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // เมื่อผู้ใช้กลับเข้ามาในแอป (Resumed) ให้บังคับเด้งกลับมาหน้ากรอก PIN ทุกครั้ง
+    if (state == AppLifecycleState.resumed) {
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const PinLoginScreen(isSetupMode: false)),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'SniperKing',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
@@ -83,8 +115,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         ),
       );
     }
-    // ถ้าเคยตั้ง PIN แล้ว ให้ไปหน้ากรอก PIN เสมอเพื่อล็อกอินเข้าแอป
-    // ถ้ายังไม่เคยตั้ง ให้ไปหน้าสร้าง PIN
     return PinLoginScreen(isSetupMode: !hasPin);
   }
 }
@@ -165,7 +195,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
           } else {
             if (enteredPin == firstEnteredPin) {
               final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('user_pin_code', enteredPin); // บันทึกรหัสลงเครื่องถาวร
+              await prefs.setString('user_pin_code', enteredPin);
 
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -409,7 +439,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _logoutToPinScreen() {
-    // พอกดล็อกเอาต์ จะเด้งกลับมาหน้ากรอก PIN (โดยยังจำรหัสเดิมไว้ให้กรอก)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const PinLoginScreen(isSetupMode: false)),
@@ -663,22 +692,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'SNIPER KING ROBOT',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFFFFB300),
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
+                              const Text(
+                                'SNIPER KING ROBOT',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFFFB300),
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Center(
