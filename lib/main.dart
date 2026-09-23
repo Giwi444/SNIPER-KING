@@ -599,7 +599,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
                             image: const DecorationImage(
-                              image: AssetImage('assets/images/Ironman (2).jpg'),
+                              image: AssetImage('IMG_20260922_194127.jpg'),
                               fit: BoxFit.cover,
                             ),
                           ),
