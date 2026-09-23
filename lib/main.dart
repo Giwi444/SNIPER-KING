@@ -62,7 +62,7 @@ class RobotBackground extends StatelessWidget {
           },
         ),
         Container(
-          color: Colors.black.withOpacity(0.65),
+          color: Colors.black.withOpacity(0.2),
         ),
         child,
       ],
