@@ -23,6 +23,9 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
+// ตัวแปรเก็บรหัส PIN ถาวรระดับแอปพลิเคชัน (จะไม่หายเวลาย้ายหน้าจอ แต่จะจำไว้จนกว่าจะกดล็อกเอาต์ออกจริง ๆ)
+String? globalSavedPin;
+
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
@@ -82,7 +85,6 @@ class PinLoginScreen extends StatefulWidget {
 
 class _PinLoginScreenState extends State<PinLoginScreen> {
   String enteredPin = "";
-  static String? temporarySavedPin; 
   String? firstEnteredPin; 
   bool isSetupMode = false; 
   bool isConfirmMode = false; 
@@ -91,8 +93,9 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   @override
   void initState() {
     super.initState();
-    // ถ้าเปิดแอปใหม่ หรือออกจากระบบ ให้รีเซ็ตค่า temporarySavedPin เป็น null เพื่อบังคับสร้าง/กรอก PIN ใหม่เสมอ
-    isSetupMode = (temporarySavedPin == null || temporarySavedPin!.isEmpty);
+    // ถ้า globalSavedPin เป็น null แสดงว่ายังไม่เคยตั้งรหัส (ให้เข้าโหมดตั้งรหัส)
+    // แต่ถ้ามีรหัสแล้ว จะเข้าสู่โหมดกรอก PIN เพื่อปลดล็อกเข้าแอปปกติ
+    isSetupMode = (globalSavedPin == null || globalSavedPin!.isEmpty);
   }
 
   void _onNumberTap(String number) async {
@@ -120,7 +123,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             });
           } else {
             if (enteredPin == firstEnteredPin) {
-              temporarySavedPin = enteredPin; 
+              globalSavedPin = enteredPin; // บันทึกรหัส PIN ไว้
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('สร้างรหัส PIN สำเร็จ!'), backgroundColor: Color(0xFF00C853)),
               );
@@ -140,7 +143,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             }
           }
         } else {
-          if (enteredPin == temporarySavedPin) {
+          if (enteredPin == globalSavedPin) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
@@ -168,7 +171,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String titleText = "กรุณากรอก PIN ของคุณ";
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
     if (isSetupMode) {
       titleText = isConfirmMode ? "ยืนยันรหัส PIN ของคุณ" : "สร้างรหัส PIN 6 หลัก";
     }
@@ -356,8 +359,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _logoutToPinScreen() {
-    // เมื่อกดล็อกเอาต์ ให้เคลียร์รหัสชั่วคราว เพื่อบังคับให้ตั้งรหัส/กรอกใหม่เมื่อเข้าแอปครั้งถัดไป
-    _PinLoginScreenState.temporarySavedPin = null;
+    // หากต้องการล้างรหัสผ่านจริงๆ เพื่อตั้งใหม่ ให้เซ็ต globalSavedPin = null (ที่นี่ไม่ได้เคลียร์เพื่อให้จำรหัสเดิมไว้กรอกเมื่อกลับมา แต่ถ้าต้องการรีเซ็ตสามารถเปิดใช้ได้)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const PinLoginScreen()),
@@ -568,7 +570,6 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              // กรอบหัวข้อด้านบน ขยายขนาดรูปภาพโรบอททางซ้ายมือให้ใหญ่ขึ้นเป็น 68x68
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -594,7 +595,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Row(
                       children: [
-                        // รูปภาพโรบอททรงสี่เหลี่ยมมุมโค้ง (Rounded Rectangle) ขนาดใหญ่ขึ้น (68x68)
                         Container(
                           width: 78,
                           height: 78,
@@ -628,7 +628,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       letterSpacing: 1.2,
                                     ),
                                   ),
-                                  // ลบไอคอนกุญแจออกแล้วตามคำสั่ง
                                 ],
                               ),
                               const SizedBox(height: 8),
