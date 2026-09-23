@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +24,6 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
-// ตัวแปรเก็บรหัส PIN ถาวรระดับแอปพลิเคชัน (จะไม่หายเวลาย้ายหน้าจอ แต่จะจำไว้จนกว่าจะกดล็อกเอาต์ออกจริง ๆ)
-String? globalSavedPin;
-
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
@@ -42,8 +40,52 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const PinLoginScreen(),
+      home: const PinAuthWrapper(),
     );
+  }
+}
+
+// ตัวตรวจสอบสถานะ PIN เริ่มต้นของแอป
+class PinAuthWrapper extends StatefulWidget {
+  const PinAuthWrapper({super.key});
+
+  @override
+  State<PinAuthWrapper> createState() => _PinAuthWrapperState();
+}
+
+class _PinAuthWrapperState extends State<PinAuthWrapper> {
+  bool isLoading = true;
+  bool hasPin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSavedPin();
+  }
+
+  Future<void> _checkSavedPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('user_pin_code');
+    if (mounted) {
+      setState(() {
+        hasPin = savedPin != null && savedPin.isNotEmpty;
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const RobotBackground(
+        child: Scaffold(
+          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+        ),
+      );
+    }
+    // ถ้าเคยตั้ง PIN แล้ว ให้ไปหน้ากรอก PIN เสมอเพื่อล็อกอินเข้าแอป
+    // ถ้ายังไม่เคยตั้ง ให้ไปหน้าสร้าง PIN
+    return PinLoginScreen(isSetupMode: !hasPin);
   }
 }
 
@@ -74,10 +116,11 @@ class RobotBackground extends StatelessWidget {
 }
 
 // ==========================================
-// 0. PIN LOGIN & SETUP SCREEN
+// PIN LOGIN & SETUP SCREEN
 // ==========================================
 class PinLoginScreen extends StatefulWidget {
-  const PinLoginScreen({super.key});
+  final bool isSetupMode;
+  const PinLoginScreen({super.key, required this.isSetupMode});
 
   @override
   State<PinLoginScreen> createState() => _PinLoginScreenState();
@@ -86,16 +129,14 @@ class PinLoginScreen extends StatefulWidget {
 class _PinLoginScreenState extends State<PinLoginScreen> {
   String enteredPin = "";
   String? firstEnteredPin; 
-  bool isSetupMode = false; 
+  late bool isSetupMode; 
   bool isConfirmMode = false; 
   String activeNumber = ""; 
 
   @override
   void initState() {
     super.initState();
-    // ถ้า globalSavedPin เป็น null แสดงว่ายังไม่เคยตั้งรหัส (ให้เข้าโหมดตั้งรหัส)
-    // แต่ถ้ามีรหัสแล้ว จะเข้าสู่โหมดกรอก PIN เพื่อปลดล็อกเข้าแอปปกติ
-    isSetupMode = (globalSavedPin == null || globalSavedPin!.isEmpty);
+    isSetupMode = widget.isSetupMode;
   }
 
   void _onNumberTap(String number) async {
@@ -123,14 +164,18 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             });
           } else {
             if (enteredPin == firstEnteredPin) {
-              globalSavedPin = enteredPin; // บันทึกรหัส PIN ไว้
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('สร้างรหัส PIN สำเร็จ!'), backgroundColor: Color(0xFF00C853)),
-              );
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-              );
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('user_pin_code', enteredPin); // บันทึกรหัสลงเครื่องถาวร
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('สร้างรหัส PIN สำเร็จ!'), backgroundColor: Color(0xFF00C853)),
+                );
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                );
+              }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาสร้างใหม่อีกครั้ง'), backgroundColor: Colors.red),
@@ -143,11 +188,16 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             }
           }
         } else {
-          if (enteredPin == globalSavedPin) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-            );
+          final prefs = await SharedPreferences.getInstance();
+          final savedPin = prefs.getString('user_pin_code');
+
+          if (enteredPin == savedPin) {
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+              );
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
@@ -359,10 +409,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _logoutToPinScreen() {
-    // หากต้องการล้างรหัสผ่านจริงๆ เพื่อตั้งใหม่ ให้เซ็ต globalSavedPin = null (ที่นี่ไม่ได้เคลียร์เพื่อให้จำรหัสเดิมไว้กรอกเมื่อกลับมา แต่ถ้าต้องการรีเซ็ตสามารถเปิดใช้ได้)
+    // พอกดล็อกเอาต์ จะเด้งกลับมาหน้ากรอก PIN (โดยยังจำรหัสเดิมไว้ให้กรอก)
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const PinLoginScreen()),
+      MaterialPageRoute(builder: (context) => const PinLoginScreen(isSetupMode: false)),
     );
   }
 
@@ -588,9 +638,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       right: 0,
                       top: 0,
                       child: IconButton(
-                        icon: const Icon(Icons.lock, color: Color(0xFFFFB300), size: 20),
+                        icon: const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 20),
                         onPressed: widget.onLogout,
-                        tooltip: 'ล็อกอินใหม่',
+                        tooltip: 'ล็อกเอาต์ออกเพื่อกรอก PIN ใหม่',
                       ),
                     ),
                     Row(
