@@ -1,911 +1,391 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  try {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-        appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-        messagingSenderId: "155532929563",
-        projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739.firebasestorage.app",
-        databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-      ),
-    );
-  } catch (e) {
-    print("Firebase init error: $e");
-  }
-
-  runApp(const LiquiditySweepApp());
+void main() {
+  runApp(const SniperKingApp());
 }
 
-class LiquiditySweepApp extends StatelessWidget {
-  const LiquiditySweepApp({super.key});
+class SniperKingApp extends StatelessWidget {
+  const SniperKingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sniper King',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.transparent,
-        cardColor: const Color(0xFF161619),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00C853),
-          secondary: Color(0xFFFFB300),
-        ),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
       ),
-      home: const PinLoginScreen(),
+      home: const DashboardScreen(),
     );
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอทสำหรับทุกหน้า
-class RobotBackground extends StatelessWidget {
-  final Widget child;
-  const RobotBackground({super.key, required this.child});
+// -------------------------------------------------------------------------
+// 1. หน้าจอแดชบอร์ดหลัก (Dashboard) พร้อมปุ่มบอลลอยลากได้
+// -------------------------------------------------------------------------
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  // ตำแหน่งเริ่มต้นของปุ่มลูกบอลลอย AI บนหน้าจอ
+  double _floatX = 300.0;
+  double _floatY = 500.0;
+
+  bool _isBotRunning = false;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/images/Ironman.jpg',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(color: const Color(0xFF0B0B0E));
-          },
-        ),
-        Container(
-          color: Colors.black.withOpacity(0.65),
-        ),
-        child,
-      ],
-    );
-  }
-}
-
-// ==========================================
-// 0. PIN LOGIN & SETUP SCREEN
-// ==========================================
-class PinLoginScreen extends StatefulWidget {
-  const PinLoginScreen({super.key});
-
-  @override
-  State<PinLoginScreen> createState() => _PinLoginScreenState();
-}
-
-class _PinLoginScreenState extends State<PinLoginScreen> {
-  String enteredPin = "";
-  static String? temporarySavedPin; 
-  String? firstEnteredPin; 
-  bool isSetupMode = false; 
-  bool isConfirmMode = false; 
-  String activeNumber = ""; 
-
-  @override
-  void initState() {
-    super.initState();
-    isSetupMode = (temporarySavedPin == null || temporarySavedPin!.isEmpty);
-  }
-
-  void _onNumberTap(String number) async {
-    setState(() {
-      activeNumber = number;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 120));
-
-    if (mounted) {
-      setState(() {
-        activeNumber = "";
-        if (enteredPin.length < 6) {
-          enteredPin += number;
-        }
-      });
-
-      if (enteredPin.length == 6) {
-        if (isSetupMode) {
-          if (!isConfirmMode) {
-            setState(() {
-              firstEnteredPin = enteredPin;
-              enteredPin = "";
-              isConfirmMode = true;
-            });
-          } else {
-            if (enteredPin == firstEnteredPin) {
-              temporarySavedPin = enteredPin; 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('สร้างรหัส PIN สำเร็จ!'), backgroundColor: Color(0xFF00C853)),
-              );
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาสร้างใหม่อีกครั้ง'), backgroundColor: Colors.red),
-              );
-              setState(() {
-                enteredPin = "";
-                firstEnteredPin = null;
-                isConfirmMode = false;
-              });
-            }
-          }
-        } else {
-          if (enteredPin == temporarySavedPin) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
-            );
-            setState(() {
-              enteredPin = "";
-            });
-          }
-        }
-      }
-    }
-  }
-
-  void _onDeleteTap() {
-    if (enteredPin.isNotEmpty) {
-      setState(() {
-        enteredPin = enteredPin.substring(0, enteredPin.length - 1);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String titleText = "กรุณากรอก PIN ของคุณ";
-    if (isSetupMode) {
-      titleText = isConfirmMode ? "ยืนยันรหัส PIN ของคุณ" : "สร้างรหัส PIN 6 หลัก";
-    }
-
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 10),
-              Text(
-                titleText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
-                  bool isFilled = index < enteredPin.length;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
-                      border: Border.all(color: const Color(0xFFFFB300), width: 2),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 40),
-              _buildKeypadRow(['1', '2', '3']),
-              const SizedBox(height: 16),
-              _buildKeypadRow(['4', '5', '6']),
-              const SizedBox(height: 16),
-              _buildKeypadRow(['7', '8', '9']),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(width: 80, height: 80),
-                  const SizedBox(width: 24),
-                  _buildKeypadButton('0'),
-                  const SizedBox(width: 24),
-                  SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: ElevatedButton(
-                      onPressed: _onDeleteTap,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF161619).withOpacity(0.85),
-                        shape: const CircleBorder(),
-                        side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-                      ),
-                      child: const Icon(Icons.backspace_outlined, color: Color(0xFFFFB300)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildKeypadRow(List<String> numbers) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: numbers.map((num) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: _buildKeypadButton(num),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildKeypadButton(String number) {
-    bool isPressed = activeNumber == number;
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: ElevatedButton(
-        onPressed: () => _onNumberTap(number),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isPressed ? const Color(0xFF00695C) : const Color(0xFF161619).withOpacity(0.85),
-          shape: const CircleBorder(),
-          side: BorderSide(
-            color: isPressed ? const Color(0xFF00C853) : const Color(0xFFFFB300), 
-            width: isPressed ? 2.5 : 1.5,
-          ),
-          elevation: 5,
-        ),
-        child: Text(
-          number,
-          style: TextStyle(
-            color: isPressed ? Colors.white : const Color(0xFFFFB300),
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
-
-  @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-}
-
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-  String currentLogin = "8111175";
-  int unreadAlertsCount = 0;
-  DatabaseReference? _alertsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToActiveAccount();
-    _listenToAlertsCount();
-  }
-
-  void _listenToActiveAccount() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('status/login').onValue.listen((event) {
-        final val = event.snapshot.value?.toString();
-        if (val != null && val.isNotEmpty && mounted) {
-          setState(() {
-            currentLogin = val;
-          });
-        }
-      });
-    } catch (e) {
-      print("Account listen error: $e");
-    }
-  }
-
-  void _listenToAlertsCount() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _alertsRef = database.ref('alerts');
-      _alertsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted) {
-          int total = 0;
-          if (data is Map) {
-            total = data.length;
-          } else if (data is List) {
-            total = data.where((e) => e != null).length;
-          }
-          setState(() {
-            if (_currentIndex != 4) {
-              unreadAlertsCount = total;
-            }
-          });
-        } else if (data == null && mounted) {
-          setState(() {
-            unreadAlertsCount = 0;
-          });
-        }
-      });
-    } catch (e) {
-      print("Alerts count error: $e");
-    }
-  }
-
-  void _logoutToPinScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const PinLoginScreen()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> pages = [
-      HomeScreen(accountLogin: currentLogin, onLogout: _logoutToPinScreen),
-      const SettingsScreen(),
-      OrdersScreen(accountLogin: currentLogin),
-      HistoryScreen(accountLogin: currentLogin),
-      AlertsScreen(onAlertsRead: () {
-        setState(() {
-          unreadAlertsCount = 0;
-        });
-      }),
-    ];
-
     return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: pages,
-        ),
+      backgroundColor: const Color(0xFF0F172A), // โทนสีมืดพรีเมียม
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('SNIPER KING DASHBOARD', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-              if (index == 4) {
-                unreadAlertsCount = 0;
-              }
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF101014),
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.grey.shade600,
-          items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.notifications_active),
-                  if (unreadAlertsCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$unreadAlertsCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+      body: Stack(
+        children: [
+          // --- เนื้อหาแดชบอร์ดหลัก (Balance, Margin, Bot Control) ---
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. ส่วนแสดงยอดเงินรวมด้านบน
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
                     ),
-                ],
-              ),
-              label: 'Alerts',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 1. HOME SCREEN (รวมกล่อง AI วิเคราะห์พอร์ตในแดชบอร์ด)
-// ==========================================
-class HomeScreen extends StatefulWidget {
-  final String accountLogin;
-  final VoidCallback onLogout;
-  const HomeScreen({super.key, required this.accountLogin, required this.onLogout});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  bool isRunning = false;
-  bool isConnected = false; 
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
-  double profitLoss = 0.0;
-  String broker = "";
-  String server = "";
-  int loginAccount = 0;
-
-  DatabaseReference? _dbRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _initFirebaseAndListen(widget.accountLogin);
-  }
-
-  @override
-  void didUpdateWidget(covariant HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _initFirebaseAndListen(widget.accountLogin);
-    }
-  }
-
-  void _initFirebaseAndListen(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _dbRef = database.ref('status');
-
-      database.ref('.info/connected').onValue.listen((event) {
-        final connected = event.snapshot.value as bool? ?? false;
-        if (mounted) {
-          setState(() {
-            isConnected = connected;
-          });
-        }
-      });
-
-      _dbRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-
-        if (data != null && mounted) {
-          setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
-            profitLoss = (data['profit'] ?? 0.0).toDouble();
-            isRunning = data['is_running'] ?? false;
-            broker = data['broker']?.toString() ?? '';
-            server = data['server']?.toString() ?? '';
-            loginAccount = int.tryParse(data['login']?.toString() ?? login) ?? 0;
-          });
-        }
-      });
-    } catch (e) {
-      print("Database listen error: $e");
-    }
-  }
-
-  void _toggleBotStatus(bool status) {
-    try {
-      _dbRef?.update({'is_running': status});
-    } catch (e) {
-      print("Toggle bot error: $e");
-    }
-  }
-
-  void _closeAllOrders() {
-    try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
-      );
-    } catch (e) {
-      print("Close all error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    bool isProfit = profitLoss >= 0;
-
-    return RobotBackground(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              // กรอบหัวข้อด้านบน
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: const Color(0xFFFFB300).withOpacity(0.6),
-                    width: 1.5,
+                    child: const Text(
+                      '+$0.00',
+                      style: TextStyle(color: Colors.greenAccent, fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
+                const SizedBox(height: 20),
+
+                // 2. ข้อมูล Balance & Equity
+                Row(
                   children: [
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: IconButton(
-                        icon: const Icon(Icons.lock, color: Color(0xFFFFB300), size: 20),
-                        onPressed: widget.onLogout,
-                        tooltip: 'ล็อกอินใหม่',
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                            SizedBox(width: 8),
-                            Text(
-                              'SNIPER KING ROBOT',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFFFFB300),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Center(
-                          child: Container(
+                    Expanded(child: _buildInfoCard('Balance', '\$1581.00', Icons.account_balance_wallet)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildInfoCard('Equity', '\$1581.00', Icons.trending_up)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 3. ข้อมูล Margin & Free Margin
+                Row(
+                  children: [
+                    Expanded(child: _buildInfoCard('Margin', '\$0.00', Icons.lock_outline)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildInfoCard('Free Margin', '\$1581.00', Icons.lock_open)),
+                  ],
+                ),
+                const SizedBox(height: 30),
+
+                // 4. ส่วนควบคุม Bot & Order Control
+                const Text(
+                  'BOT & ORDER CONTROL',
+                  style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('EA Execution Status', style: TextStyle(color: Colors.white70)),
+                          Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                width: 1,
+                              color: _isBotRunning ? Colors.green : Colors.red,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _isBotRunning ? 'RUNNING' : 'STOPPED',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ).wrap(
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isBotRunning = true;
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                child: const Text('START', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isConnected ? Icons.bolt : Icons.wifi_off,
-                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                  size: 12,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                                  style: TextStyle(
-                                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepOrange,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ).wrap(
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isBotRunning = false;
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+                                child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          broker.isNotEmpty ? '$broker ($loginAccount) | $server' : 'Liquidity Sweep v.3 (${widget.accountLogin})',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.amberAccent,
-                            fontWeight: FontWeight.w500,
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // คำสั่งปิดออเดอร์ทั้งหมด
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Close All Orders Triggered!')),
+                            );
+                          },
+                          icon: const Icon(Icons.delete_sweep, color: Colors.black),
+                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // กล่อง Floating Profit / Loss
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isProfit
-                        ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
-                        : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'FLOATING PROFIT / LOSS',
-                      style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+              ],
+            ),
+          ),
 
-              // Grid เมตริก Balance, Equity, Margin, Free Margin
-              Row(
-                children: [
-                  Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // ----------------------------------------------------
-              // AI MARKET & RISK INSIGHTS (เพิ่ม AI เข้ามาในแดชบอร์ดตรงนี้)
-              // ----------------------------------------------------
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
+          // --- ปุ่มลูกบอลลอย AI (ลากเลื่อนได้อิสระบนหน้าจอ) ---
+          Positioned(
+            left: _floatX,
+            top: _floatY,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _floatX += details.delta.dx;
+                  _floatY += details.delta.dy;
+                });
+              },
+              onTap: () {
+                // กดแล้วเปิดหน้าแชท AI ขึ้นมา
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AiChatScreen()),
+                );
+              },
+              child: Container(
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1a2634).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.6), width: 1.5),
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Colors.purpleAccent, Colors.blueAccent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.15),
+                      color: Colors.black.withOpacity(0.5),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.psychology, color: Color(0xFF3b82f6), size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'AI MARKET & RISK INSIGHTS',
-                          style: TextStyle(
-                            color: Color(0xFF3b82f6),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    const Divider(color: Colors.white12, height: 1),
-                    const SizedBox(height: 10),
-                    Text(
-                      _getAIAnalysisText(profitLoss, balance, equity),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Bot Control Panel
-              Row(
-                children: const [
-                  Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'BOT & ORDER CONTROL',
-                    style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+                child: const Center(
+                  child: Icon(
+                    Icons.auto_awesome,
+                    color: Colors.white,
+                    size: 30,
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isRunning ? 'RUNNING' : 'STOPPED',
-                            style: TextStyle(
-                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(true),
-                            icon: const Icon(Icons.play_arrow, color: Colors.white),
-                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(false),
-                            icon: const Icon(Icons.stop, color: Colors.white),
-                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  String _getAIAnalysisText(double profit, double balance, double equity) {
-    if (profit > 0) {
-      return "• พอร์ตกำลังทำกำไรอยู่ที่ +\$${profit.toStringAsFixed(2)} ยี่ยมมาก! ระบบ Liquidity Sweep กำลังทำงานได้ตามแผน\n• ระดับความเสี่ยงอยู่ในเกณฑ์ปลอดภัย รักษาวินัยการจัดการล็อตต่อเนื่องครับ";
-    } else if (profit < 0) {
-      return "• พอร์ตกำลังติดลบชั่วคราว -\$${profit.abs().toStringAsFixed(2)} เนื่องจากตลาดมีความผันผวนสูง\n• AI แนะนำให้จับตากรอบแนวรับ-แนวต้านหลัก และระวังการเปิด Recovery ไม้ซ้ำ";
-    } else {
-      return "• พอร์ตอยู่ในสถานะทรงตัว รอจังหวะสัญญาณ Liquidity Sweep ทำงานรอบถัดไป\n• ระบบบริหารความเสี่ยงทำงานปกติ ปลอดภัยดีครับ";
-    }
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon) {
+  Widget _buildInfoCard(String title, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.grey, size: 15),
+              Icon(icon, size: 16, color: Colors.white60),
               const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+              Text(title, style: const TextStyle(color: Colors.white60, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------------------
+// 2. หน้าจอแชทสนทนากับ AI (สไตล์ WhatsApp / Gemini)
+// -------------------------------------------------------------------------
+class AiChatScreen extends StatefulWidget {
+  const AiChatScreen({super.key});
+
+  @override
+  State<AiChatScreen> createState() => _AiChatScreenState();
+}
+
+class _AiChatScreenState extends State<AiChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final List<Map<String, String>> _messages = [
+    {
+      "sender": "ai",
+      "message": "สวัสดีตอนเช้า Ironman! ฉันคือผู้ช่วย AI ส่วนตัวของคุณ พร้อมวิเคราะห์พอร์ตและตลาดให้แล้ว มีอะไรให้ช่วยเหลือไหมครับ?"
+    }
+  ];
+
+  void _sendMessage() {
+    if (_messageController.text.trim().isEmpty) return;
+
+    String userText = _messageController.text;
+    setState(() {
+      _messages.add({"sender": "user", "message": userText});
+      _messageController.clear();
+
+      // จำลองการตอบกลับของ AI (คุณสามารถเชื่อมต่อ API เพิ่มเติมตรงนี้ได้)
+      _messages.add({
+        "sender": "ai",
+        "message": "รับทราบคำถาม: \"$userText\" ระบบบริหารความเสี่ยงทำงานปกติ พอร์ตอยู่ในสถานะทรงตัวปลอดภัยดีครับ"
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF111B21), // โทนสีมืดสไตล์ WhatsApp
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF202C33),
+        title: Row(
+          children: const [
+            CircleAvatar(
+              backgroundColor: Colors.purpleAccent,
+              radius: 18,
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Meta AI / Sniper AI", style: TextStyle(color: Colors.white, fontSize: 15)),
+                Text("ออนไลน์", style: TextStyle(color: Colors.greenAccent, fontSize: 11)),
+              ],
+            ),
+          ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Column(
+        children: [
+          // รายการแชท
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                bool isUser = msg["sender"] == "user";
+                return Align(
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                    decoration: BoxDecoration(
+                      color: isUser ? const Color(0xFF005C4B) : const Color(0xFF202C33),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      msg["message"]!,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // แถบพิมพ์ข้อความแชทด้านล่าง
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            color: const Color(0xFF202C33),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A3942),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _messageController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: "ถาม Meta AI หรือค้นหา...",
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF00A884),
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                    onPressed: _sendMessage,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -913,941 +393,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ==========================================
-// 2. SETTINGS SCREEN
-// ==========================================
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  String lotMode = 'Double';
-  final TextEditingController initialLotController = TextEditingController();
-  final TextEditingController maxRecoveryController = TextEditingController();
-  final TextEditingController swingBarsController = TextEditingController();
-  final TextEditingController slPointsController = TextEditingController();
-  final TextEditingController riskRewardController = TextEditingController();
-
-  bool enableDailyTarget = true;
-  final TextEditingController dailyTargetController = TextEditingController();
-  
-  bool enableDailyLoss = false;
-  final TextEditingController dailyLossController = TextEditingController();
-
-  DatabaseReference? _settingsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettingsFromFirebase();
-  }
-
-  void _loadSettingsFromFirebase() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _settingsRef = database.ref('status');
-
-      _settingsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
-            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
-            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
-            slPointsController.text = data['sl_points']?.toString() ?? '500';
-            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
-
-            enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
-
-            enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
-          });
-        }
-      });
-    } catch (e) {
-      print("Load settings error: $e");
-    }
-  }
-
-  void _saveSettingsToFirebase() {
-    try {
-      _settingsRef?.update({
-        'lot_mode': lotMode,
-        'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
-        'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
-        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
-        'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
-        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
-        'enable_daily_target': enableDailyTarget,
-        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
-        'enable_daily_loss': enableDailyLoss,
-        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Parameters Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFFFFB300),
-        ),
-      );
-    } catch (e) {
-      print("Save settings error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double sl = double.tryParse(slPointsController.text) ?? 500;
-    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
-    double calculatedTP = sl * rr;
-
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('EA Parameters Settings'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'LIQUIDITY SWEEP PARAMETERS',
-                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-              ),
-              const SizedBox(height: 8),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B0B0E),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white12, width: 1),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: lotMode,
-                          isExpanded: true,
-                          dropdownColor: const Color(0xFF161619),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          items: ['Fixed', 'Step', 'Double'].map((String item) {
-                            return DropdownMenuItem<String>(value: item, child: Text(item));
-                          }).toList(),
-                          onChanged: (val) => setState(() => lotMode = val!),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B0B0E),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white12, width: 1),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${calculatedTP.toStringAsFixed(1)} Points',
-                                  style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.white12),
-                    const SizedBox(height: 8),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontSize: 13)),
-                        Switch(
-                          value: enableDailyTarget,
-                          activeColor: const Color(0xFF00C853),
-                          onChanged: (val) => setState(() => enableDailyTarget = val),
-                        ),
-                      ],
-                    ),
-                    if (enableDailyTarget) ...[
-                      const SizedBox(height: 6),
-                      _buildControllerInputField('Daily Target (\$)', dailyTargetController, TextInputType.number),
-                    ],
-                    const SizedBox(height: 12),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontSize: 13)),
-                        Switch(
-                          value: enableDailyLoss,
-                          activeColor: Colors.redAccent,
-                          onChanged: (val) => setState(() => enableDailyLoss = val),
-                        ),
-                      ],
-                    ),
-                    if (enableDailyLoss) ...[
-                      const SizedBox(height: 6),
-                      _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _saveSettingsToFirebase,
-                  icon: const Icon(Icons.save, color: Colors.white),
-                  label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB300),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {}),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// 3. ORDERS SCREEN
-// ==========================================
-class OrdersScreen extends StatefulWidget {
-  final String accountLogin;
-  const OrdersScreen({super.key, required this.accountLogin});
-
-  @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
-}
-
-class _OrdersScreenState extends State<OrdersScreen> {
-  List<Map<dynamic, dynamic>> activeOrders = [];
-  DatabaseReference? _ordersRef;
-  String activeSymbol = 'XAUUSD';
-  String activeTimeframe = 'M1';
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToOrders();
-    _listenToStatusForSymbol();
-  }
-
-  void _listenToStatusForSymbol() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('status').onValue.listen((event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
-            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
-          });
-        }
-      });
-    } catch (e) {
-      print("Status symbol listen error: $e");
-    }
-  }
-
-  void _listenToOrders() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _ordersRef = database.ref('orders');
-
-      _ordersRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            activeOrders.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Orders listen error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isTotalProfit = totalOrdersProfit >= 0;
-
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text('Active Orders (${widget.accountLogin})'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            activeSymbol,
-                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            activeTimeframe,
-                            style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Text('Active Symbol', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
-
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isTotalProfit
-                      ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
-                      : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TOTAL OPEN PROFIT',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                  ),
-                  Text(
-                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: activeOrders.isEmpty
-                  ? const Center(
-                      child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: activeOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = activeOrders[index];
-                        final String type = order['type']?.toString() ?? 'BUY';
-                        final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                        final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                        final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                        bool isBuy = type.toUpperCase().contains('BUY');
-                        bool orderProfit = profit >= 0;
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.85),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      type,
-                                      style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                      const SizedBox(height: 2),
-                                      Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 4. TRADE HISTORY SCREEN
-// ==========================================
-class HistoryScreen extends StatefulWidget {
-  final String accountLogin;
-  const HistoryScreen({super.key, required this.accountLogin});
-
-  @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  List<Map<dynamic, dynamic>> allTradeHistory = [];
-  DatabaseReference? _historyRef;
-  
-  String selectedFilter = 'วันนี้';
-  final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToHistory(widget.accountLogin);
-  }
-
-  @override
-  void didUpdateWidget(covariant HistoryScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _listenToHistory(widget.accountLogin);
-    }
-  }
-
-  void _listenToHistory(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _historyRef = database.ref('history');
-
-      _historyRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            allTradeHistory.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(value));
-                } else if (value is List) {
-                  for (var item in value) {
-                    if (item is Map) {
-                      allTradeHistory.add(Map<dynamic, dynamic>.from(item));
-                    }
-                  }
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-
-            allTradeHistory.sort((a, b) {
-              String timeA = a['close_time']?.toString() ?? a['time']?.toString() ?? '';
-              String timeB = b['close_time']?.toString() ?? b['time']?.toString() ?? '';
-              return timeB.compareTo(timeA);
-            });
-          });
-        }
-      });
-    } catch (e) {
-      print("History listen error: $e");
-    }
-  }
-
-  List<Map<dynamic, dynamic>> _getFilteredHistory() {
-    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
-
-    DateTime now = DateTime.now();
-    return allTradeHistory.where((trade) {
-      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      DateTime? tradeDate = DateTime.tryParse(timeStr.replaceAll('.', '-'));
-      if (tradeDate == null) return false;
-
-      if (selectedFilter == 'วันนี้') {
-        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
-      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
-        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
-      } else if (selectedFilter == 'เดือนล่าสุด') {
-        return tradeDate.year == now.year && tradeDate.month == now.month;
-      } else if (selectedFilter == '3 เดือนล่าสุด') {
-        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-        return tradeDate.isAfter(threeMonthsAgo);
-      }
-      return true;
-    }).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
-
-    double totalProfit = filteredHistory.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text('History (${widget.accountLogin})'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: Column(
-          children: [
-            SizedBox(
-              height: 50,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                itemCount: filterOptions.length,
-                itemBuilder: (context, index) {
-                  String filter = filterOptions[index];
-                  bool isSelected = selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(filter),
-                      selected: isSelected,
-                      selectedColor: const Color(0xFFFFB300),
-                      backgroundColor: const Color(0xFF161619),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      onSelected: (bool selected) {
-                        setState(() {
-                          selectedFilter = filter;
-                        });
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text(
-                    '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: filteredHistory.isEmpty
-                  ? const Center(
-                      child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey)),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredHistory.length,
-                      itemBuilder: (context, index) {
-                        final trade = filteredHistory[index];
-                        final String type = trade['type']?.toString() ?? 'BUY';
-                        final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
-                        final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
-                        final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
-                        final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                        final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                        final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-                        bool isBuy = type.toUpperCase().contains('BUY');
-                        bool isProfit = profit >= 0;
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.85),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white12, width: 1),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      type,
-                                      style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                        style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 5. ALERTS SCREEN
-// ==========================================
-class AlertsScreen extends StatefulWidget {
-  final VoidCallback onAlertsRead;
-  const AlertsScreen({super.key, required this.onAlertsRead});
-
-  @override
-  State<AlertsScreen> createState() => _AlertsScreenState();
-}
-
-class _AlertsScreenState extends State<AlertsScreen> {
-  List<Map<String, dynamic>> alertItems = [];
-  DatabaseReference? _alertsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.onAlertsRead();
-    _listenToAlerts();
-  }
-
-  void _listenToAlerts() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _alertsRef = database.ref('alerts');
-
-      _alertsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            alertItems.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value != null) {
-                  alertItems.add({
-                    'key': key.toString(),
-                    'message': value.toString(),
-                  });
-                }
-              });
-            } else if (data is List) {
-              for (int i = 0; i < data.length; i++) {
-                if (data[i] != null) {
-                  alertItems.add({
-                    'key': i.toString(),
-                    'message': data[i].toString(),
-                  });
-                }
-              }
-            }
-
-            alertItems.sort((a, b) => b['message'].compareTo(a['message']));
-          });
-        }
-      });
-    } catch (e) {
-      print("Alerts listen error: $e");
-    }
-  }
-
-  void _deleteAlert(String key) {
-    try {
-      _alertsRef?.child(key).remove();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
-      );
-    } catch (e) {
-      print("Delete alert error: $e");
-    }
-  }
-
-  void _clearAllAlerts() {
-    try {
-      _alertsRef?.remove();
-      setState(() {
-        alertItems.clear();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cleared all alerts successfully'), duration: Duration(seconds: 1)),
-      );
-    } catch (e) {
-      print("Clear all alerts error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('Mobile Push Alerts'),
-          backgroundColor: Colors.transparent,
-          actions: [
-            if (alertItems.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-                onPressed: _clearAllAlerts,
-                tooltip: 'Clear All Alerts',
-              ),
-          ],
-        ),
-        body: alertItems.isEmpty
-            ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: alertItems.length,
-                itemBuilder: (context, index) {
-                  final alert = alertItems.isNotEmpty ? alertItems.first : null;
-                  return Card(
-                    color: const Color(0xFF161619).withOpacity(0.85),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: ListTile(
-                      leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                      title: Text(alert?['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey, size: 20),
-                        onPressed: () => _deleteAlert(alert?['key']),
-                      ),
-                    ),
-                  );
-                },
-              ),
-      ),
-    );
+// Extension ช่วยอำนวยความสะดวกในการจัด Layout ปุ่มเล็กน้อย
+extension on ButtonStyle {
+  Widget wrap(Widget child) {
+    return child;
   }
 }
