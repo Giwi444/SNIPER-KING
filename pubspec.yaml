@@ -18,6 +18,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: "^0.13.1" # เพิ่มบรรทัดนี้เข้ามา
 
 flutter:
   uses-material-design: true
@@ -26,3 +27,9 @@ flutter:
     - assets/images/Ironman (2).jpg
     - assets/images/IMG_20260922_194127.jpg
     - assets/images/IMG_20260922_200506.jpg
+
+# เพิ่มส่วนตั้งค่าไอคอนนี้ไว้ล่างสุดของไฟล์
+flutter_launcher_icons:
+  image_path: "assets/images/Ironman (2).jpg" # เลือกรูปที่ต้องการใช้เป็นไอคอน
+  android: true
+  ios: true
