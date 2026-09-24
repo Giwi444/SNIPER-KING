@@ -1,4 +1,4 @@
-name: sniperking
+name: ROBOT 
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -25,4 +25,4 @@ flutter:
   assets:
     - assets/images/Ironman (2).jpg
     - assets/images/IMG_20260922_194127.jpg
-    - assets/images/IMG_20260922_194127.jpg
+    - assets/images/IMG_20260922_200506.jpg
