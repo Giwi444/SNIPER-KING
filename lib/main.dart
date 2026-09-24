@@ -420,7 +420,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             total = data.where((e) => e != null).length;
           }
           setState(() {
-            if (_currentIndex != 5) {
+            if (_currentIndex != 4) {
               unreadAlertsCount = total;
             }
           });
@@ -449,7 +449,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
-      StatisticsScreen(accountLogin: currentLogin), // หน้าสถิติใหม่
       AlertsScreen(onAlertsRead: () {
         setState(() {
           unreadAlertsCount = 0;
@@ -479,7 +478,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onTap: (index) {
             setState(() {
               _currentIndex = index;
-              if (index == 5) {
+              if (index == 4) {
                 unreadAlertsCount = 0;
               }
             });
@@ -493,7 +492,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'), // เมนู Stats
             BottomNavigationBarItem(
               icon: Stack(
                 children: [
@@ -549,10 +547,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   bool isConnected = false; 
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
+  double bidPrice = 0.0;
+  double askPrice = 0.0;
+  double spread = 0.0;
   double profitLoss = 0.0;
   String broker = "";
   String server = "";
@@ -597,10 +594,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (data != null && mounted) {
           setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            bidPrice = (data['bid'] ?? 0.0).toDouble();
+            askPrice = (data['ask'] ?? 0.0).toDouble();
+            spread = (data['spread'] ?? 0.0).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
             isRunning = data['is_running'] ?? false;
             broker = data['broker']?.toString() ?? '';
@@ -633,6 +629,25 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       print("Close all error: $e");
+    }
+  }
+
+  void _executeManualTrade(String action) {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      database.ref('manual_trade_commands').push().set({
+        'action': action,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'login': widget.accountLogin,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sent Manual $action Order Successfully!'), backgroundColor: action == 'BUY' ? const Color(0xFF00C853) : Colors.redAccent),
+      );
+    } catch (e) {
+      print("Manual trade error: $e");
     }
   }
 
@@ -802,17 +817,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
               Row(
                 children: [
-                  Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                  Expanded(child: _buildMetricCard('BID PRICE', bidPrice.toStringAsFixed(2), Icons.trending_down, const Color(0xFFFF5252))),
                   const SizedBox(width: 10),
-                  Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                  Expanded(child: _buildMetricCard('ASK PRICE', askPrice.toStringAsFixed(2), Icons.trending_up, const Color(0xFF00C853))),
                 ],
               ),
               const SizedBox(height: 10),
+              Container(
+                alignment: Alignment.center,
+                child: Text('Spread: ${spread.toStringAsFixed(1)}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => _executeManualTrade('SELL'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD50000),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('SELL', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => _executeManualTrade('BUY'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00C853),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('BUY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -912,7 +956,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon) {
+  Widget _buildMetricCard(String title, String value, IconData icon, Color valueColor) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -933,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ],
       ),
@@ -1241,33 +1285,40 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
-  String activeSymbol = 'XAUUSD';
-  String activeTimeframe = 'M1';
+  DatabaseReference? _statusRef;
+  
+  double balance = 0.0;
+  double equity = 0.0;
+  double margin = 0.0;
+  double freeMargin = 0.0;
 
   @override
   void initState() {
     super.initState();
     _listenToOrders();
-    _listenToStatusForSymbol();
+    _listenToAccountStatus();
   }
 
-  void _listenToStatusForSymbol() {
+  void _listenToAccountStatus() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      database.ref('status').onValue.listen((event) {
+      _statusRef = database.ref('status');
+      _statusRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
-            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
           });
         }
       });
     } catch (e) {
-      print("Status symbol listen error: $e");
+      print("Account status listen error: $e");
     }
   }
 
@@ -1306,6 +1357,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  void _closeAllOrders() {
+    try {
+      _statusRef?.update({
+        'close_all': true,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
+      );
+    } catch (e) {
+      print("Close all error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
@@ -1317,101 +1382,106 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('Active Orders (${widget.accountLogin})'),
+          title: Text('Portfolio & Orders (${widget.accountLogin})'),
           backgroundColor: Colors.transparent,
         ),
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
+                  color: const Color(0xFF161619).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            activeSymbol,
-                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            activeTimeframe,
-                            style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
+                        Expanded(child: _buildDashboardMetricCard('BALANCE', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet, const Color(0xFFFFB300))),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildDashboardMetricCard('EQUITY', '\$${equity.toStringAsFixed(2)}', Icons.show_chart, const Color(0xFF00C853))),
                       ],
                     ),
-                    const Text('Active Symbol', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: _buildDashboardMetricCard('MARGIN', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline, Colors.blueAccent)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildDashboardMetricCard('FREE MARGIN', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open, Colors.purpleAccent)),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
 
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isTotalProfit
-                      ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
-                      : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isTotalProfit
+                        ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
+                        : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TOTAL OPEN PROFIT',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                    width: 1.5,
                   ),
-                  Text(
-                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'TOTAL OPEN PROFIT',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                     ),
-                  ),
-                ],
+                    Text(
+                      '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 10),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _closeAllOrders,
+                  icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                  label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFB300),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
 
             Expanded(
               child: activeOrders.isEmpty
@@ -1426,7 +1496,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         final String type = order['type']?.toString() ?? 'BUY';
                         final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                         final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                        final String symbol = order['symbol']?.toString() ?? activeSymbol;
+                        final String symbol = order['symbol']?.toString() ?? 'XAUUSD';
                         bool isBuy = type.toUpperCase().contains('BUY');
                         bool orderProfit = profit >= 0;
 
@@ -1484,6 +1554,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardMetricCard(String title, String value, IconData icon, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0B0E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: accentColor, size: 14),
+              const SizedBox(width: 6),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ],
       ),
     );
   }
@@ -1747,162 +1845,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. STATISTICS SCREEN (เพิ่มใหม่ตามรูปที่ 1)
-// ==========================================
-class StatisticsScreen extends StatefulWidget {
-  final String accountLogin;
-  const StatisticsScreen({super.key, required this.accountLogin});
-
-  @override
-  State<StatisticsScreen> createState() => _StatisticsScreenState();
-}
-
-class _StatisticsScreenState extends State<StatisticsScreen> {
-  String selectedTimeframe = 'ทั้งหมด';
-  final List<String> timeframes = ['1W', '1M', '3M', '6M', '1Y', 'ทั้งหมด'];
-
-  @override
-  Widget build(BuildContext context) {
-    return RobotBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text('สถิติการเทรด (${widget.accountLogin})'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'ข้อมูลบัญชี',
-                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    _buildInfoRow('บัญชี', 'Demo', isGreen: false),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('ROI (รายวัน)', '+3.75%', isGreen: true),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('ROI ตลอดระยะเวลาทั้งหมด', '0.00%', isGreen: true),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('อิควิตี้', '\$2,016.10', isGreen: false),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('ประเภทบัญชี', 'Demo, hedging', isGreen: false),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('เลเวอเรจ', '1:1000', isGreen: false),
-                    const Divider(color: Colors.white12, height: 20),
-                    _buildInfoRow('โบรกเกอร์', 'icmarketssc', isGreen: false),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              const Text(
-                'ROI (%)',
-                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'เลือกช่วงเวลาเพื่อดูผลตอบแทนจากการลงทุนในบัญชี',
-                style: TextStyle(color: Colors.grey, fontSize: 11),
-              ),
-              const SizedBox(height: 12),
-
-              SizedBox(
-                height: 40,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: timeframes.length,
-                  itemBuilder: (context, index) {
-                    String tf = timeframes[index];
-                    bool isSelected = selectedTimeframe == tf;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(tf),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFFFFB300),
-                        backgroundColor: const Color(0xFF161619),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                        onSelected: (bool selected) {
-                          setState(() {
-                            selectedTimeframe = tf;
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Container(
-                width: double.infinity,
-                height: 220,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.show_chart, color: Color(0xFF00C853), size: 48),
-                    const SizedBox(height: 12),
-                    Text(
-                      'แสดงกราฟแนวโน้ม ROI ช่วงเวลา: $selectedTimeframe',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '(-1.94% -> 0.00%)',
-                      style: TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, {required bool isGreen}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        Text(
-          value,
-          style: TextStyle(
-            color: isGreen ? const Color(0xFF00C853) : Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// 6. ALERTS SCREEN
+// 5. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
