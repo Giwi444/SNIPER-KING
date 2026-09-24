@@ -117,7 +117,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอท (ลบกรอบขอบจอสีเหลืองออก)
+// วิดเจ็ตภาพพื้นหลังโรบอท
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -344,20 +344,40 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       child: ElevatedButton(
         onPressed: () => _onNumberTap(number),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isPressed ? const Color(0xFF00695C) : const Color(0xFF161619).withOpacity(0.85),
+          // เปลี่ยนจากสีเขียวตอนกด เป็นการใส่ภาพโรบอท/พื้นผิวโปรไฟล์ พร้อมขอบทองเด่นชัด
+          backgroundColor: Colors.transparent,
+          padding: EdgeInsets.zero,
           shape: const CircleBorder(),
           side: BorderSide(
-            color: isPressed ? const Color(0xFF00C853) : const Color(0xFFFFB300), 
+            color: isPressed ? const Color(0xFFFFE082) : const Color(0xFFFFB300), 
             width: isPressed ? 2.5 : 1.5,
           ),
           elevation: 5,
         ),
-        child: Text(
-          number,
-          style: TextStyle(
-            color: isPressed ? Colors.white : const Color(0xFFFFB300),
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
+        child: Ink(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: isPressed
+                ? const DecorationImage(
+                    image: AssetImage('assets/images/IMG_20260922_194127.jpg'),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+            color: isPressed ? null : const Color(0xFF161619).withOpacity(0.85),
+          ),
+          child: Container(
+            alignment: Alignment.center,
+            child: Text(
+              number,
+              style: TextStyle(
+                color: isPressed ? Colors.white : const Color(0xFFFFB300),
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                shadows: isPressed
+                    ? [const Shadow(color: Colors.black, blurRadius: 4)]
+                    : [],
+              ),
+            ),
           ),
         ),
       ),
@@ -557,7 +577,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String server = "";
   int loginAccount = 0;
 
-  // สำหรับทำเอฟเฟกต์ปุ่มกดบุ๋มลง (Tactile Pressed States)
   bool isStartPressed = false;
   bool isStopPressed = false;
   bool isCloseAllPressed = false;
@@ -790,8 +809,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
+                    // ลบเครื่องหมายลบออก เหลือแต่สัญลักษณ์สกุลเงินและตัวเลขสัมบูรณ์
                     Text(
-                      '${profitLoss < 0 ? "-" : ""}\$${profitLoss.abs().toStringAsFixed(2)}',
+                      '\$${profitLoss.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                         fontSize: 34,
@@ -804,7 +824,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Account Overview (ขยายตัวเลขให้ใหญ่ขึ้น)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -855,7 +874,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Bot & Order Control (ย้ายหัวข้อเข้ามาไว้ในกล่องเรียบร้อย พร้อมเอฟเฟกต์ปุ่มกด)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -907,7 +925,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        // ปุ่ม START (กดแล้วบุ๋มลงและค้างสถานะ)
                         Expanded(
                           child: GestureDetector(
                             onTapDown: (_) => setState(() => isStartPressed = true),
@@ -931,7 +948,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // ปุ่ม STOP (กดแล้วบุ๋มลงและค้างสถานะ)
                         Expanded(
                           child: GestureDetector(
                             onTapDown: (_) => setState(() => isStopPressed = true),
@@ -957,7 +973,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // ปุ่ม CLOSE ALL ORDERS (กดบุ๋มลงแล้วเด้งกลับอัตโนมัติเหมือนสวิตช์สปริง)
                     GestureDetector(
                       onTapDown: (_) => setState(() => isCloseAllPressed = true),
                       onTapUp: (_) async {
@@ -1023,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 18, // ขยายตัวเลขให้ใหญ่และชัดเจนยิ่งขึ้น
+              fontSize: 18,
             ),
           ),
         ],
@@ -1492,8 +1507,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     'TOTAL OPEN PROFIT',
                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                   ),
+                  // ลบเครื่องหมายลบออก เหลือแต่มูลค่าสัมบูรณ์
                   Text(
-                    '${totalOrdersProfit < 0 ? "-" : ""}\$${totalOrdersProfit.abs().toStringAsFixed(2)}',
+                    '\$${totalOrdersProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                       fontSize: 20,
@@ -1559,8 +1575,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   ),
                                 ],
                               ),
+                              // ลบเครื่องหมายลบออกเช่นกัน
                               Text(
-                                '${profit < 0 ? "-" : ""}\$${profit.abs().toStringAsFixed(2)}',
+                                '\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
@@ -1745,8 +1762,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  // ลบเครื่องหมายลบออกในประวัติรวม
                   Text(
-                    '${totalProfit < 0 ? "-" : ""}\$${totalProfit.abs().toStringAsFixed(2)}',
+                    '\$${totalProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
                       fontSize: 18,
@@ -1816,8 +1834,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                 ],
                               ),
+                              // ลบเครื่องหมายลบออกในรายการประวัติแต่ละเทรด
                               Text(
-                                '${profit < 0 ? "-" : ""}\$${profit.abs().toStringAsFixed(2)}',
+                                '\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
