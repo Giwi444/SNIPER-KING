@@ -117,7 +117,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอท (ลบกรอบขอบจอสีเหลืองออกแล้ว)
+// วิดเจ็ตภาพพื้นหลังโรบอท (ลบกรอบขอบจอสีเหลืองออก)
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -557,6 +557,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String server = "";
   int loginAccount = 0;
 
+  // สำหรับทำเอฟเฟกต์ปุ่มกดบุ๋มลง (Tactile Pressed States)
+  bool isStartPressed = false;
+  bool isStopPressed = false;
+  bool isCloseAllPressed = false;
+
   DatabaseReference? _dbRef;
 
   @override
@@ -799,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ชุดกล่อง Account Metrics (ปรับขอบให้เหมือนกล่อง Start: สีขาวจาง ความโค้งมนเท่ากัน ไม่มีกรอบสีเหลือง)
+              // Account Overview (ขยายตัวเลขให้ใหญ่ขึ้นเล็กน้อย)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -848,20 +853,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              Row(
-                children: const [
-                  Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'BOT & ORDER CONTROL',
-                    style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+              // Bot & Order Control (นำข้อความเข้ามาไว้ในกรอบกล่องเรียบร้อย พร้อมเอฟเฟกต์ปุ่มกดบุ๋มลงและเด้งกลับ)
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
@@ -869,7 +865,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   border: Border.all(color: Colors.white12, width: 1),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'BOT & ORDER CONTROL',
+                          style: TextStyle(
+                            color: Color(0xFFFFB300), 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 12, 
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -894,44 +907,79 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
+                        // ปุ่ม START (กดแล้วบุ๋มลงค้างสถานะ)
                         Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(true),
-                            icon: const Icon(Icons.play_arrow, color: Colors.white),
-                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: GestureDetector(
+                            onTapDown: (_) => setState(() => isStartPressed = true),
+                            onTapUp: (_) => setState(() => isStartPressed = false),
+                            onTapCancel: () => setState(() => isStartPressed = false),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 100),
+                              transform: Matrix4.identity()..translate(0.0, isStartPressed ? 3.0 : 0.0),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _toggleBotStatus(true),
+                                icon: const Icon(Icons.play_arrow, color: Colors.white),
+                                label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00C853),
+                                  elevation: isStartPressed ? 1 : 6,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
+                        // ปุ่ม STOP (กดแล้วบุ๋มลงค้างสถานะ)
                         Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(false),
-                            icon: const Icon(Icons.stop, color: Colors.white),
-                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: GestureDetector(
+                            onTapDown: (_) => setState(() => isStopPressed = true),
+                            onTapUp: (_) => setState(() => isStopPressed = false),
+                            onTapCancel: () => setState(() => isStopPressed = false),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 100),
+                              transform: Matrix4.identity()..translate(0.0, isStopPressed ? 3.0 : 0.0),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _toggleBotStatus(false),
+                                icon: const Icon(Icons.stop, color: Colors.white),
+                                label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD50000),
+                                  elevation: isStopPressed ? 1 : 6,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    // ปุ่ม CLOSE ALL ORDERS (กดบุ๋มลงแล้วเด้งกลับอัตโนมัติเหมือนสวิตช์ไฟสปริง)
+                    GestureDetector(
+                      onTapDown: (_) => setState(() => isCloseAllPressed = true),
+                      onTapUp: (_) async {
+                        setState(() => isCloseAllPressed = false);
+                        _closeAllOrders();
+                      },
+                      onTapCancel: () => setState(() => isCloseAllPressed = false),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        transform: Matrix4.identity()..translate(0.0, isCloseAllPressed ? 4.0 : 0.0),
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: null, // ใช้ GestureDetector คุมแทนเพื่อให้กดบุ๋ม-เด้งสมบูรณ์
+                          icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            disabledBackgroundColor: const Color(0xFFFFB300),
+                            elevation: isCloseAllPressed ? 1 : 6,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
                     ),
@@ -975,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 16, // ขยายตัวเลขให้ใหญ่ขึ้นเล็กน้อย
             ),
           ),
         ],
