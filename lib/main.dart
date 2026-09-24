@@ -618,20 +618,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _closeAllOrders() {
-    try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
-      );
-    } catch (e) {
-      print("Close all error: $e");
-    }
-  }
-
   void _executeManualTrade(String action) {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -815,49 +801,142 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              Row(
-                children: [
-                  Expanded(child: _buildMetricCard('BID PRICE', bidPrice.toStringAsFixed(2), Icons.trending_down, const Color(0xFFFF5252))),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildMetricCard('ASK PRICE', askPrice.toStringAsFixed(2), Icons.trending_up, const Color(0xFF00C853))),
-                ],
-              ),
-              const SizedBox(height: 10),
+              // --- กล่องใหญ่รวม Bid / Ask / Spread / ปุ่ม Buy และ Sell เข้าไว้ด้วยกัน ---
               Container(
-                alignment: Alignment.center,
-                child: Text('Spread: ${spread.toStringAsFixed(1)}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => _executeManualTrade('SELL'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD50000),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: const Color(0xFFFFB300).withOpacity(0.4),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.bolt, color: Color(0xFFFFB300), size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'MARKET EXECUTION & QUOTE',
+                          style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
                         ),
-                        child: const Text('SELL', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // แถวตัวเลข Bid และ Ask (ให้อยู่ตรงกลางและขนาดใหญ่ขึ้น)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('BID PRICE', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  bidPrice.toStringAsFixed(2),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.bold, fontSize: 20),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('ASK PRICE', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  askPrice.toStringAsFixed(2),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 20),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // กล่อง Spread ตัวหนังสือสีทอง
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0B0B0E),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Spread: ', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
+                          Text(
+                            spread.toStringAsFixed(1),
+                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => _executeManualTrade('BUY'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00C853),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    const SizedBox(height: 16),
+
+                    // ปุ่ม Sell และ Buy อยู่ในกรอบเดียวกัน
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: () => _executeManualTrade('SELL'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD50000),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('SELL', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
                         ),
-                        child: const Text('BUY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: () => _executeManualTrade('BUY'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C853),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('BUY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -932,54 +1011,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon, Color valueColor) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.grey, size: 15),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ],
       ),
     );
   }
