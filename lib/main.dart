@@ -117,7 +117,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอท พร้อมเพิ่มกรอบขอบจอใหญ่ครอบทุกหน้า
+// วิดเจ็ตภาพพื้นหลังโรบอท (ลบกรอบขอบจอสีเหลืองออกแล้ว)
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -137,30 +137,7 @@ class RobotBackground extends StatelessWidget {
         Container(
           color: Colors.black.withOpacity(0.2),
         ),
-        // กรอบขอบจอใหญ่ครอบทั้งหน้าจอ (Screen Frame) สีสันเข้ากับธีมแดชบอร์ด
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: const Color(0xFFFFB300).withOpacity(0.65),
-                width: 2.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFB300).withOpacity(0.15),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: child,
-            ),
-          ),
-        ),
+        child,
       ],
     );
   }
@@ -809,7 +786,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
+                      '${profitLoss < 0 ? "-" : ""}\$${profitLoss.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                         fontSize: 34,
@@ -822,24 +799,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ชุดกล่อง Account Metrics (ครอบรวม 1 ชุด พร้อมสีสันสดใส และจัดวางข้อความกลางกล่อง)
+              // ชุดกล่อง Account Metrics (ปรับขอบให้เหมือนกล่อง Start: สีขาวจาง ความโค้งมนเท่ากัน ไม่มีกรอบสีเหลือง)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.88),
-                  borderRadius: BorderRadius.circular(22),
+                  color: const Color(0xFF161619).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFFFB300).withOpacity(0.5),
-                    width: 1.5,
+                    color: Colors.white12,
+                    width: 1,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1475,7 +1445,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                   ),
                   Text(
-                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                    '${totalOrdersProfit < 0 ? "-" : ""}\$${totalOrdersProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
                       fontSize: 20,
@@ -1542,7 +1512,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 ],
                               ),
                               Text(
-                                '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                '${profit < 0 ? "-" : ""}\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
@@ -1728,7 +1698,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   Text(
-                    '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                    '${totalProfit < 0 ? "-" : ""}\$${totalProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
                       fontSize: 18,
@@ -1799,7 +1769,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 ],
                               ),
                               Text(
-                                '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                '${profit < 0 ? "-" : ""}\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
