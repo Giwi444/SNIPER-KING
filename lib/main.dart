@@ -117,6 +117,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
+// วิดเจ็ตภาพพื้นหลังโรบอท พร้อมเพิ่มกรอบขอบจอใหญ่ครอบทุกหน้า
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -136,7 +137,30 @@ class RobotBackground extends StatelessWidget {
         Container(
           color: Colors.black.withOpacity(0.2),
         ),
-        child,
+        // กรอบขอบจอใหญ่ครอบทั้งหน้าจอ (Screen Frame) สีสันเข้ากับธีมแดชบอร์ด
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFFFB300).withOpacity(0.65),
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFB300).withOpacity(0.15),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: child,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -547,9 +571,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   bool isConnected = false; 
-  double bidPrice = 0.0;
-  double askPrice = 0.0;
-  double spread = 0.0;
+  double balance = 0.0;
+  double equity = 0.0;
+  double margin = 0.0;
+  double freeMargin = 0.0;
   double profitLoss = 0.0;
   String broker = "";
   String server = "";
@@ -594,9 +619,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (data != null && mounted) {
           setState(() {
-            bidPrice = (data['bid'] ?? 0.0).toDouble();
-            askPrice = (data['ask'] ?? 0.0).toDouble();
-            spread = (data['spread'] ?? 0.0).toDouble();
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
             isRunning = data['is_running'] ?? false;
             broker = data['broker']?.toString() ?? '';
@@ -618,22 +644,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _executeManualTrade(String action) {
+  void _closeAllOrders() {
     try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('manual_trade_commands').push().set({
-        'action': action,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-        'login': widget.accountLogin,
+      _dbRef?.update({
+        'close_all': true,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sent Manual $action Order Successfully!'), backgroundColor: action == 'BUY' ? const Color(0xFF00C853) : Colors.redAccent),
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
       );
     } catch (e) {
-      print("Manual trade error: $e");
+      print("Close all error: $e");
     }
   }
 
@@ -801,138 +822,57 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // --- กล่องใหญ่รวม Bid / Ask / Spread / ปุ่ม Buy และ Sell เข้าไว้ด้วยกัน ---
+              // ชุดกล่อง Account Metrics (ครอบรวม 1 ชุด พร้อมสีสันสดใส และจัดวางข้อความกลางกล่อง)
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
+                  color: const Color(0xFF161619).withOpacity(0.88),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: const Color(0xFFFFB300).withOpacity(0.4),
-                    width: 1.2,
+                    color: const Color(0xFFFFB300).withOpacity(0.5),
+                    width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: const [
-                        Icon(Icons.bolt, color: Color(0xFFFFB300), size: 18),
-                        SizedBox(width: 8),
+                        Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 16),
+                        SizedBox(width: 6),
                         Text(
-                          'MARKET EXECUTION & QUOTE',
-                          style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // แถวตัวเลข Bid และ Ask (ให้อยู่ตรงกลางและขนาดใหญ่ขึ้น)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B0B0E),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.white12, width: 1),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('BID PRICE', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 6),
-                                Text(
-                                  bidPrice.toStringAsFixed(2),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.bold, fontSize: 20),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B0B0E),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.white12, width: 1),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('ASK PRICE', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 6),
-                                Text(
-                                  askPrice.toStringAsFixed(2),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 20),
-                                ),
-                              ],
-                            ),
+                          'ACCOUNT OVERVIEW',
+                          style: TextStyle(
+                            color: Color(0xFFFFB300),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-
-                    // กล่อง Spread ตัวหนังสือสีทอง
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B0B0E),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3), width: 1),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Spread: ', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-                          Text(
-                            spread.toStringAsFixed(1),
-                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ปุ่ม Sell และ Buy อยู่ในกรอบเดียวกัน
+                    const SizedBox(height: 14),
                     Row(
                       children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: () => _executeManualTrade('SELL'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD50000),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text('SELL', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: () => _executeManualTrade('BUY'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00C853),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text('BUY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
+                        Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet, const Color(0xFF00695C).withOpacity(0.45))),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart, const Color(0xFF0D47A1).withOpacity(0.45))),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline, const Color(0xFFE65100).withOpacity(0.45))),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open, const Color(0xFF4A148C).withOpacity(0.45))),
                       ],
                     ),
                   ],
@@ -1011,12 +951,64 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _closeAllOrders,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFB300),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.amberAccent, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1322,40 +1314,33 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
-  DatabaseReference? _statusRef;
-  
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
+  String activeSymbol = 'XAUUSD';
+  String activeTimeframe = 'M1';
 
   @override
   void initState() {
     super.initState();
     _listenToOrders();
-    _listenToAccountStatus();
+    _listenToStatusForSymbol();
   }
 
-  void _listenToAccountStatus() {
+  void _listenToStatusForSymbol() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _statusRef = database.ref('status');
-      _statusRef?.onValue.listen((event) {
+      database.ref('status').onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
           });
         }
       });
     } catch (e) {
-      print("Account status listen error: $e");
+      print("Status symbol listen error: $e");
     }
   }
 
@@ -1394,20 +1379,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _closeAllOrders() {
-    try {
-      _statusRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
-      );
-    } catch (e) {
-      print("Close all error: $e");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
@@ -1419,106 +1390,101 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('Portfolio & Orders (${widget.accountLogin})'),
+          title: Text('Active Orders (${widget.accountLogin})'),
           backgroundColor: Colors.transparent,
         ),
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildDashboardMetricCard('BALANCE', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet, const Color(0xFFFFB300))),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildDashboardMetricCard('EQUITY', '\$${equity.toStringAsFixed(2)}', Icons.show_chart, const Color(0xFF00C853))),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(child: _buildDashboardMetricCard('MARGIN', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline, Colors.blueAccent)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildDashboardMetricCard('FREE MARGIN', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open, Colors.purpleAccent)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isTotalProfit
-                        ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
-                        : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                  color: const Color(0xFF161619).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'TOTAL OPEN PROFIT',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0B0B0E),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            activeSymbol,
+                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0B0B0E),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            activeTimeframe,
+                            style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                    const Text('Active Symbol', style: TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _closeAllOrders,
-                  icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                  label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB300),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isTotalProfit
+                      ? [const Color(0xFF00C853).withOpacity(0.35), const Color(0xFF161619).withOpacity(0.9)]
+                      : [const Color(0xFFB71C1C).withOpacity(0.65), const Color(0xFF161619).withOpacity(0.9)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'TOTAL OPEN PROFIT',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                  ),
+                  Text(
+                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
 
             Expanded(
               child: activeOrders.isEmpty
@@ -1533,7 +1499,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         final String type = order['type']?.toString() ?? 'BUY';
                         final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                         final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                        final String symbol = order['symbol']?.toString() ?? 'XAUUSD';
+                        final String symbol = order['symbol']?.toString() ?? activeSymbol;
                         bool isBuy = type.toUpperCase().contains('BUY');
                         bool orderProfit = profit >= 0;
 
@@ -1591,34 +1557,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDashboardMetricCard(String title, String value, IconData icon, Color accentColor) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B0B0E),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: accentColor, size: 14),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-        ],
       ),
     );
   }
