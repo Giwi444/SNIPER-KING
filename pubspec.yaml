@@ -30,6 +30,6 @@ flutter:
 
 # เพิ่มส่วนตั้งค่าไอคอนนี้ไว้ล่างสุดของไฟล์
 flutter_launcher_icons:
-  image_path: "assets/images/Ironman (2).jpg" # เลือกรูปที่ต้องการใช้เป็นไอคอน
+  image_path: "assets/images/IMG_20260922_200506.jpg" # เลือกรูปที่ต้องการใช้เป็นไอคอน
   android: true
   ios: true
