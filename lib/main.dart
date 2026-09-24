@@ -420,7 +420,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             total = data.where((e) => e != null).length;
           }
           setState(() {
-            if (_currentIndex != 4) {
+            if (_currentIndex != 5) {
               unreadAlertsCount = total;
             }
           });
@@ -449,6 +449,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
+      StatisticsScreen(accountLogin: currentLogin), // หน้าสถิติใหม่
       AlertsScreen(onAlertsRead: () {
         setState(() {
           unreadAlertsCount = 0;
@@ -478,7 +479,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onTap: (index) {
             setState(() {
               _currentIndex = index;
-              if (index == 4) {
+              if (index == 5) {
                 unreadAlertsCount = 0;
               }
             });
@@ -492,6 +493,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+            const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'), // เมนู Stats
             BottomNavigationBarItem(
               icon: Stack(
                 children: [
@@ -1488,7 +1490,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN (อัปเดตคำนวณ Net Profit แล้ว)
+// 4. TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1595,12 +1597,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
 
-    // รวมยอดสุทธิ (Profit + Commission + Swap)
     double totalProfit = filteredHistory.fold(0.0, (sum, item) {
-      double profit = double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0;
-      double commission = double.tryParse(item['commission']?.toString() ?? '0.0') ?? 0.0;
-      double swap = double.tryParse(item['swap']?.toString() ?? '0.0') ?? 0.0;
-      return sum + (profit + commission + swap);
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
 
     return RobotBackground(
@@ -1682,16 +1680,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
                         final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
                         final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                        
-                        // คำนวณกำไรสุทธิรายออเดอร์
-                        final double profitVal = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                        final double commissionVal = double.tryParse(trade['commission']?.toString() ?? '0.0') ?? 0.0;
-                        final double swapVal = double.tryParse(trade['swap']?.toString() ?? '0.0') ?? 0.0;
-                        final double netProfit = profitVal + commissionVal + swapVal;
-
+                        final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
                         final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
                         bool isBuy = type.toUpperCase().contains('BUY');
-                        bool isProfit = netProfit >= 0;
+                        bool isProfit = profit >= 0;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -1734,7 +1726,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 ],
                               ),
                               Text(
-                                '${isProfit ? "+" : ""}\$${netProfit.toStringAsFixed(2)}',
+                                '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
@@ -1755,7 +1747,162 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// 5. STATISTICS SCREEN (เพิ่มใหม่ตามรูปที่ 1)
+// ==========================================
+class StatisticsScreen extends StatefulWidget {
+  final String accountLogin;
+  const StatisticsScreen({super.key, required this.accountLogin});
+
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  String selectedTimeframe = 'ทั้งหมด';
+  final List<String> timeframes = ['1W', '1M', '3M', '6M', '1Y', 'ทั้งหมด'];
+
+  @override
+  Widget build(BuildContext context) {
+    return RobotBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('ROI(%) (${widget.accountLogin})'),
+          backgroundColor: Colors.transparent,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'ข้อมูลบัญชี',
+                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white12, width: 1),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow('บัญชี', 'Demo', isGreen: false),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('ROI (รายวัน)', '+3.75%', isGreen: true),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('ROI ตลอดระยะเวลาทั้งหมด', '0.00%', isGreen: true),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('อิควิตี้', '\$2,016.10', isGreen: false),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('ประเภทบัญชี', 'Demo, hedging', isGreen: false),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('เลเวอเรจ', '1:1000', isGreen: false),
+                    const Divider(color: Colors.white12, height: 20),
+                    _buildInfoRow('โบรกเกอร์', 'icmarketssc', isGreen: false),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const Text(
+                'ROI (%)',
+                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'เลือกช่วงเวลาเพื่อดูผลตอบแทนจากการลงทุนในบัญชี',
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: timeframes.length,
+                  itemBuilder: (context, index) {
+                    String tf = timeframes[index];
+                    bool isSelected = selectedTimeframe == tf;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(tf),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFFB300),
+                        backgroundColor: const Color(0xFF161619),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        onSelected: (bool selected) {
+                          setState(() {
+                            selectedTimeframe = tf;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                width: double.infinity,
+                height: 220,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white12, width: 1),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.show_chart, color: Color(0xFF00C853), size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      'แสดงกราฟแนวโน้ม ROI ช่วงเวลา: $selectedTimeframe',
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '(-1.94% -> 0.00%)',
+                      style: TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {required bool isGreen}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        Text(
+          value,
+          style: TextStyle(
+            color: isGreen ? const Color(0xFF00C853) : Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==========================================
+// 6. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
