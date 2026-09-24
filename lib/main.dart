@@ -49,7 +49,6 @@ class _LiquiditySweepAppState extends State<LiquiditySweepApp> with WidgetsBindi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // เมื่อผู้ใช้กลับเข้ามาในแอป (Resumed) ให้บังคับเด้งกลับมาหน้ากรอก PIN ทุกครั้ง
     if (state == AppLifecycleState.resumed) {
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const PinLoginScreen(isSetupMode: false)),
@@ -77,7 +76,6 @@ class _LiquiditySweepAppState extends State<LiquiditySweepApp> with WidgetsBindi
   }
 }
 
-// ตัวตรวจสอบสถานะ PIN เริ่มต้นของแอป
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
 
@@ -119,7 +117,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอทสำหรับทุกหน้า
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -1491,7 +1488,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN
+// 4. TRADE HISTORY SCREEN (อัปเดตคำนวณ Net Profit แล้ว)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1598,8 +1595,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
 
+    // รวมยอดสุทธิ (Profit + Commission + Swap)
     double totalProfit = filteredHistory.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+      double profit = double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0;
+      double commission = double.tryParse(item['commission']?.toString() ?? '0.0') ?? 0.0;
+      double swap = double.tryParse(item['swap']?.toString() ?? '0.0') ?? 0.0;
+      return sum + (profit + commission + swap);
     });
 
     return RobotBackground(
@@ -1681,10 +1682,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
                         final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
                         final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                        final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                        
+                        // คำนวณกำไรสุทธิรายออเดอร์
+                        final double profitVal = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                        final double commissionVal = double.tryParse(trade['commission']?.toString() ?? '0.0') ?? 0.0;
+                        final double swapVal = double.tryParse(trade['swap']?.toString() ?? '0.0') ?? 0.0;
+                        final double netProfit = profitVal + commissionVal + swapVal;
+
                         final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
                         bool isBuy = type.toUpperCase().contains('BUY');
-                        bool isProfit = profit >= 0;
+                        bool isProfit = netProfit >= 0;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -1727,7 +1734,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 ],
                               ),
                               Text(
-                                '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                '${isProfit ? "+" : ""}\$${netProfit.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                   fontWeight: FontWeight.bold,
