@@ -1767,7 +1767,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('ROI(%) (${widget.accountLogin})'),
+          title: Text('สถิติการเทรด (${widget.accountLogin})'),
           backgroundColor: Colors.transparent,
         ),
         body: SingleChildScrollView(
