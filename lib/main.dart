@@ -804,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Account Overview (ขยายตัวเลขให้ใหญ่ขึ้นเล็กน้อย)
+              // Account Overview (ขยายตัวเลขให้ใหญ่ขึ้น)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -855,7 +855,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Bot & Order Control (นำข้อความเข้ามาไว้ในกรอบกล่องเรียบร้อย พร้อมเอฟเฟกต์ปุ่มกดบุ๋มลงและเด้งกลับ)
+              // Bot & Order Control (ย้ายหัวข้อเข้ามาไว้ในกล่องเรียบร้อย พร้อมเอฟเฟกต์ปุ่มกด)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -907,7 +907,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        // ปุ่ม START (กดแล้วบุ๋มลงค้างสถานะ)
+                        // ปุ่ม START (กดแล้วบุ๋มลงและค้างสถานะ)
                         Expanded(
                           child: GestureDetector(
                             onTapDown: (_) => setState(() => isStartPressed = true),
@@ -931,7 +931,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // ปุ่ม STOP (กดแล้วบุ๋มลงค้างสถานะ)
+                        // ปุ่ม STOP (กดแล้วบุ๋มลงและค้างสถานะ)
                         Expanded(
                           child: GestureDetector(
                             onTapDown: (_) => setState(() => isStopPressed = true),
@@ -957,7 +957,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // ปุ่ม CLOSE ALL ORDERS (กดบุ๋มลงแล้วเด้งกลับอัตโนมัติเหมือนสวิตช์ไฟสปริง)
+                    // ปุ่ม CLOSE ALL ORDERS (กดบุ๋มลงแล้วเด้งกลับอัตโนมัติเหมือนสวิตช์สปริง)
                     GestureDetector(
                       onTapDown: (_) => setState(() => isCloseAllPressed = true),
                       onTapUp: (_) async {
@@ -970,7 +970,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         transform: Matrix4.identity()..translate(0.0, isCloseAllPressed ? 4.0 : 0.0),
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: null, // ใช้ GestureDetector คุมแทนเพื่อให้กดบุ๋ม-เด้งสมบูรณ์
+                          onPressed: null, 
                           icon: const Icon(Icons.delete_sweep, color: Colors.white),
                           label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
@@ -1023,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 16, // ขยายตัวเลขให้ใหญ่ขึ้นเล็กน้อย
+              fontSize: 18, // ขยายตัวเลขให้ใหญ่และชัดเจนยิ่งขึ้น
             ),
           ),
         ],
