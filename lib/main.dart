@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN AUTH WRAPPER (ระบบตรวจสอบ PIN 6 หลัก)
+// PIN AUTH WRAPPER (ระบบตรวจสอบ PIN และบังคับกรอกเมื่อเปิดแอปใหม่)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -55,7 +55,7 @@ class PinAuthWrapper extends StatefulWidget {
   State<PinAuthWrapper> createState() => _PinAuthWrapperState();
 }
 
-class _PinAuthWrapperState extends State<PinAuthWrapper> {
+class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObserver {
   bool isAuthorized = false;
   bool hasStoredPin = false;
   bool isConfirming = false;
@@ -66,7 +66,26 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkPinExists();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+      if (mounted && hasStoredPin) {
+        setState(() {
+          isAuthorized = false;
+          currentPinInput = "";
+        });
+      }
+    }
   }
 
   Future<void> _checkPinExists() async {
@@ -172,7 +191,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.75),
+            color: Colors.black.withOpacity(0.8),
           ),
           SafeArea(
             child: Column(
@@ -215,21 +234,56 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           width: 72,
                           height: 72,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (val == 'del') {
-                                _onDeleteTap();
-                              } else {
-                                _onNumberTap(val);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white12,
-                              shape: const CircleBorder(),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFD50000), Color(0xFF7A0000)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
                             ),
-                            child: val == 'del'
-                                ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                if (val == 'del') {
+                                  _onDeleteTap();
+                                } else {
+                                  _onNumberTap(val);
+                                }
+                              },
+                              customBorder: const CircleBorder(),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  ClipOval(
+                                    child: Image.asset(
+                                      'assets/images/p.jpg',
+                                      fit: BoxFit.cover,
+                                      opacity: const AlwaysStoppedAnimation(0.25),
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(color: Colors.transparent);
+                                      },
+                                    ),
+                                  ),
+                                  Center(
+                                    child: val == 'del'
+                                        ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                                        : Text(
+                                            val,
+                                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -523,12 +577,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.account_circle, color: Color(0xFFFFB300), size: 16),
-                      const SizedBox(width: 6),
+                    children: const [
+                      Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 16),
+                      SizedBox(width: 6),
                       Text(
-                        'A/C: ${widget.accountLogin}',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        'Sniper King Bot',
+                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -574,17 +628,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'BOT & ORDER CONTROL',
-                          style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -593,7 +636,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: Border.all(color: Colors.white12, width: 1),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 16),
+                              SizedBox(width: 6),
+                              Text(
+                                'BOT & ORDER CONTROL',
+                                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -658,36 +713,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: const Color(0xFFFFB300).withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            'Sniper King Bot',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.amberAccent,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            'SECURE BOT',
-                            style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
