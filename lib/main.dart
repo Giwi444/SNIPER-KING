@@ -444,7 +444,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.white70,
           items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Parameter'),
+            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
             const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
@@ -489,7 +489,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (รองรับ Floating Bubble & Collapsible Panel)
+// 1. HOME SCREEN (เพิ่มแดชบอร์ดเล็ก & บอลลูนสถานะด่วน)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -501,26 +501,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
+  double balance = 0.0;
+  double equity = 0.0;
+  double profit = 0.0;
+  String activeSymbol = 'XAUUSD';
   DatabaseReference? _dbRef;
-  
-  bool isExpanded = true;
-  Offset bubblePosition = const Offset(300, 450);
 
   @override
   void initState() {
     super.initState();
-    _initFirebaseAndListen(widget.accountLogin);
+    _initFirebaseAndListen();
   }
 
-  @override
-  void didUpdateWidget(covariant HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _initFirebaseAndListen(widget.accountLogin);
-    }
-  }
-
-  void _initFirebaseAndListen(String login) {
+  void _initFirebaseAndListen() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
@@ -535,6 +528,10 @@ class _HomeScreenState extends State<HomeScreen> {
         if (data != null && mounted) {
           setState(() {
             isRunning = data['is_running'] ?? false;
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            profit = (data['profit'] ?? 0.0).toDouble();
+            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
           });
         }
       });
@@ -567,53 +564,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/p.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.2),
-          ),
-          
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Spacer(),
-                  Center(
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'SNIPER KING BOT',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 2.0,
-                        ),
+    bool isProfitPositive = profit >= 0;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/p.jpg',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(color: const Color(0xFF0B0B0E));
+          },
+        ),
+        Container(
+          color: Colors.black.withOpacity(0.3),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. บอลลูนแสดงสถานะด่วน (Quick Status Badge)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.amber.withOpacity(0.5), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.fiber_manual_record, color: Colors.amberAccent, size: 10),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Acc: ${widget.accountLogin}',
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(8),
+                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isRunning ? const Color(0xFF00C853) : Colors.red,
                           width: 1,
@@ -623,222 +622,164 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isRunning ? Icons.play_arrow : Icons.stop,
+                            isRunning ? Icons.bolt : Icons.stop,
                             color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            size: 14,
+                            size: 12,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           Text(
-                            isRunning ? 'RUNNING' : 'STOPPED',
+                            isRunning ? 'BOT ACTIVE' : 'BOT STOPPED',
                             style: TextStyle(
                               color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // 2. แดชบอร์ดเล็ก (Mini Dashboard Card)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('MINI DASHBOARD', style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text(activeSymbol, style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const Divider(color: Colors.white12, height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildMiniMetric('Balance', '\$${balance.toStringAsFixed(2)}', Colors.white),
+                          _buildMiniMetric('Equity', '\$${equity.toStringAsFixed(2)}', Colors.white),
+                          _buildMiniMetric('Open P/L', '${isProfitPositive ? "+" : ""}\$${profit.toStringAsFixed(2)}', isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
 
-          Stack(
-            children: [
-              Positioned(
-                left: isExpanded ? null : bubblePosition.dx,
-                top: isExpanded ? null : bubblePosition.dy,
-                right: isExpanded ? 16 : null,
-                bottom: isExpanded ? 100 : null,
-                child: isExpanded
-                    ? _buildCollapsiblePanel()
-                    : _buildFloatingBubble(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+                const Spacer(),
 
-  Widget _buildCollapsiblePanel() {
-    return Container(
-      width: 320,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                // 3. ข้อความหัวข้อ SNIPER KING BOT ตรงกลาง
+                Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'SNIPER KING BOT',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2.0,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isRunning ? 'Server is Online' : 'Server is Offline',
-                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.close, color: Colors.grey, size: 18),
-                onPressed: () {
-                  setState(() {
-                    isExpanded = false;
-                  });
-                },
-                tooltip: 'Minimize',
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Center(
-            child: Text(
-              'Poverty Scalper Robot',
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Center(
-            child: Text(
-              'Powered by Robot',
-              style: TextStyle(color: Colors.grey, fontSize: 10),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _toggleBotStatus(false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF26262B),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isExpanded = false;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF26262B),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text('MORE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(height: 16),
+
+                // 4. แผงปุ่มควบคุม: Close(ซ้าย) - Start(กลาง) - Stop(ขวา)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _closeAllOrders,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 16),
+                        label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFB300),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _toggleBotStatus(true),
+                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 16),
+                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _toggleBotStatus(false),
+                        icon: const Icon(Icons.stop, color: Colors.white, size: 16),
+                        label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD50000),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _closeAllOrders,
-              icon: const Icon(Icons.delete_sweep, size: 14, color: Colors.white),
-              label: const Text('CLOSE ALL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-              ),
+                const SizedBox(height: 10),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFloatingBubble() {
-    return Positioned(
-      left: bubblePosition.dx,
-      top: bubblePosition.dy,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            bubblePosition += details.delta;
-          });
-        },
-        onTap: () {
-          setState(() {
-            isExpanded = true;
-          });
-        },
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFD50000), Color(0xFF7A0000)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            border: Border.all(color: const Color(0xFFFFB300), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.smart_toy, color: Colors.white, size: 28),
-              Positioned(
-                right: 4,
-                top: 4,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _buildMiniMetric(String label, String value, Color valueColor) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }
@@ -952,7 +893,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parameter'),
+        title: const Text('Parameters Bot'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
         actions: [
@@ -1012,7 +953,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Parameters Bot',
+                  'SNIPER KING PARAMETERS',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
@@ -1999,7 +1940,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
-                    final alert = alertItems[index]; // แก้ไขจุดที่ผิดพลาดตรงนี้เรียบร้อย
+                    final alert = alertItems[index];
                     return Card(
                       color: const Color(0xFF161619).withOpacity(0.9),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
