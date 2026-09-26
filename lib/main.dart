@@ -52,7 +52,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 2; // ตั้งค่าเริ่มต้นให้เปิดที่หน้า Orders (index 2) หรือปรับตามต้องการ
+  int _currentIndex = 2; // เริ่มต้นที่หน้า Home (Index 2)
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
@@ -120,7 +120,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final List<Widget> pages = [
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
-      HomeScreen(accountLogin: currentLogin), // ย้าย Home มาอยู่ตำแหน่งตรงกลาง (Index 2)
+      HomeScreen(accountLogin: currentLogin),
       HistoryScreen(accountLogin: currentLogin),
       AlertsScreen(onAlertsRead: () {
         setState(() {
@@ -160,14 +160,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent, // โปร่งแสงเพื่อให้เห็น Gradient ด้านหลัง
+          backgroundColor: Colors.transparent,
           elevation: 0,
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.white70,
           items: [
             const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'), // ปุ่ม Home ตรงกลาง
+            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
             BottomNavigationBarItem(
               icon: Stack(
@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับเลย์เอาต์ใหม่ตามสั่ง)
+// 1. HOME SCREEN (ลบรูปโปรไฟล์หุ่นยนต์ออกแล้ว)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -328,31 +328,8 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
-                // พื้นที่ว่างด้านบนสำหรับใส่รูปภาพหุ่นยนต์ (Robot) ตามที่คุณต้องการ
-                Center(
-                  child: Container(
-                    height: 120,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFFFB300), width: 2),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/IMG_20260922_200506.jpg'), // สามารถเปลี่ยนเป็น path รูปโรบอทของคุณได้
-                        fit: BoxFit.cover,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFB300).withOpacity(0.3),
-                          blurRadius: 15,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
 
-                // กล่อง "SNIPER KING ROBOT" ที่ขยับลงมาแทนที่พื้นที่เดิมโดยขนาดเท่าเดิม
+                // กล่อง "SNIPER KING ROBOT" ขึ้นมาอยู่บนสุดทันที
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -428,7 +405,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // ลบข้อมูล Server และ Account ออกทั้งหมดเพื่อความปลอดภัยตอนไลฟ์สด TikTok
                       const Text(
                         'Liquidity Sweep v.3',
                         textAlign: TextAlign.center,
@@ -1380,7 +1356,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
                                       style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
                                     ),
-                                    const SizedBox(2),
+                                    const SizedBox(height: 2),
                                     Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                   ],
                                 ),
