@@ -2,6 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Sniper King',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.red,
+      ),
+      home: HomeScreen(
+        accountLogin: 'default_account',
+        onLogout: () {},
+      ),
+    );
+  }
+}
+
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -12,7 +38,7 @@ class RobotBackground extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          'assets/images/1000056738_2.jpg', // เปลี่ยนเป็นชื่อไฟล์รูปของคุณ
+          'assets/images/1000056738_2.jpg',
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(color: const Color(0xFF0B0B0E));
@@ -185,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 5),
 
-                // 2. หัวข้อ "Create your own Forex Mobile Robot Today"
+                // 2. หัวข้อด้านบนสุด
                 const Text(
                   'Create your own Forex\nMobile Robot Today',
                   textAlign: TextAlign.center,
@@ -386,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // 8. กล่อง Account Overview (4 ช่อง Balance, Equity, Margin, Free Margin)
+                // 8. กล่อง Account Overview
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
