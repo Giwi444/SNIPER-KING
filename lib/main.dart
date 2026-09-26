@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN AUTH WRAPPER (ระบบตรวจสอบ PIN และบังคับกรอกเมื่อเปิดแอปใหม่)
+// PIN AUTH WRAPPER (ปุ่มสีแดงไล่ระดับ และเมื่อกดเปลี่ยนเป็นสีทอง)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -221,78 +221,108 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                   }),
                 ),
                 const SizedBox(height: 40),
-                for (var row in [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['', '0', 'del']])
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: row.map((val) {
-                        if (val.isEmpty) {
-                          return const SizedBox(width: 72, height: 72);
-                        }
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFD50000), Color(0xFF7A0000)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.4),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                if (val == 'del') {
-                                  _onDeleteTap();
-                                } else {
-                                  _onNumberTap(val);
-                                }
-                              },
-                              customBorder: const CircleBorder(),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/p.jpg',
-                                      fit: BoxFit.cover,
-                                      opacity: const AlwaysStoppedAnimation(0.25),
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(color: Colors.transparent);
-                                      },
-                                    ),
-                                  ),
-                                  Center(
-                                    child: val == 'del'
-                                        ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                                        : Text(
-                                            val,
-                                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                                          ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                // แถวที่ 1: 1, 2, 3
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
                   ),
+                ),
+                // แถวที่ 2: 4, 5, 6
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
+                  ),
+                ),
+                // แถวที่ 3: 7, 8, 9
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
+                  ),
+                ),
+                // แถวที่ 4: (เว้นว่างซ้าย), 0, del (จัดให้อยู่ตรงกลางเป๊ะ)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(width: 72, height: 72), // บล็อกหลอกเพื่อให้ตำแหน่งตรงกัน
+                      const SizedBox(width: 32),
+                      _buildPinButton('0'),
+                      const SizedBox(width: 32),
+                      _buildPinButton('del'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPinButton(String val) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFD50000), Color(0xFF7A0000)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (val == 'del') {
+              _onDeleteTap();
+            } else {
+              _onNumberTap(val);
+            }
+          },
+          customBorder: const CircleBorder(),
+          splashColor: const Color(0xFFFFB300).withOpacity(0.6), // สีทองเมื่อกด
+          highlightColor: const Color(0xFFFFB300).withOpacity(0.4), // สีทองเมื่อแตะค้าง
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipOval(
+                child: Image.asset(
+                  'assets/images/p.jpg',
+                  fit: BoxFit.cover,
+                  opacity: const AlwaysStoppedAnimation(0.25),
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: Colors.transparent);
+                  },
+                ),
+              ),
+              Center(
+                child: val == 'del'
+                    ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                    : Text(
+                        val,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -567,29 +597,6 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Positioned(
                 top: 8,
-                left: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'Sniper King Bot',
-                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
                 right: 16,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -629,18 +636,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white12, width: 1),
+                        color: const Color(0xFF161619).withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: Colors.white24, width: 1.2),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Sniper King Bot',
+                                  style: TextStyle(
+                                    color: Colors.amberAccent,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Divider(color: Colors.white12),
+                          const SizedBox(height: 8),
                           Row(
                             children: const [
-                              Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 16),
+                              Icon(Icons.settings_suggest, color: Color(0xFFFFB300), size: 16),
                               SizedBox(width: 6),
                               Text(
                                 'BOT & ORDER CONTROL',
