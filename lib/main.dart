@@ -506,10 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
-  // ควบคุมการแสดงผล (true = แสดงแดชบอร์ดใหญ่เต็มจอ, false = ย่อเป็นกล่องสี่เหลี่ยมลอยได้)
   bool isExpanded = true;
-  
-  // ตำแหน่งเริ่มต้นของกล่องสี่เหลี่ยมเล็กบนหน้าจอ (สามารถใช้นิ้วลากเปลี่ยนตำแหน่งได้)
   Offset floatingPosition = const Offset(50, 150);
 
   @override
@@ -646,7 +643,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // ปุ่มควบคุมหลักเมื่อแสดงผลแบบหน้าจอปกติ
                 Row(
                   children: [
                     Expanded(
@@ -709,13 +705,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 
-                // ปุ่มสำหรับทดลองเปิดใช้งานกล่องบอลลูนลอยได้
+                // แก้ไขเอา textDirection ออกเรียบร้อยแล้ว
                 Center(
-                  textDirection: TextDirection.ltr,
                   child: TextButton.icon(
                     onPressed: () {
                       setState(() {
-                        isExpanded = false; // ย่อเป็นกล่องลอย
+                        isExpanded = false;
                       });
                     },
                     icon: const Icon(Icons.picture_in_picture_alt, color: Color(0xFFFFB300), size: 16),
@@ -728,7 +723,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // เงื่อนไขการแสดงผลกล่องสี่เหลี่ยมลอยได้ (Floating Mini Dashboard) ทับบนหน้าจอ
         if (!isExpanded)
           Positioned(
             left: floatingPosition.dx,
@@ -736,7 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: GestureDetector(
               onPanUpdate: (details) {
                 setState(() {
-                  floatingPosition += details.delta; // ลากเปลี่ยนตำแหน่งกล่องไปมาบนหน้าจอได้อิสระ
+                  floatingPosition += details.delta;
                 });
               },
               child: Material(
@@ -752,7 +746,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // โครงสร้างเนื้อหาแดชบอร์ด (รองรับทั้งขนาดเล็กและใหญ่)
   Widget _buildDashboardContent({required bool isSmall}) {
     return Container(
       padding: EdgeInsets.all(isSmall ? 12 : 16),
@@ -796,7 +789,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              // ปุ่มขยายกลับหรือปิดกล่องลอย
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
