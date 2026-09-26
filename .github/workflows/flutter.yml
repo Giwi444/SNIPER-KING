@@ -22,6 +22,10 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Clean and Fix Android V2 Structure
+        run: |
+          flutter create . --platforms=android --project-name=sniperking
+
       - name: Install dependencies
         run: flutter pub get
 
