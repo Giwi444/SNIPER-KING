@@ -22,12 +22,6 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Android & Gradle structure if missing
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --project-name=sniper_king
-          fi
-
       - name: Install dependencies
         run: flutter pub get
 
@@ -37,5 +31,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk-v2  # เปลี่ยนชื่อตรงนี้ไม่ให้ซ้ำกับรอบก่อนหน้า
+          name: release-apk-v2
           path: build/app/outputs/flutter-apk/app-release.apk
