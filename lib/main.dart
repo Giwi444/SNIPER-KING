@@ -428,13 +428,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      // หากอยู่ในโหมดลอย ให้พื้นหลังโปร่งแสงสนิท เพื่อให้มองทะลุเห็นแอปอื่นหรือหน้าจอหลักได้
       backgroundColor: isFloatingMode ? Colors.transparent : const Color(0xFF0B0B0E),
       body: IndexedStack(
         index: _currentIndex,
         children: pages,
       ),
-      // ซ่อน BottomNavigationBar ทันทีเมื่อเปิดโหมดลอยหรือบอลลูน
       bottomNavigationBar: isFloatingMode 
           ? const SizedBox.shrink() 
           : Container(
@@ -603,7 +601,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // หากเปิดโหมดลอย จะซ่อนภาพพื้นหลังและองค์ประกอบทั้งหมด เหลือไว้เฉพาะกล่องลอย/บอลลูน
         if (!widget.isFloatingMode) ...[
           Image.asset(
             'assets/images/p.jpg',
@@ -773,7 +770,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
 
-        // แสดงกล่องลอย หรือ บอลลูนวงกลม เมื่อเปิดโหมดกล่องลอย โดยอยู่บนพื้นหลังโปร่งใส
         if (widget.isFloatingMode)
           Positioned(
             left: widget.floatingPosition.dx,
@@ -791,7 +787,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: widget.isBalloonMode
                     ? GestureDetector(
                         onTap: () {
-                          // กดที่บอลลูน เพื่อสลับกลับมาหน้าแดชบอร์ดใหญ่
                           widget.onFloatingChanged(false, false, widget.floatingPosition);
                         },
                         child: Container(
@@ -2071,7 +2066,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
-   
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mobile Push Alerts'),
