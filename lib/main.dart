@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -834,9 +833,9 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- แถบเส้นสีฟ้าด้านบนสำหรับลากย่อ-ขยายขนาดหน้าต่าง (ตามที่คุณต้องการ)[span_0](start_span)[span_0](end_span) ---
+          // --- แถบเส้นสีฟ้าด้านบนสำหรับลากย่อ-ขยายขนาดหน้าต่าง (แก้ไขนำเมธอด resize ออกแล้ว) ---
           GestureDetector(
-            onPanUpdate: (details) async {
+            onPanUpdate: (details) {
               setState(() {
                 _windowWidth += details.delta.dx;
                 _windowHeight += details.delta.dy;
@@ -847,11 +846,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_windowHeight < 250) _windowHeight = 250;
                 if (_windowHeight > 600) _windowHeight = 600;
               });
-
-              // หากรันเป็นระบบ Overlay แยกแอป สามารถเรียกคำสั่ง resize เพิ่มเติมตรงนี้ได้[span_1](start_span)[span_1](end_span)
-              try {
-                await FlutterOverlayWindow.resize(_windowWidth.toInt(), _windowHeight.toInt());
-              } catch (_) {}
             },
             child: Container(
               width: double.infinity,
@@ -862,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 50,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.lightBlueAccent, // แถบสีฟ้าสำหรับลากย่อขยาย
+                  color: Colors.lightBlueAccent,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
