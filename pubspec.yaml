@@ -24,11 +24,11 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/Ironman (2).jpg
+    - assets/images/p.jpg
     - assets/images/IMG_20260922_194127.jpg
     - assets/images/IMG_20260922_200506.jpg
 
 flutter_launcher_icons:
-  image_path: "assets/images/IMG_20260922_200506.jpg"
+  image_path: "assets/images/p.jpg"
   android: true
   ios: true
