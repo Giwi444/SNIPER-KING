@@ -827,7 +827,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('EA Parameters Settings'),
+        title: const Text('Parameters Bot'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
         actions: [
