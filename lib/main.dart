@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ย้ายกล่องคอนโทรลชิดล่างสุด และเปลี่ยนชื่อเป็น Sniper King v.3)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -752,7 +752,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN (ปรับจัดกึ่งกลางตัวเลขบัญชี และลบกล่อง XAUUSD/M1 ออกแล้ว)
+// 3. ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
