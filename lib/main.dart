@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ย้าย Robot ลงมา และปรับภาพให้สว่างขึ้น)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -305,7 +305,6 @@ class _HomeScreenState extends State<HomeScreen> {
             return Container(color: const Color(0xFF0B0B0E));
           },
         ),
-        // ปรับความมืดลง (Opacity 0.35) เพื่อให้รูปสว่างและชัดเจนขึ้น
         Container(
           color: Colors.black.withOpacity(0.35),
         ),
@@ -316,8 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-
-                // Bot & Order Control อยู่ด้านบน (หรือสลับตามโครงสร้างใหม่)
                 Row(
                   children: const [
                     Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
@@ -407,8 +404,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // SNIPER KING ROBOT ย้ายมาอยู่ด้านล่างส่วนควบคุม
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -789,7 +784,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN (ย้ายข้อมูลในกรอบสีขาวมาไว้ที่นี่)
+// 3. ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -806,7 +801,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
 
-  // ตัวแปรข้อมูลการเงินที่ย้ายมาจากหน้า Home
   double balance = 0.0;
   double equity = 0.0;
   double margin = 0.0;
@@ -924,7 +918,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // นำส่วนข้อมูลในกรอบสีขาวมาแปะไว้ที่นี่
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -979,7 +972,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Symbol & Timeframe bar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1423,7 +1415,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// 5. ALERTS SCREEN (แก้ไขเอา ScaffoldMessenger.endSnackBar ออกแล้ว)
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -1490,7 +1482,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
-      ScaffoldMessenger.endSnackBar?.call();
+      // แก้ไข: ลบบรรทัด ScaffoldMessenger.endSnackBar?.call(); ออกแล้ว
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
