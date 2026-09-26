@@ -444,7 +444,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.white70,
           items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Parameter'),
             const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
             const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
             const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
@@ -489,7 +489,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับปรุงตามรูปตัวอย่างล่าสุด)
+// 1. HOME SCREEN (รองรับ Floating Bubble & Collapsible Panel)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -502,6 +502,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
+  
+  // สถานะควบคุมการย่อ/ขยาย (Floating Bubble & Collapsible Panel)
+  bool isExpanded = true;
+  Offset bubblePosition = const Offset(300, 450); // ตำแหน่งเริ่มต้นของบอลลูนลอย
 
   @override
   void initState() {
@@ -564,162 +568,290 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/images/p.jpg',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(color: const Color(0xFF0B0B0E));
-          },
-        ),
-        Container(
-          color: Colors.black.withOpacity(0.2),
-        ),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ลบกล่อง Sniper King Bot ด้านบนซ้ายออกตามต้องการ
-                const Spacer(),
-
-                // ข้อความหัวข้อ SNIPER KING BOT ตรงกลางตัวหนาเด่นชัดสไตล์เรืองแสง
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'SNIPER KING BOT',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.2),
+          ),
+          
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Spacer(),
+                  Center(
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'SNIPER KING BOT',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // สถานะ EA (Running / Stopped) อยู่เหนือปุ่มควบคุมตรงกลาง
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isRunning ? Icons.play_arrow : Icons.stop,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                          size: 14,
+                          width: 1,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isRunning ? Icons.play_arrow : Icons.stop,
                             color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            size: 14,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            isRunning ? 'RUNNING' : 'STOPPED',
+                            style: TextStyle(
+                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // แผงปุ่มควบคุม: Close(ซ้าย) - Start(กลาง ไล่เฉดสี) - Stop(ขวา)
-                Row(
-                  children: [
-                    // ปุ่ม Close อยู่ด้านซ้าย
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                        label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // ปุ่ม Start อยู่ตรงกลาง (คงสไตล์ไล่เฉดสี)
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00C853), Color(0xFF00E676)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(true),
-                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // ปุ่ม Stop อยู่ด้านขวา
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _toggleBotStatus(false),
-                        icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                        label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD50000),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
+
+          // ----------------------------------------------------
+          // ระบบ Floating Bubble (บอลลูนวงกลม) และ Collapsible Panel (ย่อ/ขยาย)
+          // ----------------------------------------------------
+          Stack(
+            children: [
+              Positioned(
+                left: isExpanded ? null : bubblePosition.dx,
+                top: isExpanded ? null : bubblePosition.dy,
+                right: isExpanded ? 16 : null,
+                bottom: isExpanded ? 100 : null,
+                child: isExpanded
+                    ? _buildCollapsiblePanel() // แบบขยาย (แผงควบคุมเต็มรูปแบบ)
+                    : _buildFloatingBubble(),  // แบบย่อ (บอลลูนวงกลมลอยได้)
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // รูปแบบแผงควบคุมขยาย (Collapsible Panel) เหมือนในรูปตัวอย่าง
+  Widget _buildCollapsiblePanel() {
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isRunning ? 'Server is Online' : 'Server is Offline',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                onPressed: () {
+                  setState(() {
+                    isExpanded = false; // กดย่อเก็บเป็นบอลลูน
+                  });
+                },
+                tooltip: 'Minimize',
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Center(
+            child: Text(
+              'Poverty Scalper Robot',
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Center(
+            child: Text(
+              'Powered by Robot',
+              style: TextStyle(color: Colors.grey, fontSize: 10),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _toggleBotStatus(false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF26262B),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // ทำงานเมื่อกดปุ่ม More หรือสลับเมนู
+                    setState(() {
+                      isExpanded = false;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF26262B),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text('MORE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _closeAllOrders,
+              icon: const Icon(Icons.delete_sweep, size: 14, color: Colors.white),
+              label: const Text('CLOSE ALL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // รูปแบบบอลลูนวงกลมลอยได้ (Floating Bubble) ลากย้ายตำแหน่งได้
+  Widget _buildFloatingBubble() {
+    return Positioned(
+      left: bubblePosition.dx,
+      top: bubblePosition.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            bubblePosition += details.delta; // ขยับตำแหน่งบอลลูนตามการลากนิ้ว
+          });
+        },
+        onTap: () {
+          setState(() {
+            isExpanded = true; // กดแล้วกางขยายเป็นแผงควบคุม
+          });
+        },
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFD50000), Color(0xFF7A0000)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            border: Border.all(color: const Color(0xFFFFB300), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Icon(Icons.smart_toy, color: Colors.white, size: 28),
+              Positioned(
+                right: 4,
+                top: 4,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (พารามิเตอร์)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -827,7 +959,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parameters Bot'),
+        title: const Text('Parameter Bot'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
         actions: [
@@ -1874,7 +2006,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
-                    final alert = alertItems[index];
+                    final alert = alertItems.index != -1 ? alertItems[index] : null;
+                    if (alert == null) return const SizedBox.shrink();
                     return Card(
                       color: const Color(0xFF161619).withOpacity(0.9),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
