@@ -339,6 +339,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
 
+  // เพิ่มตัวแปรควบคุมโหมดกล่องลอยที่นี่ เพื่อให้ซ่อน BottomNavigationBar ได้ด้วย
+  bool isFloatingMode = false;
+  bool isBalloonMode = false;
+  Offset floatingPosition = const Offset(50, 150);
+
   @override
   void initState() {
     super.initState();
@@ -402,7 +407,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final List<Widget> pages = [
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
-      HomeScreen(accountLogin: currentLogin),
+      HomeScreen(
+        accountLogin: currentLogin,
+        isFloatingMode: isFloatingMode,
+        isBalloonMode: isBalloonMode,
+        floatingPosition: floatingPosition,
+        onFloatingChanged: (floating, balloon, pos) {
+          setState(() {
+            isFloatingMode = floating;
+            isBalloonMode = balloon;
+            floatingPosition = pos;
+          });
+        },
+      ),
       HistoryScreen(accountLogin: currentLogin),
       AlertsScreen(onAlertsRead: () {
         setState(() {
@@ -416,87 +433,102 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD50000), Color(0xFF7A0000), Color(0xFF101014)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-              if (index == 4) {
-                unreadAlertsCount = 0;
-              }
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.white70,
-          items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.notifications_active),
-                  if (unreadAlertsCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$unreadAlertsCount',
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
+      // ซ่อน BottomNavigationBar ทันทีเมื่อเปิดโหมดลอยหรือบอลลูน
+      bottomNavigationBar: isFloatingMode 
+          ? const SizedBox.shrink() 
+          : Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFD50000), Color(0xFF7A0000), Color(0xFF101014)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.6),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
                 ],
               ),
-              label: 'Alerts',
+              child: BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                    if (index == 4) {
+                      unreadAlertsCount = 0;
+                    }
+                  });
+                },
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedItemColor: const Color(0xFFFFB300),
+                unselectedItemColor: Colors.white70,
+                items: [
+                  const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+                  const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
+                  const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+                  const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+                  BottomNavigationBarItem(
+                    icon: Stack(
+                      children: [
+                        const Icon(Icons.notifications_active),
+                        if (unreadAlertsCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                '$unreadAlertsCount',
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    label: 'Alerts',
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
 
 // ==========================================
-// 1. HOME SCREEN (พร้อมระบบบอลลูนกล่องสี่เหลี่ยมลอยได้ & แดชบอร์ดใหญ่)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
+  final bool isFloatingMode;
+  final bool isBalloonMode;
+  final Offset floatingPosition;
+  final Function(bool, bool, Offset) onFloatingChanged;
+
+  const HomeScreen({
+    super.key,
+    required this.accountLogin,
+    required this.isFloatingMode,
+    required this.isBalloonMode,
+    required this.floatingPosition,
+    required this.onFloatingChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -505,10 +537,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
-  
-  bool isFloatingMode = false; // ควบคุมการเปิดโหมดกล่องลอย (ซ่อนแดชบอร์ดใหญ่)
-  bool isBalloonMode = false;  // ควบคุมว่ากำลังย่อเป็นบอลลูนวงกลมหรือไม่
-  Offset floatingPosition = const Offset(50, 150);
 
   @override
   void initState() {
@@ -586,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         
         // แดชบอร์ดหลัก จะถูกซ่อนเมื่อเปิดโหมดกล่องลอย
-        if (!isFloatingMode)
+        if (!widget.isFloatingMode)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -709,14 +737,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // ปุ่มเปิดโหมดกล่องลอย เหลือเพียงปุ่มวงกลมพร้อมอีโมจิ (ตัดข้อความออก)
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          isFloatingMode = true;
-                          isBalloonMode = false;
-                        });
+                        widget.onFloatingChanged(true, false, widget.floatingPosition);
                       },
                       child: Container(
                         width: 48,
@@ -749,26 +773,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
         // แสดงกล่องลอย หรือ บอลลูนวงกลม เมื่อเปิดโหมดกล่องลอย
-        if (isFloatingMode)
+        if (widget.isFloatingMode)
           Positioned(
-            left: floatingPosition.dx,
-            top: floatingPosition.dy,
+            left: widget.floatingPosition.dx,
+            top: widget.floatingPosition.dy,
             child: GestureDetector(
               onPanUpdate: (details) {
-                setState(() {
-                  floatingPosition += details.delta;
-                });
+                widget.onFloatingChanged(
+                  widget.isFloatingMode,
+                  widget.isBalloonMode,
+                  widget.floatingPosition + details.delta,
+                );
               },
               child: Material(
                 color: Colors.transparent,
-                child: isBalloonMode
+                child: widget.isBalloonMode
                     ? GestureDetector(
                         onTap: () {
                           // กดที่บอลลูน เพื่อสลับกลับมาหน้าแดชบอร์ดใหญ่
-                          setState(() {
-                            isFloatingMode = false;
-                            isBalloonMode = false;
-                          });
+                          widget.onFloatingChanged(false, false, widget.floatingPosition);
                         },
                         child: Container(
                           width: 60,
@@ -805,7 +828,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ดีไซน์กล่องลอย ธีมโรบอท ไล่เฉดสี แดง-ดำ-เหลือง สไตล์เปลวไฟ
   Widget _buildRobotFloatingBox() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -853,15 +875,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              // ปุ่มย่อเป็นบอลลูน (มุมขวาบนของกล่องลอย)
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 icon: const Icon(Icons.circle_notifications, color: Color(0xFFFFEA00), size: 22),
                 onPressed: () {
-                  setState(() {
-                    isBalloonMode = true;
-                  });
+                  widget.onFloatingChanged(true, true, widget.floatingPosition);
                 },
                 tooltip: 'Minimize to Balloon',
               ),
@@ -2051,6 +2070,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+   
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mobile Push Alerts'),
