@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (ปรับปรุงตำแหน่งใหม่ตามสั่ง)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -306,15 +306,15 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         Container(
-          color: Colors.black.withOpacity(0.35),
+          color: Colors.black.withOpacity(0.2),
         ),
         SafeArea(
-          child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.end, // ดันเนื้อหาทั้งหมดมาไว้ด้านล่างสุด
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
                 Row(
                   children: const [
                     Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.85),
+                    color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white12, width: 1),
                   ),
@@ -403,89 +403,57 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(22),
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: const Color(0xFFFFB300).withOpacity(0.6),
-                      width: 1.5,
+                      color: const Color(0xFFFFB300).withOpacity(0.4),
+                      width: 1,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 15,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                          SizedBox(width: 8),
-                          Text(
-                            'SNIPER KING ROBOT',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFFFFB300),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isConnected ? Icons.bolt : Icons.wifi_off,
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                                style: TextStyle(
-                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       const Text(
                         'Liquidity Sweep v.3',
-                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: Colors.amberAccent,
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isConnected ? Icons.bolt : Icons.wifi_off,
+                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                              style: TextStyle(
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -1415,7 +1383,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN (แก้ไขเอา ScaffoldMessenger.endSnackBar ออกแล้ว)
+// 5. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -1482,7 +1450,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
-      // แก้ไข: ลบบรรทัด ScaffoldMessenger.endSnackBar?.call(); ออกแล้ว
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
