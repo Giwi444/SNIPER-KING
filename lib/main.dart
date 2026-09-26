@@ -649,29 +649,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isRunning ? const Color(0xFF00C853).withOpacity(0.25) : Colors.red.withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              isRunning ? 'RUNNING' : 'STOPPED',
-                              style: TextStyle(
-                                color: isRunning ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // ย้ายปุ่ม Connected มาไว้ในกล่องตรงนี้ ต่อจากบรรทัด Running
+                      
+                      // 1. Connection Status (อยู่ด้านบน มีกรอบและไอคอน)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -699,6 +678,45 @@ class _HomeScreenState extends State<HomeScreen> {
                                   isConnected ? 'CONNECTED' : 'DISCONNECTED',
                                   style: TextStyle(
                                     color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // 2. EA Execution Status (อยู่ด้านล่าง พร้อมใส่กรอบและไอคอนสอดคล้องกัน)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isRunning ? Icons.play_arrow : Icons.stop,
+                                  color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isRunning ? 'RUNNING' : 'STOPPED',
+                                  style: TextStyle(
+                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
