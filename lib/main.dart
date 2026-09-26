@@ -299,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          'assets/images/IMG_20260922_200506.jpg',
+          'assets/images/Ironman (2).jpg',
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(color: const Color(0xFF0B0B0E));
