@@ -340,7 +340,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   DatabaseReference? _alertsRef;
 
   bool isFloatingMode = false;
-  bool isBalloonMode = true; // ตั้งค่าเริ่มต้นให้เป็นบอลลูนวงกลมลอย
+  bool isBalloonMode = false;
   Offset floatingPosition = const Offset(50, 150);
 
   @override
@@ -428,70 +428,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: isFloatingMode ? Colors.transparent : null,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // หน้าจอหลักทั้งหมด (รวมถึง IndexedStack) จะถูกซ่อนหรือทำให้โปร่งใสเมื่อเปิดโหมดลอย เพื่อให้มองทะลุไปเห็นแอปอื่นหรือหน้าจอหลักของเครื่องได้
-          Opacity(
-            opacity: isFloatingMode ? 0.0 : 1.0,
-            child: IndexedStack(
-              index: _currentIndex,
-              children: pages,
-            ),
-          ),
-
-          // แสดงบอลลูนวงกลมลอยอยู่บนสุดเมื่อเปิดโหมดลอย
-          if (isFloatingMode)
-            Positioned(
-              left: floatingPosition.dx,
-              top: floatingPosition.dy,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    floatingPosition += details.delta;
-                  });
-                },
-                child: Material(
-                  color: Colors.transparent,
-                  child: GestureDetector(
-                    onTap: () {
-                      // กดที่บอลลูน เพื่อกลับคืนสู่หน้าจอหลักของแอปตามปกติ
-                      setState(() {
-                        isFloatingMode = false;
-                      });
-                    },
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.amber.withOpacity(0.8),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Center(
-                        child: Text('🤖', style: TextStyle(fontSize: 28)),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
+      // หากอยู่ในโหมดลอย ให้พื้นหลังโปร่งแสงสนิท เพื่อให้มองทะลุเห็นแอปอื่นหรือหน้าจอหลักได้
+      backgroundColor: isFloatingMode ? Colors.transparent : const Color(0xFF0B0B0E),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
       ),
+      // ซ่อน BottomNavigationBar ทันทีเมื่อเปิดโหมดลอยหรือบอลลูน
       bottomNavigationBar: isFloatingMode 
-          ? null 
+          ? const SizedBox.shrink() 
           : Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -658,175 +603,346 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          'assets/images/p.jpg',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(color: const Color(0xFF0B0B0E));
-          },
-        ),
-        Container(
-          color: Colors.black.withOpacity(0.2),
-        ),
-        
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'SNIPER KING BOT',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
+        // หากเปิดโหมดลอย จะซ่อนภาพพื้นหลังและองค์ประกอบทั้งหมด เหลือไว้เฉพาะกล่องลอย/บอลลูน
+        if (!widget.isFloatingMode) ...[
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.2),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Spacer(),
+                  Center(
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'SNIPER KING BOT',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isRunning ? Icons.play_arrow : Icons.stop,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                        label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          width: 1,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00C853), Color(0xFF00E676)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isRunning ? Icons.play_arrow : Icons.stop,
+                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                            size: 14,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
+                          const SizedBox(width: 6),
+                          Text(
+                            isRunning ? 'RUNNING' : 'STOPPED',
+                            style: TextStyle(
+                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(true),
-                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          onPressed: _closeAllOrders,
+                          icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                          label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
+                            backgroundColor: const Color(0xFFFFB300),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _toggleBotStatus(false),
-                        icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                        label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD50000),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                
-                // ปุ่มหุ่นยนต์: เมื่อกดจะสั่งซ่อนหน้าแดชบอร์ดและ BottomBar เหลือแค่ไอคอนวงกลมลอยบนจอ
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      widget.onFloatingChanged(true, true, widget.floatingPosition);
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.amber.withOpacity(0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
                       ),
-                      child: const Center(
-                        child: Text('🤖', style: TextStyle(fontSize: 22)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _toggleBotStatus(false),
+                          icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD50000),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        widget.onFloatingChanged(true, false, widget.floatingPosition);
+                      },
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text('🤖', style: TextStyle(fontSize: 22)),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
+
+        // แสดงกล่องลอย หรือ บอลลูนวงกลม เมื่อเปิดโหมดกล่องลอย โดยอยู่บนพื้นหลังโปร่งใส
+        if (widget.isFloatingMode)
+          Positioned(
+            left: widget.floatingPosition.dx,
+            top: widget.floatingPosition.dy,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                widget.onFloatingChanged(
+                  widget.isFloatingMode,
+                  widget.isBalloonMode,
+                  widget.floatingPosition + details.delta,
+                );
+              },
+              child: Material(
+                color: Colors.transparent,
+                child: widget.isBalloonMode
+                    ? GestureDetector(
+                        onTap: () {
+                          // กดที่บอลลูน เพื่อสลับกลับมาหน้าแดชบอร์ดใหญ่
+                          widget.onFloatingChanged(false, false, widget.floatingPosition);
+                        },
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.withOpacity(0.6),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Center(
+                            child: Text('🤖', style: TextStyle(fontSize: 28)),
+                          ),
+                        ),
+                      )
+                    : SizedBox(
+                        width: 280,
+                        child: _buildRobotFloatingBox(),
+                      ),
+              ),
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildRobotFloatingBox() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF200505), Color(0xFF0F0F12), Color(0xFF2A1B00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6D00).withOpacity(0.4),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isRunning ? 'Robot Active' : 'Robot Stopped',
+                    style: const TextStyle(
+                      color: Colors.white70, 
+                      fontSize: 11, 
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(Icons.circle_notifications, color: Color(0xFFFFEA00), size: 22),
+                onPressed: () {
+                  widget.onFloatingChanged(true, true, widget.floatingPosition);
+                },
+                tooltip: 'Minimize to Balloon',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Center(
+            child: Text(
+              '🔥 SNIPER KING ROBOT 🔥',
+              style: TextStyle(
+                color: Color(0xFFFFEA00), 
+                fontSize: 12, 
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _toggleBotStatus(!isRunning),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isRunning ? Colors.red : const Color(0xFF00C853),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                minimumSize: Size.zero,
+              ),
+              child: Text(
+                isRunning ? 'STOP BOT' : 'START BOT',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _closeAllOrders,
+              icon: const Icon(Icons.delete_sweep, size: 14, color: Colors.white),
+              label: const Text(
+                'CLOSE ALL', 
+                style: TextStyle(
+                  fontSize: 11, 
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6D00),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                minimumSize: Size.zero,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1955,6 +2071,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+   
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mobile Push Alerts'),
