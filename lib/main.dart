@@ -489,7 +489,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (ปรับปรุงตามเงื่อนไขใหม่)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -501,7 +501,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
-  bool isConnected = false; 
   DatabaseReference? _dbRef;
 
   @override
@@ -526,15 +525,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       _dbRef = database.ref('status');
-
-      database.ref('.info/connected').onValue.listen((event) {
-        final connected = event.snapshot.value as bool? ?? false;
-        if (mounted) {
-          setState(() {
-            isConnected = connected;
-          });
-        }
-      });
 
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -589,190 +579,138 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // กล่องข้อความ "Sniper King Bot" แยกออกมาด้านบนสุด
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: const Color(0xFFFFB300),
-                      width: 2.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.5),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
                   ),
-                  child: Column(
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Sniper King Bot',
-                              style: TextStyle(
-                                color: Colors.amberAccent,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Divider(color: Colors.white24),
-                      const SizedBox(height: 8),
-                      const Row(
-                        children: [
-                          Icon(Icons.settings_suggest, color: Color(0xFFFFB300), size: 16),
-                          SizedBox(width: 6),
-                          Text(
-                            'BOT & ORDER CONTROL',
-                            style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      
-                      // 1. Connection Status (อยู่ด้านบน มีกรอบและไอคอน)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Connection Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isConnected ? Icons.bolt : Icons.wifi_off,
-                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                  size: 13,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isConnected ? 'CONNECTED' : 'DISCONNECTED',
-                                  style: TextStyle(
-                                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 2. EA Execution Status (อยู่ด้านล่าง พร้อมใส่กรอบและไอคอนสอดคล้องกัน)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isRunning ? Icons.play_arrow : Icons.stop,
-                                  color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                  size: 13,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isRunning ? 'RUNNING' : 'STOPPED',
-                                  style: TextStyle(
-                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(true),
-                              icon: const Icon(Icons.play_arrow, color: Colors.white),
-                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00C853),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(false),
-                              icon: const Icon(Icons.stop, color: Colors.white),
-                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD50000),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _closeAllOrders,
-                          icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                      Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sniper King Bot',
+                        style: TextStyle(
+                          color: Colors.amberAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
+                const Spacer(),
+
+                // สถานะ EA (Running / Stopped) อยู่เหนือปุ่มควบคุมตรงกลาง
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isRunning ? Icons.play_arrow : Icons.stop,
+                          color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isRunning ? 'RUNNING' : 'STOPPED',
+                          style: TextStyle(
+                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // แผงปุ่มควบคุม: Close(ซ้าย) - Start(กลาง ไล่เฉดสี) - Stop(ขวา)
+                Row(
+                  children: [
+                    // ปุ่ม Close อยู่ด้านซ้าย
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _closeAllOrders,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                        label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFB300),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // ปุ่ม Start อยู่ตรงกลาง (คงสไตล์ไล่เฉดสี)
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _toggleBotStatus(true),
+                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // ปุ่ม Stop อยู่ด้านขวา
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _toggleBotStatus(false),
+                        icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                        label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD50000),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -783,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (ย้ายสถานะ Connected มาไว้มุมขวาบน)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -807,6 +745,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController dailyLossController = TextEditingController();
 
   DatabaseReference? _settingsRef;
+  bool isConnected = false;
 
   @override
   void initState() {
@@ -822,6 +761,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       _settingsRef = database.ref('status');
+
+      database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
 
       _settingsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -884,6 +832,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('EA Parameters Settings'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
+        actions: [
+          // ย้ายสถานะ Connection Status มาไว้ที่มุมขวาบนของหน้า Settings ตามต้องการ
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isConnected ? Icons.bolt : Icons.wifi_off,
+                      color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isConnected ? 'CONNECTED' : 'DISCONNECTED',
+                      style: TextStyle(
+                        color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         fit: StackFit.expand,
