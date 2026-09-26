@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN AUTH WRAPPER
+// PIN AUTH WRAPPER (เอาตัวเช็ค Lifecycle ออกเพื่อไม่ให้ PIN เด้งล็อก)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -55,7 +55,7 @@ class PinAuthWrapper extends StatefulWidget {
   State<PinAuthWrapper> createState() => _PinAuthWrapperState();
 }
 
-class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObserver {
+class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool isAuthorized = false;
   bool hasStoredPin = false;
   bool isConfirming = false;
@@ -66,26 +66,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _checkPinExists();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
-      if (mounted && hasStoredPin) {
-        setState(() {
-          isAuthorized = false;
-          currentPinInput = "";
-        });
-      }
-    }
   }
 
   Future<void> _checkPinExists() async {
