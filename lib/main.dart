@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับปรุงตำแหน่งใหม่ตามสั่ง)
+// 1. HOME SCREEN (ย้ายกล่องคอนโทรลชิดล่างสุด และเปลี่ยนชื่อเป็น Sniper King v.3)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -310,9 +310,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end, // ดันเนื้อหาทั้งหมดมาไว้ด้านล่างสุด
+              mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -325,9 +325,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -366,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF00C853),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
@@ -379,14 +379,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFD50000),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -395,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFB300),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
@@ -403,10 +403,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(18),
@@ -419,7 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Liquidity Sweep v.3',
+                        'Sniper King v.3',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.amberAccent,
@@ -577,7 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'LIQUIDITY SWEEP PARAMETERS',
+              'SNIPER KING PARAMETERS',
               style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
             ),
             const SizedBox(height: 8),
@@ -752,7 +752,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (ปรับจัดกึ่งกลางตัวเลขบัญชี และลบกล่อง XAUUSD/M1 ออกแล้ว)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -941,51 +941,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             const SizedBox(height: 16),
 
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeSymbol,
-                          style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          activeTimeframe,
-                          style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Text('Active Symbol', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -1101,26 +1056,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildMetricCard(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white12, width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: Colors.grey, size: 15),
               const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 19,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
