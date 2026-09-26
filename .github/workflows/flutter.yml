@@ -22,11 +22,6 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean & Generate Fresh Android Project
-        run: |
-          rm -rf android
-          flutter create . --platforms=android --project-name=sniper_king
-
       - name: Install dependencies
         run: flutter pub get
 
