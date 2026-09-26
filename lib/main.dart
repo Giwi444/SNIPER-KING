@@ -503,9 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
-  // สถานะควบคุมการย่อ/ขยาย (Floating Bubble & Collapsible Panel)
   bool isExpanded = true;
-  Offset bubblePosition = const Offset(300, 450); // ตำแหน่งเริ่มต้นของบอลลูนลอย
+  Offset bubblePosition = const Offset(300, 450);
 
   @override
   void initState() {
@@ -647,9 +646,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ----------------------------------------------------
-          // ระบบ Floating Bubble (บอลลูนวงกลม) และ Collapsible Panel (ย่อ/ขยาย)
-          // ----------------------------------------------------
           Stack(
             children: [
               Positioned(
@@ -658,8 +654,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: isExpanded ? 16 : null,
                 bottom: isExpanded ? 100 : null,
                 child: isExpanded
-                    ? _buildCollapsiblePanel() // แบบขยาย (แผงควบคุมเต็มรูปแบบ)
-                    : _buildFloatingBubble(),  // แบบย่อ (บอลลูนวงกลมลอยได้)
+                    ? _buildCollapsiblePanel()
+                    : _buildFloatingBubble(),
               ),
             ],
           ),
@@ -668,7 +664,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // รูปแบบแผงควบคุมขยาย (Collapsible Panel) เหมือนในรูปตัวอย่าง
   Widget _buildCollapsiblePanel() {
     return Container(
       width: 320,
@@ -715,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.close, color: Colors.grey, size: 18),
                 onPressed: () {
                   setState(() {
-                    isExpanded = false; // กดย่อเก็บเป็นบอลลูน
+                    isExpanded = false;
                   });
                 },
                 tooltip: 'Minimize',
@@ -755,7 +750,6 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    // ทำงานเมื่อกดปุ่ม More หรือสลับเมนู
                     setState(() {
                       isExpanded = false;
                     });
@@ -790,7 +784,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // รูปแบบบอลลูนวงกลมลอยได้ (Floating Bubble) ลากย้ายตำแหน่งได้
   Widget _buildFloatingBubble() {
     return Positioned(
       left: bubblePosition.dx,
@@ -798,12 +791,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            bubblePosition += details.delta; // ขยับตำแหน่งบอลลูนตามการลากนิ้ว
+            bubblePosition += details.delta;
           });
         },
         onTap: () {
           setState(() {
-            isExpanded = true; // กดแล้วกางขยายเป็นแผงควบคุม
+            isExpanded = true;
           });
         },
         child: Container(
@@ -851,7 +844,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN (พารามิเตอร์)
+// 2. SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -959,7 +952,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parameter Bot'),
+        title: const Text('Parameter'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
         actions: [
@@ -1019,7 +1012,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'SNIPER KING PARAMETERS',
+                  'Parameters Bot',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
@@ -2006,8 +1999,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
-                    final alert = alertItems.index != -1 ? alertItems[index] : null;
-                    if (alert == null) return const SizedBox.shrink();
+                    final alert = alertItems[index]; // แก้ไขจุดที่ผิดพลาดตรงนี้เรียบร้อย
                     return Card(
                       color: const Color(0xFF161619).withOpacity(0.9),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
