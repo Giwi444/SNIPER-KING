@@ -22,6 +22,10 @@ jobs:
         with:
           channel: 'stable'
 
+      # เพิ่มบรรทัดนี้กลับเข้ามา เพื่อสร้างโครงสร้าง Android ใหม่ที่เป็น v2 โดยอัตโนมัติ
+      - name: Generate Fresh Android Project
+        run: flutter create . --platforms=android
+
       - name: Install dependencies
         run: flutter pub get
 
