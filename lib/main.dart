@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN AUTH WRAPPER (ปุ่มสีแดงไล่ระดับ และเมื่อกดเปลี่ยนเป็นสีทอง)
+// PIN AUTH WRAPPER (ปุ่มกดสีแดงไล่ระดับ เมือกดเปลี่ยนเป็นสีทอง)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -221,7 +221,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                   }),
                 ),
                 const SizedBox(height: 40),
-                // แถวที่ 1: 1, 2, 3
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -229,7 +228,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                     children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
-                // แถวที่ 2: 4, 5, 6
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -237,7 +235,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                     children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
-                // แถวที่ 3: 7, 8, 9
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -245,13 +242,12 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                     children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
-                // แถวที่ 4: (เว้นว่างซ้าย), 0, del (จัดให้อยู่ตรงกลางเป๊ะ)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(width: 72, height: 72), // บล็อกหลอกเพื่อให้ตำแหน่งตรงกัน
+                      const SizedBox(width: 72, height: 72),
                       const SizedBox(width: 32),
                       _buildPinButton('0'),
                       const SizedBox(width: 32),
@@ -297,8 +293,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
             }
           },
           customBorder: const CircleBorder(),
-          splashColor: const Color(0xFFFFB300).withOpacity(0.6), // สีทองเมื่อกด
-          highlightColor: const Color(0xFFFFB300).withOpacity(0.4), // สีทองเมื่อแตะค้าง
+          splashColor: const Color(0xFFFFB300).withOpacity(0.6),
+          highlightColor: const Color(0xFFFFB300).withOpacity(0.4),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -1054,7 +1050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (เปลี่ยนกล่องบนเป็นข้อมูลบัญชีเทรด & เซิร์ฟเวอร์ ขอบเปลวไฟ)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1070,6 +1066,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
+  String accountServer = 'Exness-MT5Server';
 
   double balance = 0.0;
   double equity = 0.0;
@@ -1098,6 +1095,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           setState(() {
             activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             activeTimeframe = data['timeframe']?.toString() ?? 'M1';
+            accountServer = data['server']?.toString() ?? 'Exness-MT5Server';
             
             balance = (data['balance'] ?? 0.0).toDouble();
             equity = (data['equity'] ?? 0.0).toDouble();
@@ -1127,6 +1125,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
             margin = (data['margin'] ?? 0.0).toDouble();
             freeMargin = (data['free_margin'] ?? 0.0).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
+            if (data['server'] != null) {
+              accountServer = data['server'].toString();
+            }
           });
         }
       });
@@ -1172,8 +1173,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isProfit = profitLoss >= 0;
-
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
@@ -1201,37 +1200,86 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // กล่องข้อมูลบัญชีเทรดและเซิร์ฟเวอร์ (ไล่สี แดง-ดำ-เหลือง ขอบหนาเปลวไฟ)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
-                      width: 1.5,
+                      color: const Color(0xFFFFB300),
+                      width: 2.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'FLOATING PROFIT / LOSS',
-                        style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text(
-                          '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.between,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'TRADING ACCOUNT INFO',
+                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                              ),
+                            ],
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber, width: 1),
+                            ),
+                            child: Text(
+                              activeSymbol,
+                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Account Login', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.accountLogin,
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('Server', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text(
+                                accountServer,
+                                style: const TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
