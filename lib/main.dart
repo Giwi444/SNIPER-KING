@@ -46,7 +46,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// PIN AUTH WRAPPER (ปุ่มกดสีแดงไล่ระดับ เมือกดเปลี่ยนเป็นสีทอง)
+// PIN AUTH WRAPPER
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -1050,7 +1050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN (เปลี่ยนกล่องบนเป็นข้อมูลบัญชีเทรด & เซิร์ฟเวอร์ ขอบเปลวไฟ)
+// 3. ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1227,7 +1227,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Row(
                             children: [
