@@ -833,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- แถบเส้นสีฟ้าด้านบนสำหรับลากย่อ-ขยายขนาดหน้าต่าง (แก้ไขนำเมธอด resize ออกแล้ว) ---
+          // --- แถบเส้นสีฟ้าด้านบนสำหรับลากย่อ-ขยายขนาดหน้าต่าง ---
           GestureDetector(
             onPanUpdate: (details) {
               setState(() {
