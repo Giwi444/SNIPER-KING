@@ -247,7 +247,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(width: 96), // ช่องว่างซ้ายสุดเพื่อให้ปุ่ม 0 และ del ตรงกับคอลัมน์กลางและขวา
+                      const SizedBox(width: 96),
                       _buildPinButton('0'),
                       _buildPinButton('del'),
                     ],
@@ -588,163 +588,149 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.black.withOpacity(0.2),
         ),
         SafeArea(
-          child: Stack(
-            children: [
-              Positioned(
-                top: 8,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                      width: 1,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isConnected ? Icons.bolt : Icons.wifi_off,
-                        color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isConnected ? 'CONNECTED' : 'DISCONNECTED',
-                        style: TextStyle(
-                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xFFFFB300),
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                  child: Column(
+                    children: [
+                      const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Sniper King Bot',
+                              style: TextStyle(
+                                color: Colors.amberAccent,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: const Color(0xFFFFB300),
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.5),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(color: Colors.white24),
+                      const SizedBox(height: 8),
+                      const Row(
+                        children: [
+                          Icon(Icons.settings_suggest, color: Color(0xFFFFB300), size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'BOT & ORDER CONTROL',
+                            style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                           ),
                         ],
                       ),
-                      child: Column(
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Center(
+                          const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isRunning ? const Color(0xFF00C853).withOpacity(0.25) : Colors.red.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isRunning ? 'RUNNING' : 'STOPPED',
+                              style: TextStyle(
+                                color: isRunning ? const Color(0xFF00C853) : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // ย้ายปุ่ม Connected มาไว้ในกล่องตรงนี้ ต่อจากบรรทัด Running
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Connection Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                width: 1,
+                              ),
+                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
-                                SizedBox(width: 8),
+                                Icon(
+                                  isConnected ? Icons.bolt : Icons.wifi_off,
+                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Sniper King Bot',
+                                  isConnected ? 'CONNECTED' : 'DISCONNECTED',
                                   style: TextStyle(
-                                    color: Colors.amberAccent,
-                                    fontSize: 16,
+                                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Divider(color: Colors.white24),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Icon(Icons.settings_suggest, color: Color(0xFFFFB300), size: 16),
-                              SizedBox(width: 6),
-                              Text(
-                                'BOT & ORDER CONTROL',
-                                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isRunning ? const Color(0xFF00C853).withOpacity(0.25) : Colors.red.withOpacity(0.25),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  isRunning ? 'RUNNING' : 'STOPPED',
-                                  style: TextStyle(
-                                    color: isRunning ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _toggleBotStatus(true),
-                                  icon: const Icon(Icons.play_arrow, color: Colors.white),
-                                  label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00C853),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _toggleBotStatus(false),
-                                  icon: const Icon(Icons.stop, color: Colors.white),
-                                  label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFD50000),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: _closeAllOrders,
-                              icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                              label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              onPressed: () => _toggleBotStatus(true),
+                              icon: const Icon(Icons.play_arrow, color: Colors.white),
+                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFB300),
+                                backgroundColor: const Color(0xFF00C853),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _toggleBotStatus(false),
+                              icon: const Icon(Icons.stop, color: Colors.white),
+                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD50000),
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
@@ -752,11 +738,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _closeAllOrders,
+                          icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
