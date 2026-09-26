@@ -59,9 +59,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool isAuthorized = false;
   bool hasStoredPin = false;
   bool isConfirming = false;
+  bool isLoading = true;
   String firstEnteredPin = "";
   String currentPinInput = "";
-  isLoading: true;
 
   @override
   void initState() {
@@ -148,7 +148,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (isAuthorized) {
@@ -410,7 +410,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ย้ายตำแหน่งมุมบนซ้ายและมุมบนขวาตามรูปที่ 1[span_2](start_span)[span_2](end_span))
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -511,7 +511,6 @@ class _HomeScreenState extends State<HomeScreen> {
         SafeArea(
           child: Stack(
             children: [
-              // มุมบนซ้าย (ตามรูปที่ 1)[span_3](start_span)[span_3](end_span)
               Positioned(
                 top: 8,
                 left: 16,
@@ -535,8 +534,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-
-              // มุมบนขวา (ตามรูปที่ 1)[span_4](start_span)[span_4](end_span)
               Positioned(
                 top: 8,
                 right: 16,
@@ -571,8 +568,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-
-              // คอนโทรลด้านล่าง
               Padding(
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
                 child: Column(
@@ -683,9 +678,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
                           Text(
-                            'Sniper King v.3',
+                            'Sniper King Bot',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 16,
                               color: Colors.amberAccent,
                               fontWeight: FontWeight.w500,
                             ),
@@ -709,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
+// 2. SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1007,7 +1002,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
+// 3. ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1360,7 +1355,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN (ใส่ภาพพื้นหลัง p.jpg)
+// 4. TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1629,7 +1624,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
+// 5. ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
