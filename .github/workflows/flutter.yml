@@ -22,12 +22,18 @@ jobs:
         with:
           channel: 'stable'
 
-      # สร้างเฉพาะตอนที่ยังไม่มีโฟลเดอร์ android เพื่อป้องกันติด v1 และไม่ลบไฟล์ที่คุณแต่งทิ้ง
-      - name: Generate Android if not exists
+      - name: Fresh Android Project
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android
-          fi
+          rm -rf android
+          flutter create . --platforms=android --project-name=sniper_king
+
+      - name: Inject Overlay Permissions and Service
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          
+          sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>/g' "$MANIFEST_PATH"
+          
+          sed -i 's/<\/application>/        <service\n            android:name="flutter.overlay.window.OverlayService"\n            android:exported="false"\n            android:foregroundServiceType="specialUse"\/>\n    <\/application>/g' "$MANIFEST_PATH"
 
       - name: Install dependencies
         run: flutter pub get
