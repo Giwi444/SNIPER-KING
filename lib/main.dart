@@ -61,7 +61,7 @@ class _LiquiditySweepAppState extends State<LiquiditySweepApp> with WidgetsBindi
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'SniperKing',
+      title: 'Sniper King',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.transparent,
@@ -383,6 +383,9 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   }
 }
 
+// ==========================================
+// MAIN NAVIGATION SCREEN
+// ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -391,7 +394,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 2; // เริ่มต้นที่หน้า HOME (index 2)
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
@@ -463,10 +466,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // เรียงลำดับหน้าจอตามเมนูด้านล่าง
+    // 0: SMART (Orders)
+    // 1: METATRADER (Settings)
+    // 2: HOME (หน้าหลัก Sniper King)
+    // 3: SCANNER (History)
+    // 4: SETTINGS (Alerts)
     final List<Widget> pages = [
-      HomeScreen(accountLogin: currentLogin, onLogout: _logoutToPinScreen),
-      const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
+      const SettingsScreen(),
+      HomeScreen(accountLogin: currentLogin, onLogout: _logoutToPinScreen),
       HistoryScreen(accountLogin: currentLogin),
       AlertsScreen(onAlertsRead: () {
         setState(() {
@@ -531,7 +540,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (Red-Black Cyberpunk Style)
+// 1. HOME SCREEN (Sniper King Main Interface)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -643,18 +652,53 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.lock_outline, color: Color(0xFFD50000), size: 22),
-                  onPressed: widget.onLogout,
-                  tooltip: 'ล็อกเอาต์ออกเพื่อกรอก PIN ใหม่',
-                ),
+              const SizedBox(height: 5),
+              // แถบสถานะ Connection (สีเขียวเมื่อต่อ / สีแดงเมื่อหลุด) และปุ่ม Logout
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isConnected ? 'Connect' : 'No Connection',
+                          style: TextStyle(
+                            color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.lock_outline, color: Color(0xFFD50000), size: 22),
+                    onPressed: widget.onLogout,
+                    tooltip: 'ล็อกเอาต์ออกเพื่อกรอก PIN ใหม่',
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
 
-              // ตัวหนังสือสีขาวใหญ่กลางอกโรบอท (ไร้กรอบกล่อง)
               const Text(
                 'Your Trading With',
                 style: TextStyle(
@@ -665,12 +709,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 6),
+              // ชื่อแอปเป็น "Sniper King"
               const Text(
-                'BLACK NOVA SCAPER',
+                'SNIPER KING',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 26,
+                  fontSize: 28,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2.0,
                   shadows: [
@@ -699,7 +744,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
 
-              // แผงปุ่มควบคุมทรงแคปซูลสีขาว (แสดงปุ่ม CLOSE, START, STOP)
+              // แผงควบคุม (CLOSE, START, STOP) ทรงแคปซูล
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
@@ -716,7 +761,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // 1. ปุ่ม CLOSE
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -736,7 +780,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Text('CLOSE', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    // 2. ปุ่ม START
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -757,7 +800,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Text('START', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    // 3. ปุ่ม STOP
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -796,7 +838,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
 
-              // กล่องแสดง Floating Profit / Loss
+              // กล่อง Floating Profit / Loss แยกต่างหากด้านล่าง
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
@@ -834,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // กล่อง Account Overview
+              // กล่อง Account Overview แยกต่างหากด้านล่าง
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -927,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (เดิมอยู่ปุ่ม Metatrade)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1213,7 +1255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (เดิมอยู่ปุ่ม Smart)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1468,7 +1510,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN
+// 4. TRADE HISTORY SCREEN (เดิมอยู่ปุ่ม Scanner)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1725,7 +1767,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// 5. ALERTS SCREEN (เดิมอยู่ปุ่ม Setting)
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
