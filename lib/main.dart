@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +40,206 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const MainNavigationScreen(),
+      home: const PinAuthWrapper(),
+    );
+  }
+}
+
+// ==========================================
+// PIN AUTH WRAPPER (ระบบตรวจสอบ PIN 6 หลัก)
+// ==========================================
+class PinAuthWrapper extends StatefulWidget {
+  const PinAuthWrapper({super.key});
+
+  @override
+  State<PinAuthWrapper> createState() => _PinAuthWrapperState();
+}
+
+class _PinAuthWrapperState extends State<PinAuthWrapper> {
+  bool isAuthorized = false;
+  bool hasStoredPin = false;
+  bool isConfirming = false;
+  String firstEnteredPin = "";
+  String currentPinInput = "";
+  isLoading: true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPinExists();
+  }
+
+  Future<void> _checkPinExists() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pin = prefs.getString('user_pin');
+    setState(() {
+      hasStoredPin = pin != null && pin.isNotEmpty;
+      isLoading = false;
+    });
+  }
+
+  Future<void> _saveNewPin(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_pin', pin);
+  }
+
+  Future<void> _verifyPin(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedPin = prefs.getString('user_pin');
+    if (storedPin == pin) {
+      setState(() {
+        isAuthorized = true;
+      });
+    } else {
+      setState(() {
+        currentPinInput = "";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _onNumberTap(String number) {
+    if (currentPinInput.length < 6) {
+      setState(() {
+        currentPinInput += number;
+      });
+
+      if (currentPinInput.length == 6) {
+        if (!hasStoredPin) {
+          if (!isConfirming) {
+            firstEnteredPin = currentPinInput;
+            currentPinInput = "";
+            isConfirming = true;
+          } else {
+            if (firstEnteredPin == currentPinInput) {
+              _saveNewPin(currentPinInput);
+              setState(() {
+                hasStoredPin = true;
+                isAuthorized = true;
+              });
+            } else {
+              setState(() {
+                currentPinInput = "";
+                isConfirming = false;
+                firstEnteredPin = "";
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Colors.red),
+              );
+            }
+          }
+        } else {
+          _verifyPin(currentPinInput);
+        }
+      }
+    }
+  }
+
+  void _onDeleteTap() {
+    if (currentPinInput.isNotEmpty) {
+      setState(() {
+        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularIndicator()));
+    }
+
+    if (isAuthorized) {
+      return const MainNavigationScreen();
+    }
+
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
+    if (!hasStoredPin) {
+      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักใหม่";
+    }
+
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.75),
+          ),
+          SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  titleText,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(6, (index) {
+                    bool isFilled = index < currentPinInput.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
+                        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 40),
+                for (var row in [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['', '0', 'del']])
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: row.map((val) {
+                        if (val.isEmpty) {
+                          return const SizedBox(width: 72, height: 72);
+                        }
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          width: 72,
+                          height: 72,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (val == 'del') {
+                                _onDeleteTap();
+                              } else {
+                                _onNumberTap(val);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white12,
+                              shape: const CircleBorder(),
+                            ),
+                            child: val == 'del'
+                                ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -52,7 +252,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 2; // เริ่มต้นที่หน้า Home (Index 2)
+  int _currentIndex = 2;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
@@ -210,7 +410,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (ย้ายตำแหน่งมุมบนซ้ายและมุมบนขวาตามรูปที่ 1[span_2](start_span)[span_2](end_span))
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -309,158 +509,198 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.black.withOpacity(0.2),
         ),
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      'BOT & ORDER CONTROL',
-                      style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(14),
+          child: Stack(
+            children: [
+              // มุมบนซ้าย (ตามรูปที่ 1)[span_3](start_span)[span_3](end_span)
+              Positioned(
+                top: 8,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
+                    color: const Color(0xFF161619).withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white12, width: 1),
                   ),
-                  child: Column(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              isRunning ? 'RUNNING' : 'STOPPED',
-                              style: TextStyle(
-                                color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(true),
-                              icon: const Icon(Icons.play_arrow, color: Colors.white),
-                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00C853),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(false),
-                              icon: const Icon(Icons.stop, color: Colors.white),
-                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD50000),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _closeAllOrders,
-                          icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
+                      const Icon(Icons.account_circle, color: Color(0xFFFFB300), size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'A/C: ${widget.accountLogin}',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              ),
+
+              // มุมบนขวา (ตามรูปที่ 1)[span_4](start_span)[span_4](end_span)
+              Positioned(
+                top: 8,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(18),
+                    color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFFFB300).withOpacity(0.4),
+                      color: isConnected ? const Color(0xFF00C853) : Colors.red,
                       width: 1,
                     ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Sniper King v.3',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.amberAccent,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Icon(
+                        isConnected ? Icons.bolt : Icons.wifi_off,
+                        color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                        size: 14,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isConnected ? Icons.bolt : Icons.wifi_off,
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                              style: TextStyle(
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(width: 4),
+                      Text(
+                        isConnected ? 'CONNECTED' : 'DISCONNECTED',
+                        style: TextStyle(
+                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // คอนโทรลด้านล่าง
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'BOT & ORDER CONTROL',
+                          style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white12, width: 1),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  isRunning ? 'RUNNING' : 'STOPPED',
+                                  style: TextStyle(
+                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _toggleBotStatus(true),
+                                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                                  label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF00C853),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _toggleBotStatus(false),
+                                  icon: const Icon(Icons.stop, color: Colors.white),
+                                  label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFD50000),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _closeAllOrders,
+                              icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                              label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFB300),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFFFFB300).withOpacity(0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Sniper King v.3',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.amberAccent,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            'SECURE BOT',
+                            style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -469,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -571,152 +811,167 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'SNIPER KING PARAMETERS',
-              style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 8),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'SNIPER KING PARAMETERS',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
 
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B0B0E),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white12, width: 1),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: lotMode,
-                        isExpanded: true,
-                        dropdownColor: const Color(0xFF161619),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        items: ['Fixed', 'Step', 'Double'].map((String item) {
-                          return DropdownMenuItem<String>(value: item, child: Text(item));
-                        }).toList(),
-                        onChanged: (val) => setState(() => lotMode = val!),
-                      ),
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
                   ),
-                  const SizedBox(height: 12),
-
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white12, width: 1),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${calculatedTP.toStringAsFixed(1)} Points',
-                                style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                            ],
+                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white12, width: 1),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: lotMode,
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF161619),
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            items: ['Fixed', 'Step', 'Double'].map((String item) {
+                              return DropdownMenuItem<String>(value: item, child: Text(item));
+                            }).toList(),
+                            onChanged: (val) => setState(() => lotMode = val!),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(color: Colors.white12),
-                  const SizedBox(height: 8),
+                      const SizedBox(height: 12),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      Switch(
-                        value: enableDailyTarget,
-                        activeColor: const Color(0xFF00C853),
-                        onChanged: (val) => setState(() => enableDailyTarget = val),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
+                        ],
                       ),
-                    ],
-                  ),
-                  if (enableDailyTarget) ...[
-                    const SizedBox(height: 6),
-                    _buildControllerInputField('Daily Target (\$)', dailyTargetController, TextInputType.number),
-                  ],
-                  const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      Switch(
-                        value: enableDailyLoss,
-                        activeColor: Colors.redAccent,
-                        onChanged: (val) => setState(() => enableDailyLoss = val),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                        ],
                       ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white12, width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${calculatedTP.toStringAsFixed(1)} Points',
+                                    style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontSize: 13)),
+                          Switch(
+                            value: enableDailyTarget,
+                            activeColor: const Color(0xFF00C853),
+                            onChanged: (val) => setState(() => enableDailyTarget = val),
+                          ),
+                        ],
+                      ),
+                      if (enableDailyTarget) ...[
+                        const SizedBox(height: 6),
+                        _buildControllerInputField('Daily Target (\$)', dailyTargetController, TextInputType.number),
+                      ],
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontSize: 13)),
+                          Switch(
+                            value: enableDailyLoss,
+                            activeColor: Colors.redAccent,
+                            onChanged: (val) => setState(() => enableDailyLoss = val),
+                          ),
+                        ],
+                      ),
+                      if (enableDailyLoss) ...[
+                        const SizedBox(height: 6),
+                        _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
+                      ],
                     ],
                   ),
-                  if (enableDailyLoss) ...[
-                    const SizedBox(height: 6),
-                    _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _saveSettingsToFirebase,
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB300),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-              ),
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveSettingsToFirebase,
+                    icon: const Icon(Icons.save, color: Colors.white),
+                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -752,7 +1007,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -882,174 +1137,189 @@ class _OrdersScreenState extends State<OrdersScreen> {
         title: const Text('Active Orders & Portfolio'),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161619).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    'FLOATING PROFIT / LOSS',
-                    style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
+                      width: 1.5,
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  Center(
-                    child: Text(
-                      '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'FLOATING PROFIT / LOSS',
+                        style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                const SizedBox(width: 10),
-                Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                const SizedBox(width: 10),
-                Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isTotalProfit
-                      ? [const Color(0xFF00C853).withOpacity(0.2), const Color(0xFF161619)]
-                      : [const Color(0xFFD50000).withOpacity(0.2), const Color(0xFF161619)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TOTAL OPEN PROFIT',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                  ),
-                  Text(
-                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            activeOrders.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(30.0),
-                    child: Center(
-                      child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = activeOrders[index];
-                      final String type = order['type']?.toString() ?? 'BUY';
-                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool orderProfit = profit >= 0;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                            width: 1,
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isTotalProfit
+                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'TOTAL OPEN PROFIT',
+                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      ),
+                      Text(
+                        '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                activeOrders.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(30.0),
+                        child: Center(
+                          child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: activeOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = activeOrders[index];
+                          final String type = order['type']?.toString() ?? 'BUY';
+                          final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
+                          final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
+                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
+                          bool isBuy = type.toUpperCase().contains('BUY');
+                          bool orderProfit = profit >= 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Row(
                                   children: [
-                                    Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    const SizedBox(height: 2),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        const SizedBox(height: 2),
+                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                      ],
+                                    ),
                                   ],
+                                ),
+                                Text(
+                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ],
                             ),
-                            Text(
-                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ],
-        ),
+                          );
+                        },
+                      ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1058,7 +1328,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.85),
+        color: const Color(0xFF161619).withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white12, width: 1),
       ),
@@ -1090,7 +1360,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN
+// 4. TRADE HISTORY SCREEN (ใส่ภาพพื้นหลัง p.jpg)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1206,136 +1476,151 @@ class _HistoryScreenState extends State<HistoryScreen> {
         title: const Text('History'),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              itemCount: filterOptions.length,
-              itemBuilder: (context, index) {
-                String filter = filterOptions[index];
-                bool isSelected = selectedFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFFFFB300),
-                    backgroundColor: const Color(0xFF161619),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    onSelected: (bool selected) {
-                      setState(() {
-                        selectedFilter = filter;
-                      });
-                    },
-                  ),
-                );
-              },
-            ),
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
           ),
           Container(
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161619),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                Text(
-                  '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+            color: Colors.black.withOpacity(0.8),
           ),
-          Expanded(
-            child: filteredHistory.isEmpty
-                ? const Center(
-                    child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey)),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredHistory.length,
-                    itemBuilder: (context, index) {
-                      final trade = filteredHistory[index];
-                      final String type = trade['type']?.toString() ?? 'BUY';
-                      final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
-                      final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
-                      final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                      final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool isProfit = profit >= 0;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white12, width: 1),
+          Column(
+            children: [
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: filterOptions.length,
+                  itemBuilder: (context, index) {
+                    String filter = filterOptions[index];
+                    bool isSelected = selectedFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(filter),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFFB300),
+                        backgroundColor: const Color(0xFF161619),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                        onSelected: (bool selected) {
+                          setState(() {
+                            selectedFilter = filter;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                      '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: filteredHistory.isEmpty
+                    ? const Center(
+                        child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey)),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filteredHistory.length,
+                        itemBuilder: (context, index) {
+                          final trade = filteredHistory[index];
+                          final String type = trade['type']?.toString() ?? 'BUY';
+                          final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
+                          final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
+                          final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
+                          final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
+                          final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                          final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                          bool isBuy = type.toUpperCase().contains('BUY');
+                          bool isProfit = profit >= 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Row(
                                   children: [
-                                    Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                      style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
+                                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                      ],
+                                    ),
                                   ],
+                                ),
+                                Text(
+                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ],
                             ),
-                            Text(
-                              '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1344,7 +1629,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// 5. ALERTS SCREEN (ใส่ภาพพื้นหลัง p.jpg)
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -1448,28 +1733,43 @@ class _AlertsScreenState extends State<AlertsScreen> {
             ),
         ],
       ),
-      body: alertItems.isEmpty
-          ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: alertItems.length,
-              itemBuilder: (context, index) {
-                final alert = alertItems[index];
-                return Card(
-                  color: const Color(0xFF161619),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                    title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
-                      onPressed: () => _deleteAlert(alert['key']),
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          alertItems.isEmpty
+              ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: alertItems.length,
+                  itemBuilder: (context, index) {
+                    final alert = alertItems[index];
+                    return Card(
+                      color: const Color(0xFF161619).withOpacity(0.9),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
+                        title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                          onPressed: () => _deleteAlert(alert['key']),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
     );
   }
 }
