@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ลบรูปโปรไฟล์หุ่นยนต์ออกแล้ว)
+// 1. HOME SCREEN (สลับตำแหน่งตามที่ขอแล้ว)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const SizedBox(height: 10),
 
-                // กล่อง "SNIPER KING ROBOT" ขึ้นมาอยู่บนสุดทันที
+                // 1. นำ SNIPER KING ROBOT มาไว้บนสุด
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
@@ -419,6 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // 2. ข้อมูลการเงิน (ย้ายลงมาแทนที่ และจัดตัวเลขจำนวนเงินให้อยู่กึ่งกลาง)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -431,19 +432,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center, // จัดให้อยู่กึ่งกลาง
                     children: [
                       const Text(
                         'FLOATING PROFIT / LOSS',
                         style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
+                      Center(
+                        child: Text(
+                          '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
+                          textAlign: TextAlign.center, // บังคับตัวเลขอยู่กึ่งกลางสวยงาม
+                          style: TextStyle(
+                            color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
                     ],
