@@ -247,10 +247,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(width: 72, height: 72),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 96), // ช่องว่างซ้ายสุดเพื่อให้ปุ่ม 0 และ del ตรงกับคอลัมน์กลางและขวา
                       _buildPinButton('0'),
-                      const SizedBox(width: 24),
                       _buildPinButton('del'),
                     ],
                   ),
@@ -655,10 +653,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          Center(
+                          const Center(
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
+                              children: [
                                 Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
                                 SizedBox(width: 8),
                                 Text(
@@ -676,8 +674,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 8),
                           const Divider(color: Colors.white24),
                           const SizedBox(height: 8),
-                          Row(
-                            children: const [
+                          const Row(
+                            children: [
                               Icon(Icons.settings_suggest, color: Color(0xFFFFB300), size: 16),
                               SizedBox(width: 6),
                               Text(
@@ -1215,7 +1213,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // กล่องข้อมูลบัญชีเทรดและเซิร์ฟเวอร์ (ไล่สี แดง-ดำ-เหลือง ขอบหนาเปลวไฟ)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
