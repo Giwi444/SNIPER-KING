@@ -220,37 +220,37 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
                     );
                   }),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(width: 72, height: 72),
-                      const SizedBox(width: 32),
+                      const SizedBox(width: 24),
                       _buildPinButton('0'),
-                      const SizedBox(width: 32),
+                      const SizedBox(width: 24),
                       _buildPinButton('del'),
                     ],
                   ),
@@ -267,6 +267,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> with WidgetsBindingObse
     return Container(
       width: 72,
       height: 72,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -632,11 +633,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white24, width: 1.2),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFFFFB300),
+                          width: 2.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.5),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         children: [
@@ -659,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Divider(color: Colors.white12),
+                          const Divider(color: Colors.white24),
                           const SizedBox(height: 8),
                           Row(
                             children: const [
@@ -675,17 +690,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              const Text('EA Execution Status', style: TextStyle(color: Colors.white70, fontSize: 13)),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
+                                  color: isRunning ? const Color(0xFF00C853).withOpacity(0.25) : Colors.red.withOpacity(0.25),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   isRunning ? 'RUNNING' : 'STOPPED',
                                   style: TextStyle(
-                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                    color: isRunning ? const Color(0xFF00C853) : Colors.redAccent,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -1620,16 +1635,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFFFB300),
+                    width: 2.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.5),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                     Text(
                       '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
                       style: TextStyle(
