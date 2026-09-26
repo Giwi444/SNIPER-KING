@@ -67,8 +67,8 @@ class _LiquiditySweepAppState extends State<LiquiditySweepApp> with WidgetsBindi
         scaffoldBackgroundColor: Colors.transparent,
         cardColor: const Color(0xFF161619),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00C853),
-          secondary: Color(0xFFFFB300),
+          primary: Color(0xFFD50000),
+          secondary: Color(0xFFFF5252),
         ),
       ),
       home: const PinAuthWrapper(),
@@ -109,7 +109,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (isLoading) {
       return const RobotBackground(
         child: Scaffold(
-          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+          body: Center(child: CircularProgressIndicator(color: Color(0xFFD50000))),
         ),
       );
     }
@@ -117,7 +117,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// วิดเจ็ตภาพพื้นหลังโรบอท
 class RobotBackground extends StatelessWidget {
   final Widget child;
   const RobotBackground({super.key, required this.child});
@@ -135,7 +134,7 @@ class RobotBackground extends StatelessWidget {
           },
         ),
         Container(
-          color: Colors.black.withOpacity(0.2),
+          color: Colors.black.withOpacity(0.35),
         ),
         child,
       ],
@@ -282,8 +281,8 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                     height: 16,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
-                      border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                      color: isFilled ? const Color(0xFFD50000) : Colors.transparent,
+                      border: Border.all(color: const Color(0xFFD50000), width: 2),
                     ),
                   );
                 }),
@@ -310,9 +309,9 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF161619).withOpacity(0.85),
                         shape: const CircleBorder(),
-                        side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                        side: const BorderSide(color: Color(0xFFD50000), width: 1.5),
                       ),
-                      child: const Icon(Icons.backspace_outlined, color: Color(0xFFFFB300)),
+                      child: const Icon(Icons.backspace_outlined, color: Color(0xFFD50000)),
                     ),
                   ),
                 ],
@@ -344,12 +343,11 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       child: ElevatedButton(
         onPressed: () => _onNumberTap(number),
         style: ElevatedButton.styleFrom(
-          // เปลี่ยนจากสีเขียวตอนกด เป็นการใส่ภาพโรบอท/พื้นผิวโปรไฟล์ พร้อมขอบทองเด่นชัด
           backgroundColor: Colors.transparent,
           padding: EdgeInsets.zero,
           shape: const CircleBorder(),
           side: BorderSide(
-            color: isPressed ? const Color(0xFFFFE082) : const Color(0xFFFFB300), 
+            color: isPressed ? const Color(0xFFFF5252) : const Color(0xFFD50000), 
             width: isPressed ? 2.5 : 1.5,
           ),
           elevation: 5,
@@ -370,7 +368,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             child: Text(
               number,
               style: TextStyle(
-                color: isPressed ? Colors.white : const Color(0xFFFFB300),
+                color: isPressed ? Colors.white : const Color(0xFFD50000),
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 shadows: isPressed
@@ -486,10 +484,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: const Color(0xFF1A0000),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.8),
+              blurRadius: 15,
               offset: const Offset(0, -5),
             ),
           ],
@@ -505,47 +504,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF101014),
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.grey.shade600,
+          backgroundColor: const Color(0xFF100000),
+          selectedItemColor: const Color(0xFFD50000),
+          unselectedItemColor: Colors.grey.shade500,
           items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+            const BottomNavigationBarItem(icon: Icon(Icons.smart_toy), label: 'SMART'),
+            const BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'METATRADER'),
             BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.notifications_active),
-                  if (unreadAlertsCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$unreadAlertsCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD50000),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.home_filled, color: Colors.white, size: 20),
               ),
-              label: 'Alerts',
+              label: 'HOME',
             ),
+            const BottomNavigationBarItem(icon: Icon(Icons.radar), label: 'SCANNER'),
+            const BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'SETTINGS'),
           ],
         ),
       ),
@@ -554,7 +531,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (Red-Black Cyberpunk Style)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -576,10 +553,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String broker = "";
   String server = "";
   int loginAccount = 0;
-
-  bool isStartPressed = false;
-  bool isStopPressed = false;
-  bool isCloseAllPressed = false;
 
   DatabaseReference? _dbRef;
 
@@ -652,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
       );
     } catch (e) {
       print("Close all error: $e");
@@ -668,119 +641,165 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.lock_outline, color: Color(0xFFD50000), size: 22),
+                  onPressed: widget.onLogout,
+                  tooltip: 'ล็อกเอาต์ออกเพื่อกรอก PIN ใหม่',
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ตัวหนังสือสีขาวใหญ่กลางอกโรบอท (ไร้กรอบกล่อง)
+              const Text(
+                'Your Trading With',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'BLACK NOVA SCAPER',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                  shadows: [
+                    Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: const Color(0xFFFFB300).withOpacity(0.6),
-                    width: 1.5,
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFD50000).withOpacity(0.5), width: 1),
+                ),
+                child: const Text(
+                  'Powered By Algohost',
+                  style: TextStyle(
+                    color: Color(0xFFD50000),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
                   ),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: IconButton(
-                        icon: const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 20),
-                        onPressed: widget.onLogout,
-                        tooltip: 'ล็อกเอาต์ออกเพื่อกรอก PIN ใหม่',
-                      ),
+              ),
+              const SizedBox(height: 20),
+
+              // แผงปุ่มควบคุมทรงแคปซูลสีขาว (แสดงปุ่ม CLOSE, START, STOP)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.92),
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    Row(
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // 1. ปุ่ม CLOSE
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 78,
-                          height: 78,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFB300), width: 1.8),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/images/IMG_20260922_194127.jpg'),
-                              fit: BoxFit.cover,
+                        GestureDetector(
+                          onTap: _closeAllOrders,
+                          child: Container(
+                            width: 55,
+                            height: 55,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFD50000),
+                              shape: BoxShape.circle,
                             ),
+                            child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'SNIPER KING ROBOT',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFFFFB300),
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isConnected ? Icons.bolt : Icons.wifi_off,
-                                        color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                                        style: TextStyle(
-                                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                broker.isNotEmpty ? '$broker ($loginAccount) $server' : 'Liquidity Sweep (${widget.accountLogin})',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.amberAccent,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 4),
+                        const Text('CLOSE', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    // 2. ปุ่ม START
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _toggleBotStatus(true),
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: isRunning ? const Color(0xFF00C853) : const Color(0xFF161619),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFF00C853), width: 2),
+                            ),
+                            child: const Icon(Icons.play_arrow, color: Color(0xFF00C853), size: 28),
                           ),
                         ),
-                        const SizedBox(width: 32),
+                        const SizedBox(height: 4),
+                        const Text('START', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    // 3. ปุ่ม STOP
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _toggleBotStatus(false),
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: !isRunning ? const Color(0xFFD50000) : const Color(0xFF161619),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFD50000), width: 2),
+                            ),
+                            child: const Icon(Icons.stop, color: Color(0xFFD50000), size: 28),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text('STOP', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 25),
 
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Connected Robots:',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // กล่องแสดง Floating Profit / Loss
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isProfit
@@ -789,34 +808,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: isProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                     width: 1.5,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
                 ),
                 child: Column(
                   children: [
                     const Text(
                       'FLOATING PROFIT / LOSS',
-                      style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
-                    // ลบเครื่องหมายลบออก เหลือแต่สัญลักษณ์สกุลเงินและตัวเลขสัมบูรณ์
                     Text(
                       '\$${profitLoss.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isProfit ? const Color(0xFF00C853) : const Color(0xFFFF5252),
-                        fontSize: 34,
+                        fontSize: 32,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
@@ -824,28 +834,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
 
+              // กล่อง Account Overview
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white12,
-                    width: 1,
-                  ),
+                  border: Border.all(color: Colors.white12, width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: const [
-                        Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 16),
+                        Icon(Icons.account_balance, color: Color(0xFFD50000), size: 16),
                         SizedBox(width: 6),
                         Text(
                           'ACCOUNT OVERVIEW',
                           style: TextStyle(
-                            color: Color(0xFFFFB300),
+                            color: Color(0xFFD50000),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                             letterSpacing: 0.8,
@@ -872,135 +880,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'BOT & ORDER CONTROL',
-                          style: TextStyle(
-                            color: Color(0xFFFFB300), 
-                            fontWeight: FontWeight.bold, 
-                            fontSize: 12, 
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('EA Execution Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isRunning ? const Color(0xFF00C853).withOpacity(0.15) : Colors.red.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isRunning ? 'RUNNING' : 'STOPPED',
-                            style: TextStyle(
-                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTapDown: (_) => setState(() => isStartPressed = true),
-                            onTapUp: (_) => setState(() => isStartPressed = false),
-                            onTapCancel: () => setState(() => isStartPressed = false),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 100),
-                              transform: Matrix4.identity()..translate(0.0, isStartPressed ? 3.0 : 0.0),
-                              child: ElevatedButton.icon(
-                                onPressed: () => _toggleBotStatus(true),
-                                icon: const Icon(Icons.play_arrow, color: Colors.white),
-                                label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00C853),
-                                  elevation: isStartPressed ? 1 : 6,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: GestureDetector(
-                            onTapDown: (_) => setState(() => isStopPressed = true),
-                            onTapUp: (_) => setState(() => isStopPressed = false),
-                            onTapCancel: () => setState(() => isStopPressed = false),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 100),
-                              transform: Matrix4.identity()..translate(0.0, isStopPressed ? 3.0 : 0.0),
-                              child: ElevatedButton.icon(
-                                onPressed: () => _toggleBotStatus(false),
-                                icon: const Icon(Icons.stop, color: Colors.white),
-                                label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD50000),
-                                  elevation: isStopPressed ? 1 : 6,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTapDown: (_) => setState(() => isCloseAllPressed = true),
-                      onTapUp: (_) async {
-                        setState(() => isCloseAllPressed = false);
-                        _closeAllOrders();
-                      },
-                      onTapCancel: () => setState(() => isCloseAllPressed = false),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 120),
-                        transform: Matrix4.identity()..translate(0.0, isCloseAllPressed ? 4.0 : 0.0),
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: null, 
-                          icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                          label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
-                            disabledBackgroundColor: const Color(0xFFFFB300),
-                            elevation: isCloseAllPressed ? 1 : 6,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -1023,7 +902,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.amberAccent, size: 14),
+              Icon(icon, color: Colors.redAccent, size: 14),
               const SizedBox(width: 4),
               Text(
                 title,
@@ -1038,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
             ),
           ),
         ],
@@ -1130,7 +1009,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Parameters Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFFFFB300),
+          backgroundColor: Color(0xFFD50000),
         ),
       );
     } catch (e) {
@@ -1159,7 +1038,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const Text(
                 'LIQUIDITY SWEEP PARAMETERS',
-                style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                style: TextStyle(color: Color(0xFFD50000), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
               ),
               const SizedBox(height: 8),
 
@@ -1234,7 +1113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   '${calculatedTP.toStringAsFixed(1)} Points',
-                                  style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: const TextStyle(color: Color(0xFFD50000), fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -1290,7 +1169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: const Icon(Icons.save, color: Colors.white),
                   label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB300),
+                    backgroundColor: const Color(0xFFD50000),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -1435,7 +1314,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF161619).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
+                  border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1447,11 +1326,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF0B0B0E),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
+                            border: Border.all(color: const Color(0xFFD50000).withOpacity(0.3)),
                           ),
                           child: Text(
                             activeSymbol,
-                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 15),
+                            style: const TextStyle(color: Color(0xFFD50000), fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1492,13 +1371,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                   width: 1.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1507,7 +1379,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     'TOTAL OPEN PROFIT',
                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                   ),
-                  // ลบเครื่องหมายลบออก เหลือแต่มูลค่าสัมบูรณ์
                   Text(
                     '\$${totalOrdersProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
@@ -1575,7 +1446,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   ),
                                 ],
                               ),
-                              // ลบเครื่องหมายลบออกเช่นกัน
                               Text(
                                 '\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
@@ -1732,10 +1602,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: ChoiceChip(
                       label: Text(filter),
                       selected: isSelected,
-                      selectedColor: const Color(0xFFFFB300),
+                      selectedColor: const Color(0xFFD50000),
                       backgroundColor: const Color(0xFF161619),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : Colors.white,
+                        color: isSelected ? Colors.white : Colors.white70,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -1756,13 +1626,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF161619).withOpacity(0.85),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+                border: Border.all(color: const Color(0xFFD50000).withOpacity(0.5), width: 1),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  // ลบเครื่องหมายลบออกในประวัติรวม
                   Text(
                     '\$${totalProfit.abs().toStringAsFixed(2)}',
                     style: TextStyle(
@@ -1826,7 +1695,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       const SizedBox(height: 3),
                                       Text(
                                         '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                        style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                        style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'monospace'),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10)),
@@ -1834,7 +1703,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                 ],
                               ),
-                              // ลบเครื่องหมายลบออกในรายการประวัติแต่ละเทรด
                               Text(
                                 '\$${profit.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
@@ -1975,7 +1843,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
-                      leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
+                      leading: const Icon(Icons.notifications_active, color: Color(0xFFD50000)),
                       title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, color: Colors.grey, size: 20),
