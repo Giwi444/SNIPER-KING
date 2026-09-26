@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (สลับตำแหน่งตามที่ขอแล้ว)
+// 1. HOME SCREEN (ย้าย Robot ลงมา และปรับภาพให้สว่างขึ้น)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -223,12 +223,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   bool isConnected = false; 
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
-  double profitLoss = 0.0;
-
   DatabaseReference? _dbRef;
 
   @override
@@ -268,11 +262,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (data != null && mounted) {
           setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
-            profitLoss = (data['profit'] ?? 0.0).toDouble();
             isRunning = data['is_running'] ?? false;
           });
         }
@@ -306,8 +295,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isProfit = profitLoss >= 0;
-
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -318,8 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
             return Container(color: const Color(0xFF0B0B0E));
           },
         ),
+        // ปรับความมืดลง (Opacity 0.35) เพื่อให้รูปสว่างและชัดเจนขึ้น
         Container(
-          color: Colors.black.withOpacity(0.65),
+          color: Colors.black.withOpacity(0.35),
         ),
         SafeArea(
           child: SingleChildScrollView(
@@ -327,153 +315,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 10),
-
-                // 1. นำ SNIPER KING ROBOT มาไว้บนสุด
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: const Color(0xFFFFB300).withOpacity(0.6),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 15,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
-                          SizedBox(width: 8),
-                          Text(
-                            'SNIPER KING ROBOT',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFFFFB300),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isConnected ? Icons.bolt : Icons.wifi_off,
-                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isConnected ? 'CONNECTED' : 'NO CONNECTED',
-                                style: TextStyle(
-                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Liquidity Sweep v.3',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.amberAccent,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 2. ข้อมูลการเงิน (ย้ายลงมาแทนที่ และจัดตัวเลขจำนวนเงินให้อยู่กึ่งกลาง)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center, // จัดให้อยู่กึ่งกลาง
-                    children: [
-                      const Text(
-                        'FLOATING PROFIT / LOSS',
-                        style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text(
-                          '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
-                          textAlign: TextAlign.center, // บังคับตัวเลขอยู่กึ่งกลางสวยงาม
-                          style: TextStyle(
-                            color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-                  ],
-                ),
                 const SizedBox(height: 20),
 
+                // Bot & Order Control อยู่ด้านบน (หรือสลับตามโครงสร้างใหม่)
                 Row(
                   children: const [
                     Icon(Icons.smart_toy_outlined, color: Color(0xFFFFB300), size: 18),
@@ -562,39 +406,101 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // SNIPER KING ROBOT ย้ายมาอยู่ด้านล่างส่วนควบคุม
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: const Color(0xFFFFB300).withOpacity(0.6),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.circle, color: Color(0xFFFFB300), size: 10),
+                          SizedBox(width: 8),
+                          Text(
+                            'SNIPER KING ROBOT',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFFB300),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.workspace_premium, color: Color(0xFFFFB300), size: 18),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isConnected ? Icons.bolt : Icons.wifi_off,
+                                color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isConnected ? 'CONNECTED' : 'NO CONNECTED',
+                                style: TextStyle(
+                                  color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Liquidity Sweep v.3',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.amberAccent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.grey, size: 15),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -883,7 +789,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (ย้ายข้อมูลในกรอบสีขาวมาไว้ที่นี่)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -896,14 +802,23 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
+  DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
+
+  // ตัวแปรข้อมูลการเงินที่ย้ายมาจากหน้า Home
+  double balance = 0.0;
+  double equity = 0.0;
+  double margin = 0.0;
+  double freeMargin = 0.0;
+  double profitLoss = 0.0;
 
   @override
   void initState() {
     super.initState();
     _listenToOrders();
     _listenToStatusForSymbol();
+    _listenToFinancialStatus();
   }
 
   void _listenToStatusForSymbol() {
@@ -912,17 +827,47 @@ class _OrdersScreenState extends State<OrdersScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      database.ref('status').onValue.listen((event) {
+      _dbRef = database.ref('status');
+      _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
             activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             activeTimeframe = data['timeframe']?.toString() ?? 'M1';
+            
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            profitLoss = (data['profit'] ?? 0.0).toDouble();
           });
         }
       });
     } catch (e) {
       print("Status symbol listen error: $e");
+    }
+  }
+
+  void _listenToFinancialStatus() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      database.ref('status').onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            profitLoss = (data['profit'] ?? 0.0).toDouble();
+          });
+        }
+      });
+    } catch (e) {
+      print("Financial listen error: $e");
     }
   }
 
@@ -963,6 +908,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isProfit = profitLoss >= 0;
+
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
@@ -970,14 +917,70 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Orders'),
+        title: const Text('Active Orders & Portfolio'),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Container(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // นำส่วนข้อมูลในกรอบสีขาวมาแปะไว้ที่นี่
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161619).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isProfit ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFFD50000).withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'FLOATING PROFIT / LOSS',
+                    style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Text(
+                      '${isProfit ? "+" : ""}\$${profitLoss.toStringAsFixed(2)}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                const SizedBox(width: 10),
+                Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                const SizedBox(width: 10),
+                Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Symbol & Timeframe bar
+            Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF161619),
@@ -1020,52 +1023,55 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: 12),
 
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isTotalProfit
-                    ? [const Color(0xFF00C853).withOpacity(0.2), const Color(0xFF161619)]
-                    : [const Color(0xFFD50000).withOpacity(0.2), const Color(0xFF161619)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'TOTAL OPEN PROFIT',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isTotalProfit
+                      ? [const Color(0xFF00C853).withOpacity(0.2), const Color(0xFF161619)]
+                      : [const Color(0xFFD50000).withOpacity(0.2), const Color(0xFF161619)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                Text(
-                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'TOTAL OPEN PROFIT',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                   ),
-                ),
-              ],
+                  Text(
+                    '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
 
-          Expanded(
-            child: activeOrders.isEmpty
-                ? const Center(
-                    child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            activeOrders.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(30.0),
+                    child: Center(
+                      child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: activeOrders.length,
                     itemBuilder: (context, index) {
                       final order = activeOrders[index];
@@ -1127,6 +1133,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       );
                     },
                   ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey, size: 15),
+              const SizedBox(width: 6),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ],
       ),
@@ -1456,6 +1490,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
+      ScaffoldMessenger.endSnackBar?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
