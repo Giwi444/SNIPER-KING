@@ -489,7 +489,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับปรุงตามเงื่อนไขใหม่)
+// 1. HOME SCREEN (ปรับปรุงตามรูปตัวอย่างล่าสุด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -583,31 +583,29 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // กล่องข้อความ "Sniper King Bot" แยกออกมาด้านบนสุด
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.smart_toy, color: Color(0xFFFFB300), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Sniper King Bot',
-                        style: TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                // ลบกล่อง Sniper King Bot ด้านบนซ้ายออกตามต้องการ
+                const Spacer(),
+
+                // ข้อความหัวข้อ SNIPER KING BOT ตรงกลางตัวหนาเด่นชัดสไตล์เรืองแสง
+                Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'SNIPER KING BOT',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2.0,
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 12),
 
                 // สถานะ EA (Running / Stopped) อยู่เหนือปุ่มควบคุมตรงกลาง
                 Center(
@@ -721,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN (ย้ายสถานะ Connected มาไว้มุมขวาบน)
+// 2. SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -833,7 +831,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
         actions: [
-          // ย้ายสถานะ Connection Status มาไว้ที่มุมขวาบนของหน้า Settings ตามต้องการ
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
