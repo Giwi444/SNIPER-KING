@@ -506,7 +506,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
-  bool isExpanded = true;
+  bool isFloatingMode = false; // ควบคุมการเปิดโหมดกล่องลอย (ซ่อนแดชบอร์ดใหญ่)
+  bool isBalloonMode = false;  // ควบคุมว่ากำลังย่อเป็นบอลลูนวงกลมหรือไม่
   Offset floatingPosition = const Offset(50, 150);
 
   @override
@@ -583,147 +584,172 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           color: Colors.black.withOpacity(0.2),
         ),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'SNIPER KING BOT',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
+        
+        // แดชบอร์ดหลัก จะถูกซ่อนเมื่อเปิดโหมดกล่องลอย
+        if (!isFloatingMode)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Spacer(),
+                  Center(
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'SNIPER KING BOT',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isRunning ? Icons.play_arrow : Icons.stop,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _closeAllOrders,
-                        icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                        label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB300),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          width: 1,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00C853), Color(0xFF00E676)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isRunning ? Icons.play_arrow : Icons.stop,
+                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                            size: 14,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
+                          const SizedBox(width: 6),
+                          Text(
+                            isRunning ? 'RUNNING' : 'STOPPED',
+                            style: TextStyle(
+                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(true),
-                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          onPressed: _closeAllOrders,
+                          icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                          label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
+                            backgroundColor: const Color(0xFFFFB300),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _toggleBotStatus(false),
-                        icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                        label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD50000),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _toggleBotStatus(false),
+                          icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD50000),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  // ปุ่มเปิดโหมดกล่องลอย เหลือเพียงปุ่มวงกลมพร้อมอีโมจิ (ตัดข้อความออก)
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          isFloatingMode = true;
+                          isBalloonMode = false;
+                        });
+                      },
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text('🤖', style: TextStyle(fontSize: 22)),
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                
-                // แก้ไขเอา textDirection ออกเรียบร้อยแล้ว
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        isExpanded = false;
-                      });
-                    },
-                    icon: const Icon(Icons.picture_in_picture_alt, color: Color(0xFFFFB300), size: 16),
-                    label: const Text('เปิดโหมดกล่องลอย (Floating Balloon)', style: TextStyle(color: Color(0xFFFFB300), fontSize: 12)),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
-        ),
 
-        if (!isExpanded)
+        // แสดงกล่องลอย หรือ บอลลูนวงกลม เมื่อเปิดโหมดกล่องลอย
+        if (isFloatingMode)
           Positioned(
             left: floatingPosition.dx,
             top: floatingPosition.dy,
@@ -735,10 +761,43 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: Material(
                 color: Colors.transparent,
-                child: SizedBox(
-                  width: 280,
-                  child: _buildDashboardContent(isSmall: true),
-                ),
+                child: isBalloonMode
+                    ? GestureDetector(
+                        onTap: () {
+                          // กดที่บอลลูน เพื่อสลับกลับมาหน้าแดชบอร์ดใหญ่
+                          setState(() {
+                            isFloatingMode = false;
+                            isBalloonMode = false;
+                          });
+                        },
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFD50000)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.withOpacity(0.6),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Center(
+                            child: Text('🤖', style: TextStyle(fontSize: 28)),
+                          ),
+                        ),
+                      )
+                    : SizedBox(
+                        width: 280,
+                        child: _buildRobotFloatingBox(),
+                      ),
               ),
             ),
           ),
@@ -746,18 +805,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDashboardContent({required bool isSmall}) {
+  // ดีไซน์กล่องลอย ธีมโรบอท ไล่เฉดสี แดง-ดำ-เหลือง สไตล์เปลวไฟ
+  Widget _buildRobotFloatingBox() {
     return Container(
-      padding: EdgeInsets.all(isSmall ? 12 : 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(isSmall ? 16 : 20),
-        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF200505), Color(0xFF0F0F12), Color(0xFF2A1B00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: isSmall ? 8 : 12,
-            offset: Offset(0, isSmall ? 4 : 6),
+            color: const Color(0xFFFF6D00).withOpacity(0.4),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -771,8 +835,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Container(
-                    width: isSmall ? 6 : 8,
-                    height: isSmall ? 6 : 8,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isRunning ? const Color(0xFF00C853) : Colors.red,
@@ -780,44 +844,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    isRunning ? 'Server is Online' : 'Server is Offline',
-                    style: TextStyle(
+                    isRunning ? 'Robot Active' : 'Robot Stopped',
+                    style: const TextStyle(
                       color: Colors.white70, 
-                      fontSize: isSmall ? 10 : 11, 
+                      fontSize: 11, 
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
+              // ปุ่มย่อเป็นบอลลูน (มุมขวาบนของกล่องลอย)
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: Icon(
-                  isSmall ? Icons.open_in_full : Icons.close, 
-                  color: isSmall ? const Color(0xFFFFB300) : Colors.grey, 
-                  size: isSmall ? 16 : 18,
-                ),
+                icon: const Icon(Icons.circle_notifications, color: Color(0xFFFFEA00), size: 22),
                 onPressed: () {
                   setState(() {
-                    isExpanded = !isExpanded;
+                    isBalloonMode = true;
                   });
                 },
-                tooltip: isSmall ? 'Expand' : 'Minimize',
+                tooltip: 'Minimize to Balloon',
               ),
             ],
           ),
-          SizedBox(height: isSmall ? 6 : 10),
+          const SizedBox(height: 8),
           const Center(
             child: Text(
-              'Sniper King Bot Control',
+              '🔥 SNIPER KING ROBOT 🔥',
               style: TextStyle(
-                color: Colors.white, 
-                fontSize: 13, 
-                fontWeight: FontWeight.bold,
+                color: Color(0xFFFFEA00), 
+                fontSize: 12, 
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          SizedBox(height: isSmall ? 12 : 16),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -825,37 +886,37 @@ class _HomeScreenState extends State<HomeScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: isRunning ? Colors.red : const Color(0xFF00C853),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isSmall ? 8 : 10)),
-                padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 minimumSize: Size.zero,
               ),
               child: Text(
                 isRunning ? 'STOP BOT' : 'START BOT',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold, 
-                  fontSize: isSmall ? 11 : 13,
+                  fontSize: 12,
                 ),
               ),
             ),
           ),
-          SizedBox(height: isSmall ? 6 : 10),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _closeAllOrders,
-              icon: Icon(Icons.delete_sweep, size: isSmall ? 12 : 14, color: Colors.white),
-              label: Text(
+              icon: const Icon(Icons.delete_sweep, size: 14, color: Colors.white),
+              label: const Text(
                 'CLOSE ALL', 
                 style: TextStyle(
-                  fontSize: isSmall ? 10 : 11, 
+                  fontSize: 11, 
                   fontWeight: FontWeight.bold, 
                   color: Colors.white,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isSmall ? 8 : 10)),
-                padding: EdgeInsets.symmetric(vertical: isSmall ? 6 : 10),
+                backgroundColor: const Color(0xFFFF6D00),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 minimumSize: Size.zero,
               ),
             ),
