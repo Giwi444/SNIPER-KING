@@ -1675,7 +1675,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    `code`
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mobile Push Alerts'),
