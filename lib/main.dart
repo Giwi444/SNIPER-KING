@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับปรุงให้แสดง Total Open Profit และ Orders แทน Logs)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -497,7 +497,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Offset _dialogOffset = const Offset(30, 100);
   bool _isLogDialogOpen = false;
   
-  // ตัวแปรสำหรับเก็บรายการออเดอร์ใน Dialog แทน Logs เดิม
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
@@ -766,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Draggable(
                 feedback: Material(
                   color: Colors.transparent,
-                  child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.9),
+                  child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
                 ),
                 childWhenDragging: Container(),
                 onDragEnd: (details) {
@@ -774,7 +773,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _dialogOffset = details.offset;
                   });
                 },
-                child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.9),
+                child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
               ),
             ),
         ],
@@ -903,7 +902,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ส่วนแสดง Dialog ย่อยที่เปลี่ยนจาก Logs เป็น Total Open Profit และ สถานะออเดอร์
+  // ปรับลดขนาดกล่อง Dialog และลบปุ่ม "ปิดหน้าต่าง" ออกเรียบร้อย
   Widget _buildPortfolioDialogContent({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
@@ -911,9 +910,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Container(
-      width: constraintsWidth,
-      constraints: const BoxConstraints(maxHeight: 420),
-      padding: const EdgeInsets.all(16),
+      width: constraintsWidth * 0.85,
+      constraints: const BoxConstraints(maxHeight: 280),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
@@ -955,12 +954,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
-          const Divider(color: Colors.white24, height: 16),
+          const Divider(color: Colors.white24, height: 12),
           
-          // กล่องแสดง Total Open Profit ตามสีเป๊ะ
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isTotalProfit
@@ -969,7 +967,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                 width: 1.5,
@@ -986,25 +984,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
-          // รายการสถานะออเดอร์ย่อย
-          Expanded(
+          Flexible(
             child: activeOrders.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No active orders currently',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                        'No active orders currently',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     ),
                   )
                 : ListView.builder(
+                    shrinkWrap: true,
                     itemCount: activeOrders.length,
                     itemBuilder: (context, index) {
                       final order = activeOrders[index];
@@ -1016,11 +1017,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       bool orderProfit = profit >= 0;
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
                             width: 1,
@@ -1032,7 +1033,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(4),
@@ -1042,13 +1043,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                                    const SizedBox(height: 1),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 9)),
                                   ],
                                 ),
                               ],
@@ -1058,7 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: TextStyle(
                                 color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -1067,23 +1067,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     },
                   ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isLogDialogOpen = false;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-              ),
-              child: const Text('ปิดหน้าต่าง', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-            ),
-          ),
         ],
       ),
     );
@@ -1091,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN (เพิ่มฟังก์ชันเลือก Symbol แล้ว)
+// 2. SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
