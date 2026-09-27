@@ -1086,8 +1086,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
-  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'THBUSD', EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'];
-
+  final List<String> symbolOptions = [  'XAUUSD',  'BTCUSD',   'THBUSD',   'EURUSD',   'GBPUSD',   'USDJPY',   'AUDUSD'];
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
   final TextEditingController swingBarsController = TextEditingController();
