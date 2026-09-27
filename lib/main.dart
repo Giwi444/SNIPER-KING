@@ -383,7 +383,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final List<Widget> pages = [
       const SettingsScreen(),
       OrdersScreen(accountLogin: currentLogin),
-      HomeScreen(accountLogin: currentLogin), // หน้าหลักแดชบอร์ดพร้อมแถบสีฟ้า
+      HomeScreen(accountLogin: currentLogin), // หน้าหลักแดชบอร์ด
       HistoryScreen(accountLogin: currentLogin),
       AlertsScreen(onAlertsRead: () {
         setState(() {
@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (FULL DASHBOARD WITH INTERACTIVE BLUE HANDLE)
+// 1. HOME SCREEN (ORIGINAL DASHBOARD + FLOATING WINDOW BAR)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -494,8 +494,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // เงื่อนไขสถานะ: ควบคุมการเปิด-ปิด (Collapse/Expand) ของแผงควบคุมผ่านแถบสีฟ้า
-  bool _isPanelExpanded = true;
+  // สถานะสำหรับการจำลองย่อ/ขยายหน้าต่างตามโหมด Floating Window
+  bool _isMinimized = false;
 
   @override
   void initState() {
@@ -582,36 +582,86 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- แถบขีดเส้นสีฟ้าพร้อมเงื่อนไขกดแตะ (Interactive Handle Bar) ---
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isPanelExpanded = !_isPanelExpanded;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-                        color: Colors.transparent,
-                        child: Container(
-                          width: 45,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00B0FF),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00B0FF).withOpacity(0.6),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
+                  // --- แถบควบคุมหน้าต่างลอย (Floating Window Action Bar ตามภาพที่ 1) ---
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161619).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Floating Panel',
+                          style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
-                      ),
+                        Row(
+                          children: [
+                            // ปุ่มย่อหน้าต่าง (Minimize / Expand)
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _isMinimized = !_isMinimized;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.orangeAccent.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  _isMinimized ? Icons.aspect_ratio : Icons.remove,
+                                  color: Colors.orangeAccent,
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // ปุ่มขยายหน้าจอ (Maximize)
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _isMinimized = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Maximized to Full View'), duration: Duration(milliseconds: 800)),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(Icons.open_in_full, color: Colors.blueAccent, size: 14),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // ปุ่มปิดหน้าต่าง (Close / X)
+                            InkWell(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Floating Panel Closed'), backgroundColor: Colors.red, duration: Duration(milliseconds: 800)),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(Icons.close, color: Colors.redAccent, size: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
 
                   // --- ส่วนหัวข้อชื่อบ็อต ---
                   Center(
@@ -669,122 +719,98 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // --- เงื่อนไขการแสดงผลเนื้อหาพอร์ตและปุ่มควบคุม (ซ่อน/แสดง เมื่อกดแถบสีฟ้า) ---
-                  AnimatedCrossFade(
-                    duration: const Duration(milliseconds: 300),
-                    crossFadeState: _isPanelExpanded
-                        ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
-                    firstChild: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // กล่องแสดงภาพรวมพอร์ตและสถิติย่อ
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white12, width: 1),
-                          ),
-                          child: Column(
+                  // --- แสดงข้อมูลพอร์ตเฉพาะเมื่อไม่ได้ย่อหน้าจอ (_isMinimized == false) ---
+                  if (!_isMinimized) ...[
+                    // กล่องแสดงภาพรวมพอร์ตและสถิติย่อ
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white12, width: 1),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Account Login:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                  Text(widget.accountLogin, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                ],
-                              ),
-                              const Divider(color: Colors.white12, height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Symbol / TF:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                  Text('$symbol ($timeframe)', style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13)),
-                                ],
-                              ),
-                              const Divider(color: Colors.white12, height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Balance:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                  Text('\$${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                ],
-                              ),
-                              const Divider(color: Colors.white12, height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Equity:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                  Text('\$${equity.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                ],
-                              ),
-                              const Divider(color: Colors.white12, height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Floating Profit:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                  Text(
-                                    '${isProfitPositive ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
+                              const Text('Account Login:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text(widget.accountLogin, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Divider(color: Colors.white12, height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Symbol / TF:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text('$symbol ($timeframe)', style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Divider(color: Colors.white12, height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Balance:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text('\$${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Divider(color: Colors.white12, height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Equity:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text('\$${equity.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Divider(color: Colors.white12, height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Floating Profit:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text(
+                                '${isProfitPositive ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-                        // ปุ่มควบคุมหลัก (Start / Stop / Close All)
-                        const Text(
-                          'QUICK CONTROLS',
-                          style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                        ),
-                        const SizedBox(height: 12),
+                    // ปุ่มควบคุมหลัก (Start / Stop / Close All)
+                    const Text(
+                      'QUICK CONTROLS',
+                      style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 12),
 
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () => _toggleBotStatus(true),
-                                icon: const Icon(Icons.play_arrow, color: Colors.white),
-                                label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00C853),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () => _toggleBotStatus(false),
-                                icon: const Icon(Icons.stop, color: Colors.white),
-                                label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD50000),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        SizedBox(
-                          width: double.infinity,
+                    Row(
+                      children: [
+                        Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: _closeAllOrders,
-                            icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                            label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
+                              backgroundColor: const Color(0xFF00C853),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(false),
+                            icon: const Icon(Icons.stop, color: Colors.white),
+                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -792,16 +818,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    secondChild: const Center(
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _closeAllOrders,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                        label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFB300),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Center(
                       child: Padding(
                         padding: EdgeInsets.all(20.0),
                         child: Text(
-                          'Panel Collapsed (Tap blue handle to expand)',
+                          'Panel Minimized',
                           style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
