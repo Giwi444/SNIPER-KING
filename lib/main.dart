@@ -552,14 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isProfitPositive = profit >= 0;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sniper King Dashboard'),
-        backgroundColor: const Color(0xFF0B0B0E),
-        elevation: 0,
-      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -571,172 +564,109 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.75),
+            color: Colors.black.withOpacity(0.3),
           ),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Center(
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'SNIPER KING BOT',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 2.0,
-                        ),
+                  const SizedBox(height: 20),
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'SNIPER KING BOT',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2.0,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isRunning ? Icons.play_circle_filled : Icons.stop_circle,
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isRunning ? 'BOT IS RUNNING' : 'BOT IS STOPPED',
-                            style: TextStyle(
-                              color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161619).withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white12, width: 1),
+                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                        width: 1.5,
+                      ),
                     ),
-                    child: Column(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Account Login:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            Text(widget.accountLogin, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
+                        Icon(
+                          isRunning ? Icons.play_arrow : Icons.stop,
+                          color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                          size: 18,
                         ),
-                        const Divider(color: Colors.white12, height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Symbol / TF:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            Text('$symbol ($timeframe)', style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        const Divider(color: Colors.white12, height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Balance:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            Text('\$${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        const Divider(color: Colors.white12, height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Equity:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            Text('\$${equity.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        const Divider(color: Colors.white12, height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Floating Profit:', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            Text(
-                              '${isProfitPositive ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 8),
+                        Text(
+                          isRunning ? 'RUNNING' : 'STOPPED',
+                          style: TextStyle(
+                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'QUICK CONTROLS',
-                    style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.35),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: _closeAllOrders,
+                      icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                      label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFB300),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(true),
-                          icon: const Icon(Icons.play_arrow, color: Colors.white),
-                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00C853),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: SizedBox(
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00C853),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleBotStatus(false),
-                          icon: const Icon(Icons.stop, color: Colors.white),
-                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD50000),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: SizedBox(
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(false),
+                            icon: const Icon(Icons.stop, color: Colors.white),
+                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _closeAllOrders,
-                      icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                      label: const Text('CLOSE ALL ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFB300),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -1530,6 +1460,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
+    
+    double totalFilteredProfit = filteredHistory.fold(0.0, (sum, trade) {
+      return sum + (double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isProfitPositive = totalFilteredProfit >= 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -1552,10 +1487,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Column(
             children: [
               SizedBox(
-                height: 50,
+                height: 60,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   itemCount: filterOptions.length,
                   itemBuilder: (context, index) {
                     String filter = filterOptions[index];
@@ -1582,9 +1517,50 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   },
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFFFB300),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Realized P/L ($selectedFilter)',
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${isProfitPositive ? "+" : ""}\$${totalFilteredProfit.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: filteredHistory.isEmpty
-                    ? const Center(child: Text('No closed trade history', style: TextStyle(color: Colors.grey)))
+                    ? const Center(
+                        child: Text(
+                          'No closed trade history for this account',
+                          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: filteredHistory.length,
