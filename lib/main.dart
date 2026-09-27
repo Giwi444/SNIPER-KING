@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN (ปรับปรุงความสว่างข้อความ Bot)
+// 1. HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -877,13 +877,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ปรับสีข้อความให้สว่างและอ่านง่ายขึ้นตามที่คุณต้องการ
           const Text(
             'SNIPER KING BOT',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
-              color: Color(0xFFFFD54F), // สีทองสว่าง อ่านง่ายชัดเจน
+              color: Color(0xFFFFD54F),
               letterSpacing: 1.5,
               shadows: [
                 Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
@@ -1042,7 +1041,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// 2. SETTINGS SCREEN (เพิ่มฟังก์ชันเลือก Symbol แล้ว)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1053,6 +1052,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Double';
+  String selectedSymbol = 'XAUUSD';
+  final List<String> symbolOptions = ['XAUUSD', 'EURUSD', 'GBPUSD', 'BTCUSD', 'USDJPY', 'AUDUSD'];
+
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
   final TextEditingController swingBarsController = TextEditingController();
@@ -1097,6 +1099,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (data != null && mounted) {
           setState(() {
             lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
             swingBarsController.text = data['swing_bars']?.toString() ?? '30';
@@ -1120,6 +1123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       _settingsRef?.update({
         'lot_mode': lotMode,
+        'symbol': selectedSymbol,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
         'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
@@ -1133,7 +1137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters Synced & Saved to EA Successfully!'),
+          content: Text('Parameters & Symbol Synced & Saved to EA Successfully!'),
           backgroundColor: Color(0xFFFFB300),
         ),
       );
@@ -1224,6 +1228,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white12, width: 1),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: symbolOptions.contains(selectedSymbol) ? selectedSymbol : 'XAUUSD',
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF161619),
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            items: symbolOptions.map((String sym) {
+                              return DropdownMenuItem<String>(value: sym, child: Text(sym));
+                            }).toList(),
+                            onChanged: (val) => setState(() => selectedSymbol = val!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 4),
                       Container(
@@ -2211,4 +2238,3 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
-
