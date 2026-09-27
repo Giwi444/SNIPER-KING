@@ -3,11 +3,6 @@ name: Build Flutter APK
 on:
   push:
     branches: [ main ]
-name: Build Flutter APK
-
-on:
-  push:
-    branches: [ main ]
 
 jobs:
   build:
@@ -27,65 +22,9 @@ jobs:
         with:
           channel: 'stable'
 
-      # 1. ลบโฟลเดอร์ android เก่าทิ้ง และสร้างใหม่ที่เป็น v2 สดๆ ร้อนๆ
-      - name: Fresh Android Project
-        run: |
-          rm -rf android
-          flutter create . --platforms=android --project-name=sniper_king
-
-      # 2. เติมสิทธิ์ SYSTEM_ALERT_WINDOW และ Service ลงใน AndroidManifest.xml อัตโนมัติทันที
-      - name: Inject Overlay Permissions and Service
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          
-          # แทรก uses-permission ใต้ manifest tag
-          sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>/g' "$MANIFEST_PATH"
-          
-          # แทรก OverlayService ใน application tag ก่อนปิด tag </application>
-          sed -i 's/<\/application>/        <service\n            android:name="flutter.overlay.window.OverlayService"\n            android:exported="false"\n            android:foregroundServiceType="specialUse"\/>\n    <\/application>/g' "$MANIFEST_PATH"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk-v2
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Fresh Android Project
-        run: |
-          rm -rf android
-          flutter create . --platforms=android --project-name=Sniper King 
-
-      - name: Inject Overlay Permissions and Service
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          
-          sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>/g' "$MANIFEST_PATH"
-          
-          sed -i 's/<\/application>/        <service\n            android:name="flutter.overlay.window.OverlayService"\n            android:exported="false"\n            android:foregroundServiceType="specialUse"\/>\n    <\/application>/g' "$MANIFEST_PATH"
+      # เพิ่มบรรทัดนี้กลับเข้ามา เพื่อสร้างโครงสร้าง Android ใหม่ที่เป็น v2 โดยอัตโนมัติ
+      - name: Generate Fresh Android Project
+        run: flutter create . --platforms=android
 
       - name: Install dependencies
         run: flutter pub get
