@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (ปรับปรุงให้แสดง Total Open Profit และ Orders แทน Logs)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -494,10 +494,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  Offset _dialogOffset = const Offset(50, 150);
+  Offset _dialogOffset = const Offset(30, 100);
   bool _isLogDialogOpen = false;
-  List<Map<String, dynamic>> _eaLogs = [];
-  DatabaseReference? _logsRef;
+  
+  // ตัวแปรสำหรับเก็บรายการออเดอร์ใน Dialog แทน Logs เดิม
+  List<Map<dynamic, dynamic>> activeOrders = [];
+  DatabaseReference? _ordersRef;
 
   Offset _statusBoxOffset = const Offset(0, 0);
   bool _isStatusOffsetInitialized = false;
@@ -512,7 +514,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _initFirebaseAndListen();
-    _listenToEALogs();
+    _listenToOrdersForDialog();
 
     _floatController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -558,60 +560,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  void _listenToEALogs() {
+  void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _logsRef = database.ref('ea_logs');
-      _logsRef?.onValue.listen((DatabaseEvent event) {
+      _ordersRef = database.ref('orders');
+      _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
           setState(() {
-            _eaLogs.clear();
+            activeOrders.clear();
             if (data is Map) {
               data.forEach((key, value) {
-                if (value != null) {
-                  _eaLogs.add({'key': key.toString(), 'message': value.toString()});
+                if (value is Map) {
+                  activeOrders.add(Map<dynamic, dynamic>.from(value));
                 }
               });
             } else if (data is List) {
-              for (int i = 0; i < data.length; i++) {
-                if (data[i] != null) {
-                  _eaLogs.add({'key': i.toString(), 'message': data[i].toString()});
+              for (var e in data) {
+                if (e is Map) {
+                  activeOrders.add(Map<dynamic, dynamic>.from(e));
                 }
               }
-            }
-            if (_eaLogs.isEmpty) {
-              _eaLogs = [
-                {'key': '1', 'message': 'EA Initialized & scanning Market XAUUSD M1...'},
-                {'key': '2', 'message': 'Analyzing Liquidity Zone & Swing Bars...'},
-                {'key': '3', 'message': 'Status: Normal, searching for optimal entry point.'}
-              ];
             }
           });
         }
       });
     } catch (e) {
-      print("Logs listen error: $e");
-      setState(() {
-        _eaLogs = [
-          {'key': '1', 'message': 'EA Initialized successfully.'},
-          {'key': '2', 'message': 'Checking market error / connection: OK.'},
-        ];
-      });
-    }
-  }
-
-  void _clearLogs() {
-    setState(() {
-      _eaLogs.clear();
-    });
-    try {
-      _logsRef?.remove();
-    } catch (e) {
-      print("Clear logs error: $e");
+      print("Orders listen error: $e");
     }
   }
 
@@ -788,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Draggable(
                 feedback: Material(
                   color: Colors.transparent,
-                  child: _buildLogDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.85),
+                  child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.9),
                 ),
                 childWhenDragging: Container(),
                 onDragEnd: (details) {
@@ -796,7 +774,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _dialogOffset = details.offset;
                   });
                 },
-                child: _buildLogDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.85),
+                child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.9),
               ),
             ),
         ],
@@ -925,10 +903,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildLogDialogContent({required double constraintsWidth}) {
+  // ส่วนแสดง Dialog ย่อยที่เปลี่ยนจาก Logs เป็น Total Open Profit และ สถานะออเดอร์
+  Widget _buildPortfolioDialogContent({required double constraintsWidth}) {
+    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isTotalProfit = totalOrdersProfit >= 0;
+
     return Container(
       width: constraintsWidth,
-      constraints: const BoxConstraints(maxHeight: 380),
+      constraints: const BoxConstraints(maxHeight: 420),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -951,11 +935,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               const Row(
                 children: [
-                  Icon(Icons.circle, color: Color(0xFF00C853), size: 12),
+                  Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
                   SizedBox(width: 8),
                   Text(
-                    'Robot Active - EA Logs',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    'Position & Total Open Profit',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -972,67 +956,133 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ],
           ),
           const Divider(color: Colors.white24, height: 16),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _eaLogs.isEmpty
-                    ? const [
-                        Text(
-                          'No movement or error detected currently.',
-                          style: TextStyle(color: Color(0xFF00C853), fontSize: 13, fontFamily: 'monospace'),
-                        )
-                      ]
-                    : _eaLogs.map((log) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text(
-                            '• ${log['message']}',
-                            style: const TextStyle(
-                              color: Color(0xFF00C853),
-                              fontSize: 12.5,
-                              fontFamily: 'monospace',
-                              height: 1.3,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+          
+          // กล่องแสดง Total Open Profit ตามสีเป๊ะ
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isTotalProfit
+                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                width: 1.5,
               ),
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'TOTAL OPEN PROFIT',
+                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                ),
+                Text(
+                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _clearLogs,
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                  label: const Text('ลบข้อความ', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.redAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+          const SizedBox(height: 10),
+
+          // รายการสถานะออเดอร์ย่อย
+          Expanded(
+            child: activeOrders.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No active orders currently',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: activeOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = activeOrders[index];
+                      final String type = order['type']?.toString() ?? 'BUY';
+                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
+                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
+                      final String ordSymbol = order['symbol']?.toString() ?? symbol;
+                      bool isBuy = type.toUpperCase().contains('BUY');
+                      bool orderProfit = profit >= 0;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    type,
+                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const SizedBox(height: 1),
+                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isLogDialogOpen = false;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _isLogDialogOpen = false;
-                    });
-                  },
-                  icon: const Icon(Icons.home, color: Colors.white, size: 16),
-                  label: const Text('กลับแดชบอร์ด', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-            ],
+              child: const Text('ปิดหน้าต่าง', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
           ),
         ],
       ),
