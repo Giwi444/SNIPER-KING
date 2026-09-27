@@ -25,7 +25,7 @@ jobs:
       - name: Fresh Android Project
         run: |
           rm -rf android
-          flutter create . --platforms=android --project-name=sniper_king
+          flutter create . --platforms=android --project-name=SNIPERKING
 
       - name: Inject Overlay Permissions and Service
         run: |
