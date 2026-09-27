@@ -499,6 +499,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _eaLogs = [];
   DatabaseReference? _logsRef;
 
+  // ตำแหน่งเริ่มต้นของกล่องสถานะบอท
+  Offset _statusBoxOffset = const Offset(0, 0);
+  bool _isStatusOffsetInitialized = false;
+
+  // ตำแหน่งเริ่มต้นของปุ่มไอคอนหุ่นยนต์
+  Offset _robotIconOffset = const Offset(0, 0);
+  bool _isRobotIconOffsetInitialized = false;
+
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
@@ -633,6 +641,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
+    if (!_isStatusOffsetInitialized) {
+      _statusBoxOffset = Offset((screenSize.width - 240) / 2, screenSize.height - 260);
+      _isStatusOffsetInitialized = true;
+    }
+
+    if (!_isRobotIconOffsetInitialized) {
+      _robotIconOffset = Offset(screenSize.width / 2 - 28, screenSize.height - 180);
+      _isRobotIconOffsetInitialized = true;
+    }
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -659,54 +679,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(height: constraints.maxHeight * 0.64), 
-                            ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ).createShader(bounds),
-                              child: const Text(
-                                'SNIPER KING BOT',
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                  color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    isRunning ? Icons.play_arrow : Icons.stop,
-                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    isRunning ? 'RUNNING' : 'STOPPED',
-                                    style: TextStyle(
-                                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            SizedBox(height: constraints.maxHeight * 0.72), 
                             const Spacer(),
                             Column(
                               children: [
@@ -774,65 +747,45 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
+          // กล่องสถานะบอท (ลากวางได้อิสระ)
           Positioned(
-            bottom: 60,
-            left: MediaQuery.of(context).size.width / 2 - 28,
-            child: AnimatedBuilder(
-              animation: _floatAnimation,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, _floatAnimation.value),
-                  child: child,
-                );
-              },
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isLogDialogOpen = !_isLogDialogOpen;
-                  });
-                },
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF000000), Color(0xFFFFB300)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.7),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/p.jpg',
-                          fit: BoxFit.cover,
-                          opacity: const AlwaysStoppedAnimation(0.5),
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(color: Colors.transparent);
-                          },
-                        ),
-                        const Center(
-                          child: Icon(Icons.smart_toy, color: Colors.white, size: 28),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+            left: _statusBoxOffset.dx,
+            top: _statusBoxOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildStatusBoxContent(),
               ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _statusBoxOffset = details.offset;
+                });
+              },
+              child: _buildStatusBoxContent(),
             ),
           ),
 
+          // ปุ่มไอคอนหุ่นยนต์ (ลากวางได้อิสระ)
+          Positioned(
+            left: _robotIconOffset.dx,
+            top: _robotIconOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildRobotButtonContent(),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _robotIconOffset = details.offset;
+                });
+              },
+              child: _buildRobotButtonContent(),
+            ),
+          ),
+
+          // กล่อง Log Dialog (ลากวางได้อิสระ)
           if (_isLogDialogOpen)
             Positioned(
               left: _dialogOffset.dx,
@@ -851,6 +804,131 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: _buildLogDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.85),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRobotButtonContent() {
+    return AnimatedBuilder(
+      animation: _floatAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _floatAnimation.value),
+          child: child,
+        );
+      },
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _isLogDialogOpen = !_isLogDialogOpen;
+          });
+        },
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.7),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/p.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: Colors.black);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBoxContent() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF161619), Color(0xFF0B0B0E)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: Border.all(
+          color: const Color(0xFFFFB300),
+          width: 3.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ).createShader(bounds),
+            child: const Text(
+              'SNIPER KING BOT',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isRunning ? Icons.play_arrow : Icons.stop,
+                  color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isRunning ? 'RUNNING' : 'STOPPED',
+                  style: TextStyle(
+                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
