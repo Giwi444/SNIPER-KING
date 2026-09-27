@@ -578,27 +578,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // ดันตำแหน่งข้อความให้อยู่บริเวณกลางตัวหุ่นยนต์พอดี (ไม่ไปบังหัว)
-                            SizedBox(height: constraints.maxHeight * 0.40), 
+                            SizedBox(height: constraints.maxHeight * 0.45), 
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)], // ไล่เฉดสี แดง - ดำ - เหลือง สไตล์กราฟฟิก
+                                colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ).createShader(bounds),
                               child: const Text(
                                 'SNIPER KING BOT',
                                 style: TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 26,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
                                   letterSpacing: 2.0,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                               decoration: BoxDecoration(
                                 color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(30),
@@ -620,58 +619,61 @@ class _HomeScreenState extends State<HomeScreen> {
                                     isRunning ? 'RUNNING' : 'STOPPED',
                                     style: TextStyle(
                                       color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            // ดันกลุ่มปุ่มให้อยู่ชิดด้านล่างเหนือแถบเมนูด้านล่างสุดเสมอ
                             const Spacer(),
                             Column(
                               children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 48,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _closeAllOrders,
-                                    icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 20),
-                                    label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFB300),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Expanded(
                                       child: SizedBox(
                                         height: 48,
                                         child: ElevatedButton.icon(
-                                          onPressed: () => _toggleBotStatus(true),
-                                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                          onPressed: _closeAllOrders,
+                                          icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                                          label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF00C853),
+                                            backgroundColor: const Color(0xFFFFB300),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: EdgeInsets.zero,
                                           ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 48,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => _toggleBotStatus(true),
+                                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF00C853),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
                                     Expanded(
                                       child: SizedBox(
                                         height: 48,
                                         child: ElevatedButton.icon(
                                           onPressed: () => _toggleBotStatus(false),
-                                          icon: const Icon(Icons.stop, color: Colors.white, size: 20),
-                                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                          icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: const Color(0xFFD50000),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: EdgeInsets.zero,
                                           ),
                                         ),
                                       ),
@@ -680,7 +682,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
@@ -1673,6 +1675,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    `code`
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mobile Push Alerts'),
