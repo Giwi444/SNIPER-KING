@@ -911,7 +911,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Container(
       width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 280),
+      constraints: const BoxConstraints(maxHeight: 260),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -938,7 +938,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   SizedBox(width: 8),
                   Text(
                     'Position & Total Open Profit',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ],
               ),
@@ -1084,9 +1084,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String lotMode = 'Double';
+  String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
-  final List<String> symbolOptions = ['XAUUSD', 'EURUSD', 'GBPUSD', 'BTCUSD', 'USDJPY', 'AUDUSD'];
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'THBUSD', EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'];
 
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
