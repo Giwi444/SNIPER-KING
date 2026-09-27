@@ -484,7 +484,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
@@ -500,11 +500,31 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _eaLogs = [];
   DatabaseReference? _logsRef;
 
+  // ตัวแปรควบคุมอนิเมชันลอยแบบบอลลูน
+  late AnimationController _floatController;
+  late Animation<double> _floatAnimation;
+
   @override
   void initState() {
     super.initState();
     _initFirebaseAndListen();
     _listenToEALogs();
+
+    // ตั้งค่าอนิเมชันลอยไปมาแบบบอลลูน
+    _floatController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    super.dispose();
   }
 
   void _initFirebaseAndListen() {
@@ -541,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _logsRef = database.ref('ea_logs'); // หรือปรับ path ตามฐานข้อมูลของคุณ
+      _logsRef = database.ref('ea_logs');
       _logsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -560,7 +580,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             }
-            // หากไม่มีข้อมูลจาก Realtime DB ให้ใส่ตัวอย่างจำลองสถานะการคิดวิเคราะห์ของ EA
             if (_eaLogs.isEmpty) {
               _eaLogs = [
                 {'key': '1', 'message': 'EA Initialized & scanning Market XAUUSD M1...'},
@@ -573,7 +592,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       print("Logs listen error: $e");
-      // Fallback logs
       setState(() {
         _eaLogs = [
           {'key': '1', 'message': 'EA Initialized successfully.'},
@@ -644,8 +662,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // ปรับสัดส่วนให้ข้อความขยับลงมาอยู่ตำแหน่งที่ต้องการ (เหมือนภาพที่ 2)
-                            SizedBox(height: constraints.maxHeight * 0.52), 
+                            // ข้อ 1: ปรับสัดส่วนให้ข้อความและสถานะ running ขยับลงมาพอดีตามที่ต้องการ
+                            SizedBox(height: constraints.maxHeight * 0.64), 
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
                                 colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)],
@@ -760,43 +778,70 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
-          // ปุ่มวงกลมรูปโรบอท (ตามภาพที่ 2 ด้านบน Navbar)
+          // ข้อ 2 & 3 & 4: ปุ่มวงกลมลอยขยับได้แบบบอลลูน, ใช้รูปภาพ p.jpg, กราฟิกไล่เฉดแดง-ดำเหลือบทอง
           Positioned(
             bottom: 60,
             left: MediaQuery.of(context).size.width / 2 - 28,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isLogDialogOpen = !_isLogDialogOpen;
-                });
+            child: AnimatedBuilder(
+              animation: _floatAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _floatAnimation.value),
+                  child: child,
+                );
               },
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF5722), Color(0xFFD50000)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(color: const Color(0xFFFFB300), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.6),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isLogDialogOpen = !_isLogDialogOpen;
+                  });
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    // กราฟิกไล่เฉดสีแดง-ดำเหลือบทองสไตล์พรีเมียม
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD50000), Color(0xFF000000), Color(0xFFFFB300)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(Icons.smart_toy, color: Colors.white, size: 28),
+                    border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.7),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // รูปภาพ p.jpg เป็นพื้นหลังแบบจางๆ ให้เข้ากับแดชบอร์ดใหญ่
+                        Image.asset(
+                          'assets/images/p.jpg',
+                          fit: BoxFit.cover,
+                          opacity: const AlwaysStoppedAnimation(0.5),
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(color: Colors.transparent);
+                          },
+                        ),
+                        // ไอคอนโรบอทตรงกลาง
+                        const Center(
+                          child: Icon(Icons.smart_toy, color: Colors.white, size: 28),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
 
-          // กล่องลอยขยับได้ (Draggable Log Dialog ตามภาพที่ 3)
+          // กล่องลอยขยับได้ (Draggable Log Dialog)
           if (_isLogDialogOpen)
             Positioned(
               left: _dialogOffset.dx,
@@ -820,7 +865,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // สร้างหน้าตาของกล่อง Log ข้อมูล EA (ตัวหนังสือสีเขียว พร้อมปุ่มเคลียร์และปุ่มกลับหน้าแดชบอร์ด)
   Widget _buildLogDialogContent({required double constraintsWidth}) {
     return Container(
       width: constraintsWidth,
@@ -842,7 +886,6 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header ของกล่อง
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -869,8 +912,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const Divider(color: Colors.white24, height: 16),
-          
-          // พื้นที่แสดงข้อความ Log (ใช้ตัวหนังสือสีเขียว ตามโจทย์)
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -888,7 +929,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Text(
                             '• ${log['message']}',
                             style: const TextStyle(
-                              color: Color(0xFF00C853), // ตัวหนังสือสีเขียว
+                              color: Color(0xFF00C853),
                               fontSize: 12.5,
                               fontFamily: 'monospace',
                               height: 1.3,
@@ -900,8 +941,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // ปุ่มควบคุมในกล่อง (ลบข้อความ, กลับหน้าแดชบอร์ด)
           Row(
             children: [
               Expanded(
@@ -921,7 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
-                      _isLogDialogOpen = false; // ปิดกล่องแล้วกลับสู่แดชบอร์ดหลักปกติ
+                      _isLogDialogOpen = false;
                     });
                   },
                   icon: const Icon(Icons.home, color: Colors.white, size: 16),
@@ -1270,690 +1309,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// 3. ORDERS SCREEN
-// ==========================================
-class OrdersScreen extends StatefulWidget {
-  final String accountLogin;
-  const OrdersScreen({super.key, required this.accountLogin});
-
-  @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
-}
-
-class _OrdersScreenState extends State<OrdersScreen> {
-  List<Map<dynamic, dynamic>> activeOrders = [];
-  DatabaseReference? _ordersRef;
-  String activeSymbol = 'XAUUSD';
-  String accountServer = 'Exness-MT5Server';
-
-  double balance = 0.0;
-  double equity = 0.0;
-  double margin = 0.0;
-  double freeMargin = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToOrders();
-    _listenToFinancialStatus();
-  }
-
-  void _listenToFinancialStatus() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      database.ref('status').onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
-            if (data['symbol'] != null) activeSymbol = data['symbol'].toString();
-            if (data['server'] != null) accountServer = data['server'].toString();
-          });
-        }
-      });
-    } catch (e) {
-      print("Financial listen error: $e");
-    }
-  }
-
-  void _listenToOrders() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _ordersRef = database.ref('orders');
-
-      _ordersRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            activeOrders.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Orders listen error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isTotalProfit = totalOrdersProfit >= 0;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Active Orders & Portfolio'),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/p.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: const Color(0xFFFFB300),
-                      width: 2.5,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'TRADING ACCOUNT INFO',
-                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.amber, width: 1),
-                            ),
-                            child: Text(
-                              activeSymbol,
-                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Account Login', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.accountLogin,
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text('Server', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                              const SizedBox(height: 2),
-                              Text(
-                                accountServer,
-                                style: const TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isTotalProfit
-                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'TOTAL OPEN PROFIT',
-                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                      ),
-                      Text(
-                        '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                activeOrders.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(30.0),
-                        child: Center(
-                          child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: activeOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = activeOrders[index];
-                          final String type = order['type']?.toString() ?? 'BUY';
-                          final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                          final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                          bool isBuy = type.toUpperCase().contains('BUY');
-                          bool orderProfit = profit >= 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF161619).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        type,
-                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        const SizedBox(height: 2),
-                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.grey, size: 15),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 19,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 4. TRADE HISTORY SCREEN
-// ==========================================
-class HistoryScreen extends StatefulWidget {
-  final String accountLogin;
-  const HistoryScreen({super.key, required this.accountLogin});
-
-  @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  List<Map<dynamic, dynamic>> allTradeHistory = [];
-  DatabaseReference? _historyRef;
-  String selectedFilter = 'วันนี้';
-  final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToHistory(widget.accountLogin);
-  }
-
-  void _listenToHistory(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _historyRef = database.ref('history');
-
-      _historyRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            allTradeHistory.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  allTradeHistory.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("History listen error: $e");
-    }
-  }
-
-  List<Map<dynamic, dynamic>> _getFilteredHistory() {
-    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
-    DateTime now = DateTime.now();
-    return allTradeHistory.where((trade) {
-      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      DateTime? tradeDate = DateTime.tryParse(timeStr.replaceAll('.', '-'));
-      if (tradeDate == null) return false;
-
-      if (selectedFilter == 'วันนี้') {
-        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
-      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
-        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        return tradeDate.isAfter(startOfWeek);
-      } else if (selectedFilter == 'เดือนล่าสุด') {
-        return tradeDate.year == now.year && tradeDate.month == now.month;
-      } else if (selectedFilter == '3 เดือนล่าสุด') {
-        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-        return tradeDate.isAfter(threeMonthsAgo);
-      }
-      return true;
-    }).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
-    
-    double totalFilteredProfit = filteredHistory.fold(0.0, (sum, trade) {
-      return sum + (double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isProfitPositive = totalFilteredProfit >= 0;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('History'),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/p.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
-          Column(
-            children: [
-              SizedBox(
-                height: 60,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  itemCount: filterOptions.length,
-                  itemBuilder: (context, index) {
-                    String filter = filterOptions[index];
-                    bool isSelected = selectedFilter == filter;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(filter),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFFFFB300),
-                        backgroundColor: const Color(0xFF161619),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                        onSelected: (bool selected) {
-                          setState(() {
-                            selectedFilter = filter;
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFFFB300),
-                      width: 2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total Realized P/L ($selectedFilter)',
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${isProfitPositive ? "+" : ""}\$${totalFilteredProfit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isProfitPositive ? const Color(0xFF00C853) : Colors.redAccent,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: filteredHistory.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No closed trade history for this account',
-                          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredHistory.length,
-                        itemBuilder: (context, index) {
-                          final trade = filteredHistory[index];
-                          final String type = trade['type']?.toString() ?? 'BUY';
-                          final String symbol = trade['symbol']?.toString() ?? 'XAUUSD';
-                          final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                          bool isProfit = profit >= 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF161619).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12, width: 1),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('$symbol ($type)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                Text(
-                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 5. ALERTS SCREEN
-// ==========================================
-class AlertsScreen extends StatefulWidget {
-  final VoidCallback onAlertsRead;
-  const AlertsScreen({super.key, required this.onAlertsRead});
-
-  @override
-  State<AlertsScreen> createState() => _AlertsScreenState();
-}
-
-class _AlertsScreenState extends State<AlertsScreen> {
-  List<Map<String, dynamic>> alertItems = [];
-  DatabaseReference? _alertsRef;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.onAlertsRead();
-    _listenToAlerts();
-  }
-
-  void _listenToAlerts() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _alertsRef = database.ref('alerts');
-      _alertsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            alertItems.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value != null) {
-                  alertItems.add({'key': key.toString(), 'message': value.toString()});
-                }
-              });
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Alerts error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mobile Push Alerts'),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/p.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
-          alertItems.isEmpty
-              ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: alertItems.length,
-                  itemBuilder: (context, index) {
-                    final alert = alertItems[index];
-                    return Card(
-                      color: const Color(0xFF161619).withOpacity(0.9),
-                      child: ListTile(
-                        leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
-                        title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
-                      ),
-                    );
-                  },
-                ),
-        ],
-      ),
-    );
-  }
-}
+              contentPadding: EdgeInsets.symmetric
