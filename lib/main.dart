@@ -499,11 +499,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _eaLogs = [];
   DatabaseReference? _logsRef;
 
-  // ตำแหน่งเริ่มต้นของกล่องสถานะบอท
   Offset _statusBoxOffset = const Offset(0, 0);
   bool _isStatusOffsetInitialized = false;
 
-  // ตำแหน่งเริ่มต้นของปุ่มไอคอนหุ่นยนต์
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
@@ -747,7 +745,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // กล่องสถานะบอท (ลากวางได้อิสระ)
           Positioned(
             left: _statusBoxOffset.dx,
             top: _statusBoxOffset.dy,
@@ -766,7 +763,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // ปุ่มไอคอนหุ่นยนต์ (ลากวางได้อิสระ)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -785,7 +781,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // กล่อง Log Dialog (ลากวางได้อิสระ)
           if (_isLogDialogOpen)
             Positioned(
               left: _dialogOffset.dx,
@@ -1388,7 +1383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// 3. ORDERS SCREEN (แก้ไขให้เหมือนภาพที่ 1)
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1401,11 +1396,46 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<String, dynamic>> orders = [];
   DatabaseReference? _ordersRef;
+  DatabaseReference? _statusRef;
+
+  double balance = 0.0;
+  double equity = 0.0;
+  double margin = 0.0;
+  double freeMargin = 0.0;
+  double totalProfit = 0.0;
+  String brokerName = "ICMarketsSC-Demo";
+  String symbolInfo = "XAUUSD";
 
   @override
   void initState() {
     super.initState();
+    _listenToStatus();
     _listenToOrders();
+  }
+
+  void _listenToStatus() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _statusRef = database.ref('status');
+      _statusRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            brokerName = data['broker']?.toString() ?? 'ICMarketsSC-Demo';
+            symbolInfo = data['symbol']?.toString() ?? 'XAUUSD';
+          });
+        }
+      });
+    } catch (e) {
+      print("Status listen error: $e");
+    }
   }
 
   void _listenToOrders() {
@@ -1420,16 +1450,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
         if (mounted) {
           setState(() {
             orders.clear();
+            double calcProfit = 0.0;
             if (data is Map) {
               data.forEach((key, value) {
                 if (value is Map) {
+                  double p = (value['profit'] ?? 0.0).toDouble();
+                  calcProfit += p;
                   orders.add({
                     'id': key.toString(),
                     'symbol': value['symbol']?.toString() ?? 'XAUUSD',
                     'type': value['type']?.toString() ?? 'BUY',
                     'lots': (value['lots'] ?? 0.01).toDouble(),
                     'open_price': (value['open_price'] ?? 0.0).toDouble(),
-                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'profit': p,
                   });
                 }
               });
@@ -1437,17 +1470,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
               for (int i = 0; i < data.length; i++) {
                 var value = data[i];
                 if (value is Map) {
+                  double p = (value['profit'] ?? 0.0).toDouble();
+                  calcProfit += p;
                   orders.add({
                     'id': i.toString(),
                     'symbol': value['symbol']?.toString() ?? 'XAUUSD',
                     'type': value['type']?.toString() ?? 'BUY',
                     'lots': (value['lots'] ?? 0.01).toDouble(),
                     'open_price': (value['open_price'] ?? 0.0).toDouble(),
-                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'profit': p,
                   });
                 }
               }
             }
+            totalProfit = calcProfit;
           });
         }
       });
@@ -1460,7 +1496,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Orders'),
+        title: const Text('Active Orders & Portfolio'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -1477,79 +1513,210 @@ class _OrdersScreenState extends State<OrdersScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          orders.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No active orders found.',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
-                )
-              : ListView.builder(
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // 1. TRADING ACCOUNT INFO CARD
+                Container(
                   padding: const EdgeInsets.all(16),
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    bool isBuy = order['type'].toString().toUpperCase() == 'BUY';
-                    double profitVal = order['profit'];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white12, width: 1),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: (isBuy ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: isBuy ? const Color(0xFF00C853) : Colors.red),
-                                ),
-                                child: Text(
-                                  order['type'],
-                                  style: TextStyle(
-                                    color: isBuy ? const Color(0xFF00C853) : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    order['symbol'],
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Lots: ${order['lots']} | Price: ${order['open_price']}',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                  ),
-                                ],
-                              ),
+                              const Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 16),
+                              const SizedBox(width: 6),
+                              const Text('TRADING ACCOUNT INFO', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 11)),
                             ],
                           ),
+                          const SizedBox(height: 10),
+                          const Text('Account Login', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                          const SizedBox(height: 2),
                           Text(
-                            '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                            widget.accountLogin,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            brokerName,
+                            style: const TextStyle(color: Colors.white70, fontSize: 11),
                           ),
                         ],
                       ),
-                    );
-                  },
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Text(
+                          symbolInfo,
+                          style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 12),
+
+                // 2. 4 STATS CARDS (Balance, Equity, Margin, Free Margin)
+                Row(
+                  children: [
+                    Expanded(child: _buildStatBox('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet_outlined)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildStatBox('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _buildStatBox('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildStatBox('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open_outlined)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 3. TOTAL OPEN PROFIT CARD
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white24, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('TOTAL OPEN PROFIT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text(
+                        '${totalProfit >= 0 ? '+' : ''}\$${totalProfit.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 4. ACTIVE ORDERS LIST
+                orders.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.only(top: 30),
+                        child: Text('No active orders found.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: orders.length,
+                        itemBuilder: (context, index) {
+                          final order = orders[index];
+                          bool isBuy = order['type'].toString().toUpperCase() == 'BUY';
+                          double profitVal = order['profit'];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (isBuy ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: isBuy ? const Color(0xFF00C853) : Colors.red),
+                                      ),
+                                      child: Text(
+                                        order['type'],
+                                        style: TextStyle(
+                                          color: isBuy ? const Color(0xFF00C853) : Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          order['symbol'],
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Lot: ${order['lots']}',
+                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBox(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey, size: 14),
+              const SizedBox(width: 4),
+              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
         ],
       ),
     );
@@ -1557,7 +1724,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. HISTORY SCREEN
+// 4. HISTORY SCREEN (แก้ไขให้เหมือนภาพที่ 3)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1568,8 +1735,10 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  int selectedFilterIndex = 0; // 0: วันนี้, 1: สัปดาห์ล่าสุด, 2: เดือนล่าสุด, 3: 3 เดือน
   List<Map<String, dynamic>> historyList = [];
   DatabaseReference? _historyRef;
+  double totalRealizedPL = 0.0;
 
   @override
   void initState() {
@@ -1589,15 +1758,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (mounted) {
           setState(() {
             historyList.clear();
+            double plSum = 0.0;
             if (data is Map) {
               data.forEach((key, value) {
                 if (value is Map) {
+                  double profit = (value['profit'] ?? 0.0).toDouble();
+                  plSum += profit;
                   historyList.add({
                     'id': key.toString(),
                     'symbol': value['symbol']?.toString() ?? 'XAUUSD',
                     'type': value['type']?.toString() ?? 'BUY',
                     'lots': (value['lots'] ?? 0.01).toDouble(),
-                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'profit': profit,
                     'close_time': value['close_time']?.toString() ?? '-',
                   });
                 }
@@ -1606,17 +1778,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
               for (int i = 0; i < data.length; i++) {
                 var value = data[i];
                 if (value is Map) {
+                  double profit = (value['profit'] ?? 0.0).toDouble();
+                  plSum += profit;
                   historyList.add({
                     'id': i.toString(),
                     'symbol': value['symbol']?.toString() ?? 'XAUUSD',
                     'type': value['type']?.toString() ?? 'BUY',
                     'lots': (value['lots'] ?? 0.01).toDouble(),
-                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'profit': profit,
                     'close_time': value['close_time']?.toString() ?? '-',
                   });
                 }
               }
             }
+            totalRealizedPL = plSum;
           });
         }
       });
@@ -1627,9 +1802,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    List<String> filters = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือน'];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trading History'),
+        title: const Text('History'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -1646,57 +1823,131 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          historyList.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No trade history found.',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: historyList.length,
-                  itemBuilder: (context, index) {
-                    final item = historyList[index];
-                    double profitVal = item['profit'];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white12, width: 1),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${item['symbol']} (${item['type']})',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Close Time: ${item['close_time']}',
-                                style: const TextStyle(color: Colors.grey, fontSize: 10),
-                              ),
-                            ],
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // 1. FILTER TABS ROW
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(filters.length, (index) {
+                      bool isSelected = selectedFilterIndex == index;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(filters[index]),
+                          selected: isSelected,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              selectedFilterIndex = index;
+                            });
+                          },
+                          selectedColor: const Color(0xFFFFB300),
+                          backgroundColor: const Color(0xFF161619),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
-                          Text(
-                            '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
                             ),
                           ),
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      );
+                    }),
+                  ),
                 ),
+                const SizedBox(height: 12),
+
+                // 2. TOTAL REALIZED P/L CARD
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Realized P/L (${filters[selectedFilterIndex]})',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${totalRealizedPL >= 0 ? '+' : ''}\$${totalRealizedPL.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: totalRealizedPL >= 0 ? const Color(0xFF00C853) : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 3. HISTORY LIST / NO DATA STATE
+                Expanded(
+                  child: historyList.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No closed trade history for this account',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: historyList.length,
+                          itemBuilder: (context, index) {
+                            final item = historyList[index];
+                            double profitVal = item['profit'];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF161619).withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white12, width: 1),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${item['symbol']} (${item['type']})',
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Close Time: ${item['close_time']}',
+                                        style: const TextStyle(color: Colors.grey, fontSize: 10.5),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
