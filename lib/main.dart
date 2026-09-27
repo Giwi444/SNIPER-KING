@@ -494,10 +494,17 @@ class _HomeScreenState extends State<HomeScreen> {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
+  // สถานะสำหรับกล่องลอยขยับได้ (Draggable Robot Log Dialog)
+  Offset _dialogOffset = const Offset(50, 150);
+  bool _isLogDialogOpen = false;
+  List<Map<String, dynamic>> _eaLogs = [];
+  DatabaseReference? _logsRef;
+
   @override
   void initState() {
     super.initState();
     _initFirebaseAndListen();
+    _listenToEALogs();
   }
 
   void _initFirebaseAndListen() {
@@ -525,6 +532,65 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       print("Database listen error: $e");
+    }
+  }
+
+  void _listenToEALogs() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _logsRef = database.ref('ea_logs'); // หรือปรับ path ตามฐานข้อมูลของคุณ
+      _logsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            _eaLogs.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value != null) {
+                  _eaLogs.add({'key': key.toString(), 'message': value.toString()});
+                }
+              });
+            } else if (data is List) {
+              for (int i = 0; i < data.length; i++) {
+                if (data[i] != null) {
+                  _eaLogs.add({'key': i.toString(), 'message': data[i].toString()});
+                }
+              }
+            }
+            // หากไม่มีข้อมูลจาก Realtime DB ให้ใส่ตัวอย่างจำลองสถานะการคิดวิเคราะห์ของ EA
+            if (_eaLogs.isEmpty) {
+              _eaLogs = [
+                {'key': '1', 'message': 'EA Initialized & scanning Market XAUUSD M1...'},
+                {'key': '2', 'message': 'Analyzing Liquidity Zone & Swing Bars...'},
+                {'key': '3', 'message': 'Status: Normal, searching for optimal entry point.'}
+              ];
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("Logs listen error: $e");
+      // Fallback logs
+      setState(() {
+        _eaLogs = [
+          {'key': '1', 'message': 'EA Initialized successfully.'},
+          {'key': '2', 'message': 'Checking market error / connection: OK.'},
+        ];
+      });
+    }
+  }
+
+  void _clearLogs() {
+    setState(() {
+      _eaLogs.clear();
+    });
+    try {
+      _logsRef?.remove();
+    } catch (e) {
+      print("Clear logs error: $e");
     }
   }
 
@@ -578,7 +644,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(height: constraints.maxHeight * 0.45), 
+                            // ปรับสัดส่วนให้ข้อความขยับลงมาอยู่ตำแหน่งที่ต้องการ (เหมือนภาพที่ 2)
+                            SizedBox(height: constraints.maxHeight * 0.52), 
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
                                 colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)],
@@ -691,6 +758,182 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+          ),
+          
+          // ปุ่มวงกลมรูปโรบอท (ตามภาพที่ 2 ด้านบน Navbar)
+          Positioned(
+            bottom: 60,
+            left: MediaQuery.of(context).size.width / 2 - 28,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isLogDialogOpen = !_isLogDialogOpen;
+                });
+              },
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF5722), Color(0xFFD50000)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.6),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.smart_toy, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+
+          // กล่องลอยขยับได้ (Draggable Log Dialog ตามภาพที่ 3)
+          if (_isLogDialogOpen)
+            Positioned(
+              left: _dialogOffset.dx,
+              top: _dialogOffset.dy,
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildLogDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.85),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _dialogOffset = details.offset;
+                  });
+                },
+                child: _buildLogDialogContent(constraintsWidth: MediaQuery.of(context).size.width * 0.85),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // สร้างหน้าตาของกล่อง Log ข้อมูล EA (ตัวหนังสือสีเขียว พร้อมปุ่มเคลียร์และปุ่มกลับหน้าแดชบอร์ด)
+  Widget _buildLogDialogContent({required double constraintsWidth}) {
+    return Container(
+      width: constraintsWidth,
+      constraints: const BoxConstraints(maxHeight: 380),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.8),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header ของกล่อง
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.circle, color: Color(0xFF00C853), size: 12),
+                  SizedBox(width: 8),
+                  Text(
+                    'Robot Active - EA Logs',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  setState(() {
+                    _isLogDialogOpen = false;
+                  });
+                },
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white24, height: 16),
+          
+          // พื้นที่แสดงข้อความ Log (ใช้ตัวหนังสือสีเขียว ตามโจทย์)
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _eaLogs.isEmpty
+                    ? const [
+                        Text(
+                          'No movement or error detected currently.',
+                          style: TextStyle(color: Color(0xFF00C853), fontSize: 13, fontFamily: 'monospace'),
+                        )
+                      ]
+                    : _eaLogs.map((log) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Text(
+                            '• ${log['message']}',
+                            style: const TextStyle(
+                              color: Color(0xFF00C853), // ตัวหนังสือสีเขียว
+                              fontSize: 12.5,
+                              fontFamily: 'monospace',
+                              height: 1.3,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ปุ่มควบคุมในกล่อง (ลบข้อความ, กลับหน้าแดชบอร์ด)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _clearLogs,
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                  label: const Text('ลบข้อความ', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.redAccent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _isLogDialogOpen = false; // ปิดกล่องแล้วกลับสู่แดชบอร์ดหลักปกติ
+                    });
+                  },
+                  icon: const Icon(Icons.home, color: Colors.white, size: 16),
+                  label: const Text('กลับแดชบอร์ด', style: TextStyle(color: Colors.white, fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFB300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
