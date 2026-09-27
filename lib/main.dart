@@ -494,13 +494,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // สถานะสำหรับกล่องลอยขยับได้ (Draggable Robot Log Dialog)
   Offset _dialogOffset = const Offset(50, 150);
   bool _isLogDialogOpen = false;
   List<Map<String, dynamic>> _eaLogs = [];
   DatabaseReference? _logsRef;
 
-  // ตัวแปรควบคุมอนิเมชันลอยแบบบอลลูน
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
@@ -510,7 +508,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _initFirebaseAndListen();
     _listenToEALogs();
 
-    // ตั้งค่าอนิเมชันลอยไปมาแบบบอลลูน
     _floatController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -662,7 +659,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // ข้อ 1: ปรับสัดส่วนให้ข้อความและสถานะ running ขยับลงมาพอดีตามที่ต้องการ
                             SizedBox(height: constraints.maxHeight * 0.64), 
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
@@ -778,7 +774,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // ข้อ 2 & 3 & 4: ปุ่มวงกลมลอยขยับได้แบบบอลลูน, ใช้รูปภาพ p.jpg, กราฟิกไล่เฉดแดง-ดำเหลือบทอง
           Positioned(
             bottom: 60,
             left: MediaQuery.of(context).size.width / 2 - 28,
@@ -801,7 +796,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    // กราฟิกไล่เฉดสีแดง-ดำเหลือบทองสไตล์พรีเมียม
                     gradient: const LinearGradient(
                       colors: [Color(0xFFD50000), Color(0xFF000000), Color(0xFFFFB300)],
                       begin: Alignment.topLeft,
@@ -820,7 +814,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // รูปภาพ p.jpg เป็นพื้นหลังแบบจางๆ ให้เข้ากับแดชบอร์ดใหญ่
                         Image.asset(
                           'assets/images/p.jpg',
                           fit: BoxFit.cover,
@@ -829,7 +822,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             return Container(color: Colors.transparent);
                           },
                         ),
-                        // ไอคอนโรบอทตรงกลาง
                         const Center(
                           child: Icon(Icons.smart_toy, color: Colors.white, size: 28),
                         ),
@@ -841,7 +833,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // กล่องลอยขยับได้ (Draggable Log Dialog)
           if (_isLogDialogOpen)
             Positioned(
               left: _dialogOffset.dx,
@@ -1309,4 +1300,450 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==========================================
+// 3. ORDERS SCREEN
+// ==========================================
+class OrdersScreen extends StatefulWidget {
+  final String accountLogin;
+  const OrdersScreen({super.key, required this.accountLogin});
+
+  @override
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen> {
+  List<Map<String, dynamic>> orders = [];
+  DatabaseReference? _ordersRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToOrders();
+  }
+
+  void _listenToOrders() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _ordersRef = database.ref('orders');
+      _ordersRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            orders.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value is Map) {
+                  orders.add({
+                    'id': key.toString(),
+                    'symbol': value['symbol']?.toString() ?? 'XAUUSD',
+                    'type': value['type']?.toString() ?? 'BUY',
+                    'lots': (value['lots'] ?? 0.01).toDouble(),
+                    'open_price': (value['open_price'] ?? 0.0).toDouble(),
+                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                  });
+                }
+              });
+            } else if (data is List) {
+              for (int i = 0; i < data.length; i++) {
+                var value = data[i];
+                if (value is Map) {
+                  orders.add({
+                    'id': i.toString(),
+                    'symbol': value['symbol']?.toString() ?? 'XAUUSD',
+                    'type': value['type']?.toString() ?? 'BUY',
+                    'lots': (value['lots'] ?? 0.01).toDouble(),
+                    'open_price': (value['open_price'] ?? 0.0).toDouble(),
+                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                  });
+                }
+              }
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("Orders listen error: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Active Orders'),
+        backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          orders.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No active orders found.',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    bool isBuy = order['type'].toString().toUpperCase() == 'BUY';
+                    double profitVal = order['profit'];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white12, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: (isBuy ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: isBuy ? const Color(0xFF00C853) : Colors.red),
+                                ),
+                                child: Text(
+                                  order['type'],
+                                  style: TextStyle(
+                                    color: isBuy ? const Color(0xFF00C853) : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    order['symbol'],
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Lots: ${order['lots']} | Price: ${order['open_price']}',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. HISTORY SCREEN
+// ==========================================
+class HistoryScreen extends StatefulWidget {
+  final String accountLogin;
+  const HistoryScreen({super.key, required this.accountLogin});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  List<Map<String, dynamic>> historyList = [];
+  DatabaseReference? _historyRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToHistory();
+  }
+
+  void _listenToHistory() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _historyRef = database.ref('history');
+      _historyRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            historyList.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value is Map) {
+                  historyList.add({
+                    'id': key.toString(),
+                    'symbol': value['symbol']?.toString() ?? 'XAUUSD',
+                    'type': value['type']?.toString() ?? 'BUY',
+                    'lots': (value['lots'] ?? 0.01).toDouble(),
+                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'close_time': value['close_time']?.toString() ?? '-',
+                  });
+                }
+              });
+            } else if (data is List) {
+              for (int i = 0; i < data.length; i++) {
+                var value = data[i];
+                if (value is Map) {
+                  historyList.add({
+                    'id': i.toString(),
+                    'symbol': value['symbol']?.toString() ?? 'XAUUSD',
+                    'type': value['type']?.toString() ?? 'BUY',
+                    'lots': (value['lots'] ?? 0.01).toDouble(),
+                    'profit': (value['profit'] ?? 0.0).toDouble(),
+                    'close_time': value['close_time']?.toString() ?? '-',
+                  });
+                }
+              }
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("History listen error: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Trading History'),
+        backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          historyList.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No trade history found.',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: historyList.length,
+                  itemBuilder: (context, index) {
+                    final item = historyList[index];
+                    double profitVal = item['profit'];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white12, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item['symbol']} (${item['type']})',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Close Time: ${item['close_time']}',
+                                style: const TextStyle(color: Colors.grey, fontSize: 10),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${profitVal >= 0 ? '+' : ''}\$${profitVal.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: profitVal >= 0 ? const Color(0xFF00C853) : Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 5. ALERTS SCREEN
+// ==========================================
+class AlertsScreen extends StatefulWidget {
+  final VoidCallback onAlertsRead;
+  const AlertsScreen({super.key, required this.onAlertsRead});
+
+  @override
+  State<AlertsScreen> createState() => _AlertsScreenState();
+}
+
+class _AlertsScreenState extends State<AlertsScreen> {
+  List<Map<String, dynamic>> alertsList = [];
+  DatabaseReference? _alertsRef;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onAlertsRead();
+    _listenToAlerts();
+  }
+
+  void _listenToAlerts() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _alertsRef = database.ref('alerts');
+      _alertsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            alertsList.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value != null) {
+                  alertsList.add({
+                    'id': key.toString(),
+                    'message': value.toString(),
+                  });
+                }
+              });
+            } else if (data is List) {
+              for (int i = 0; i < data.length; i++) {
+                if (data[i] != null) {
+                  alertsList.add({
+                    'id': i.toString(),
+                    'message': data[i].toString(),
+                  });
+                }
+              }
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("Alerts listen error: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications & Alerts'),
+        backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/p.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          alertsList.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No notifications at this time.',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: alertsList.length,
+                  itemBuilder: (context, index) {
+                    final alert = alertsList[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12, width: 1),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              alert['message'],
+                              style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+}
