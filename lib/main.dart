@@ -567,109 +567,127 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.black.withOpacity(0.3),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFFD600)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'SNIPER KING BOT',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isRunning ? Icons.play_arrow : Icons.stop,
-                          color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isRunning ? 'RUNNING' : 'STOPPED',
-                          style: TextStyle(
-                            color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.35),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton.icon(
-                      onPressed: _closeAllOrders,
-                      icon: const Icon(Icons.delete_sweep, color: Colors.white),
-                      label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFB300),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 54,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(true),
-                            icon: const Icon(Icons.play_arrow, color: Colors.white),
-                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // ดันตำแหน่งข้อความให้อยู่บริเวณกลางตัวหุ่นยนต์พอดี (ไม่ไปบังหัว)
+                            SizedBox(height: constraints.maxHeight * 0.40), 
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Color(0xFFFF0000), Color(0xFF000000), Color(0xFFFFB300)], // ไล่เฉดสี แดง - ดำ - เหลือง สไตล์กราฟฟิก
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ).createShader(bounds),
+                              child: const Text(
+                                'SNIPER KING BOT',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 54,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(false),
-                            icon: const Icon(Icons.stop, color: Colors.white),
-                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isRunning ? Icons.play_arrow : Icons.stop,
+                                    color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    isRunning ? 'RUNNING' : 'STOPPED',
+                                    style: TextStyle(
+                                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            // ดันกลุ่มปุ่มให้อยู่ชิดด้านล่างเหนือแถบเมนูด้านล่างสุดเสมอ
+                            const Spacer(),
+                            Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _closeAllOrders,
+                                    icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 20),
+                                    label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFFB300),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 48,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => _toggleBotStatus(true),
+                                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF00C853),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 48,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => _toggleBotStatus(false),
+                                          icon: const Icon(Icons.stop, color: Colors.white, size: 20),
+                                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFD50000),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
