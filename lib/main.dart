@@ -969,11 +969,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Container(
       width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 260),
-      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(maxHeight: 200),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFFFB300), width: 2),
         boxShadow: [
           BoxShadow(
@@ -989,19 +989,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: [
           const Row(
             children: [
-              Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-              SizedBox(width: 8),
+              Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 15),
+              SizedBox(width: 6),
               Text(
                 'Position & Total Open Profit',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
           ),
-          const Divider(color: Colors.white24, height: 8),
+          const Divider(color: Colors.white24, height: 6),
           
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isTotalProfit
@@ -1010,7 +1010,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                 width: 1.5,
@@ -1027,7 +1027,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1035,82 +1035,73 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          const SizedBox(height: 6),
+          if (activeOrders.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: activeOrders.length,
+                itemBuilder: (context, index) {
+                  final order = activeOrders[index];
+                  final String type = order['type']?.toString() ?? 'BUY';
+                  final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
+                  final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
+                  final String ordSymbol = order['symbol']?.toString() ?? symbol;
+                  bool isBuy = type.toUpperCase().contains('BUY');
+                  bool orderProfit = profit >= 0;
 
-          Flexible(
-            child: activeOrders.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: Text(
-                        'No active orders currently',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B0B0E),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
+                        width: 1,
                       ),
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = activeOrders[index];
-                      final String type = order['type']?.toString() ?? 'BUY';
-                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String ordSymbol = order['symbol']?.toString() ?? symbol;
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool orderProfit = profit >= 0;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 9)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
                               ),
+                              child: Text(
+                                type,
+                                style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 9),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+                                Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
+                              ],
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
-          ),
+                        Text(
+                          '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1315,11 +1306,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           bool isSelected = selectedSymbol == sym;
                           Color buttonColor;
                           if (sym == 'XAUUSD') {
-                            buttonColor = const Color(0xFFFFB300); // สีทอง
+                            buttonColor = const Color(0xFFFFB300);
                           } else if (sym == 'BTCUSD') {
-                            buttonColor = const Color(0xFF00C853); // สีเขียว
+                            buttonColor = const Color(0xFF00C853);
                           } else {
-                            buttonColor = const Color(0xFFD50000); // สีแดง
+                            buttonColor = const Color(0xFFD50000);
                           }
 
                           return Expanded(
@@ -1370,11 +1361,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           bool isSelected = lotMode == mode;
                           Color modeColor;
                           if (mode == 'Fixed') {
-                            modeColor = const Color(0xFF00E5FF); // ฟ้า Cyan
+                            modeColor = const Color(0xFF00E5FF);
                           } else if (mode == 'Step') {
-                            modeColor = const Color(0xFF9C27B0); // ม่วง Purple
+                            modeColor = const Color(0xFF9C27B0);
                           } else {
-                            modeColor = const Color(0xFFFF9100); // ส้ม Orange
+                            modeColor = const Color(0xFFFF9100);
                           }
 
                           return Expanded(
