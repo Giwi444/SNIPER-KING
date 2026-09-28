@@ -874,21 +874,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
+        // ปรับเปลี่ยนการไล่เฉดสีเป็น แดง-ดำ-เหลือง สไตล์เดียวกับ Trading Account Info
         gradient: const LinearGradient(
-          colors: [Color(0xFF161619), Color(0xFF0B0B0E)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: const Color(0xFFFFB300),
-          width: 3.0,
+          width: 2.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 8,
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
