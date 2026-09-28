@@ -911,8 +911,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Container(
             width: 230,
             height: 110,
-            // ปรับ padding ด้านบน/ล่าง ให้ชิดเส้นสีเขียวด้านบนมากขึ้น
-            padding: const EdgeInsets.only(top: 4, bottom: 4, left: 8, right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
@@ -925,17 +924,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
                     ),
                   )
-                // จำกัดให้แสดงผลเฉพาะข้อความล่าสุดเพียงบรรทัดเดียว (itemCount = 1)
                 : ListView.builder(
                     controller: _logScrollController,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 1,
+                    shrinkWrap: false,
+                    itemCount: _botLogs.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 0.0),
+                        padding: const EdgeInsets.only(bottom: 4.0),
                         child: Text(
-                          _botLogs.first,
+                          _botLogs[index],
                           style: const TextStyle(
                             color: Color(0xFF00C853),
                             fontSize: 11,
@@ -959,8 +956,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Container(
       width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 260),
-      padding: const EdgeInsets.all(14),
+      constraints: const BoxConstraints(maxHeight: 280),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
@@ -986,7 +983,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   SizedBox(width: 8),
                   Text(
                     'Position & Total Open Profit',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ],
               ),
@@ -1002,11 +999,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
-          const Divider(color: Colors.white24, height: 12),
+          const Divider(color: Colors.white24, height: 8),
           
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isTotalProfit
@@ -1015,7 +1012,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                 width: 1.5,
@@ -1026,26 +1023,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 const Text(
                   'TOTAL OPEN PROFIT',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                 ),
                 Text(
                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
-          // ปรับลดระยะห่างตรงนี้ให้กล่องออเดอร์ Buy ขยับขึ้นไปชิด Total Open Profit มากขึ้น
-          const SizedBox(height: 2),
+          
+          const SizedBox(height: 4),
 
           Flexible(
             child: activeOrders.isEmpty
                 ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(
                       child: Text(
                         'No active orders currently',
@@ -1066,11 +1063,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       bool orderProfit = profit >= 0;
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
                             width: 1,
