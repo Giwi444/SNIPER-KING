@@ -501,6 +501,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
+  // สำหรับควบคุมการแสดง/ซ่อนกล่อง Position และตำแหน่งบอลลูนโรบอท
+  bool showPositionBox = true;
+  Offset robotBubblePosition = const Offset(20, 50); // ตำแหน่งเริ่มต้นของปุ่มลอยโรบอท
+
   @override
   void initState() {
     super.initState();
@@ -648,6 +652,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -669,9 +675,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // กล่อง Position & Total Open Profit (ใส่ไอคอนโรบอทกลับมาแล้ว)
-                  _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
-                  const SizedBox(height: 8),
+                  // แสดงหรือซ่อนกล่อง Position & Total Open Profit ตามสถานะปุ่มโรบอท
+                  if (showPositionBox) ...[
+                    _buildOrdersBoxContent(constraintsWidth: screenSize.width),
+                    const SizedBox(height: 8),
+                  ],
 
                   // กล่อง SNIPER KING BOT (Logs)
                   SizedBox(
@@ -734,6 +742,67 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                 ],
+              ),
+            ),
+          ),
+
+          // ปุ่มบอลลูนโรบอทรอบหน้าจอ (ลากวางได้ + แตะเพื่อซ่อน/แสดงกล่อง Position)
+          Positioned(
+            left: robotBubblePosition.dx,
+            top: robotBubblePosition.dy,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  double newX = robotBubblePosition.dx + details.delta.dx;
+                  double newY = robotBubblePosition.dy + details.delta.dy;
+
+                  // จำกัดไม่ให้ลากหลุดขอบหน้าจอ
+                  newX = newX.clamp(0.0, screenSize.width - 60);
+                  newY = newY.clamp(0.0, screenSize.height - 120);
+
+                  robotBubblePosition = Offset(newX, newY);
+                });
+              },
+              onTap: () {
+                setState(() {
+                  showPositionBox = !showPositionBox; // กดเพื่อเปิด-ปิดกล่อง
+                });
+              },
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.6),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/images/p.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(color: const Color(0xFF161619));
+                        },
+                      ),
+                      Center(
+                        child: Icon(
+                          showPositionBox ? Icons.visibility : Icons.visibility_off,
+                          color: const Color(0xFFFFB300),
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -889,7 +958,6 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Row(
             children: [
-              // เพิ่มไอคอนโรบอทกลับเข้ามาตรงนี้ตามต้นฉบับ
               Text('🤖 ', style: TextStyle(fontSize: 14)),
               SizedBox(width: 2),
               Text(
@@ -2266,7 +2334,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(
-                        leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
+                        Header: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
                         title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
                         trailing: IconButton(
                           icon: const Icon(Icons.close, color: Colors.grey, size: 20),
