@@ -494,10 +494,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // ตำแหน่งเริ่มต้นของกล่องที่ 1 (กล่องบน: สำหรับแสดงรายการออเดอร์)
   Offset _ordersBoxOffset = const Offset(30, 80);
-  
-  // ตำแหน่งเริ่มต้นของกล่องที่ 2 (กล่องล่าง: สำหรับแสดง Log)
   Offset _logsBoxOffset = const Offset(30, 260);
 
   List<String> _botLogs = [];
@@ -757,7 +754,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // 1. กล่องสีขาวบน: สำหรับลากวางตำแหน่ง "รายการออเดอร์ (Orders)"
           Positioned(
             left: _ordersBoxOffset.dx,
             top: _ordersBoxOffset.dy,
@@ -776,7 +772,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // 2. กล่องสีขาวล่าง: สำหรับลากวางตำแหน่ง "ข้อความ Log ของ Bot"
           Positioned(
             left: _logsBoxOffset.dx,
             top: _logsBoxOffset.dy,
@@ -827,9 +822,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         );
       },
       child: GestureDetector(
-        onTap: () {
-          // สามารถใส่ฟังก์ชันเปิด-ปิดกล่องหรือการตั้งค่าเพิ่มเติมตรงนี้ได้หากต้องการ
-        },
+        onTap: () {},
         child: Container(
           width: 56,
           height: 56,
@@ -862,7 +855,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // กร่องแสดง Log (กล่องล่าง)
+  // ปรับแก้กล่อง Log ให้ตัวหนังสือเป็นสีขาวพร้อมอิโมจิ 🤖 BOT Alert Log
   Widget _buildLogsBoxContent() {
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
@@ -892,7 +885,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'SNIPER KING BOT LOGS',
+            'SNIPER KING BOT',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -907,44 +900,64 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Container(
             width: double.infinity,
             height: 110,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF00C853), width: 1),
             ),
-            child: _botLogs.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No logs available',
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Text('🤖 ', style: TextStyle(fontSize: 13)),
+                    Text(
+                      'BOT Alert Log',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    controller: _logScrollController,
-                    shrinkWrap: false,
-                    itemCount: _botLogs.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          _botLogs[index],
-                          style: const TextStyle(
-                            color: Color(0xFF00C853),
-                            fontSize: 11,
-                            fontFamily: 'monospace',
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: _botLogs.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No logs available',
+                            style: TextStyle(color: Colors.white70, fontSize: 11),
                           ),
+                        )
+                      : ListView.builder(
+                          controller: _logScrollController,
+                          shrinkWrap: false,
+                          itemCount: _botLogs.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Text(
+                                _botLogs[index],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // กรอบแสดงรายการออเดอร์ (กล่องบน)
   Widget _buildOrdersBoxContent({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
@@ -1115,6 +1128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'THBUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'];
+  
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
   final TextEditingController swingBarsController = TextEditingController();
@@ -1206,6 +1220,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // กำหนดสีประจำตัว Symbol ตามโจทย์
+  Color _getSymbolColor(String sym) {
+    switch (sym) {
+      case 'XAUUSD':
+        return const Color(0xFFFFB300); // สีทอง
+      case 'BTCUSD':
+        return const Color(0xFF00C853); // สีเขียว
+      case 'THBUSD':
+        return Colors.blueAccent;
+      case 'EURUSD':
+        return Colors.indigoAccent;
+      case 'GBPUSD':
+        return Colors.purpleAccent;
+      case 'USDJPY':
+        return Colors.orangeAccent;
+      case 'AUDUSD':
+        return Colors.tealAccent;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double sl = double.tryParse(slPointsController.text) ?? 500;
@@ -1288,29 +1324,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ส่วนเลือก Trading Symbol เป็นปุ่มกดด้านบนสุด
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white12, width: 1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: symbolOptions.contains(selectedSymbol) ? selectedSymbol : 'XAUUSD',
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF161619),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            items: symbolOptions.map((String sym) {
-                              return DropdownMenuItem<String>(value: sym, child: Text(sym));
-                            }).toList(),
-                            onChanged: (val) => setState(() => selectedSymbol = val!),
-                          ),
-                        ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: symbolOptions.map((sym) {
+                          bool isSelected = selectedSymbol == sym;
+                          Color symColor = _getSymbolColor(sym);
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                selectedSymbol = sym;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? symColor.withOpacity(0.3) : const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isSelected ? symColor : Colors.white24,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Text(
+                                sym,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.white70,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 4),
                       Container(
