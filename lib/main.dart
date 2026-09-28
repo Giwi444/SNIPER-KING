@@ -682,7 +682,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 children: [
                   const Spacer(),
-                  // กล่อง Log อยู่เหนือปุ่มควบคุมพอดี ไม่ทับซ้อน
                   Center(
                     child: SizedBox(
                       width: 260,
@@ -747,7 +746,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // 1. กล่อง Position & Total Open Profit (ลากย้ายได้อิสระ)
           if (_isOrdersBoxVisible)
             Positioned(
               left: _ordersBoxOffset.dx,
@@ -767,7 +765,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
 
-          // 2. ปุ่มไอคอนหุ่นยนต์ตรงกลาง (ลากย้ายได้อิสระ)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -896,7 +893,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
-                      'BOT Alert Log',
+                      'BOT Alert Log ⛔', // เพิ่มอิโมจิ ⛔ ที่นี่
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
