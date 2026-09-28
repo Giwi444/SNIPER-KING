@@ -504,6 +504,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
+  // ปรับพิกัดเริ่มต้นของกล่อง SNIPER KING BOT ให้อยู่ในโซนกรอบสีขาวด้านล่าง (เหนือปุ่ม START/STOP)
+  Offset _logsBoxOffset = const Offset(50, 480);
+  bool _isLogsBoxOffsetInitialized = false;
+
+  // ปรับพิกัดเริ่มต้นของไอคอนโรบอทให้อยู่ตำแหน่งกลางด้านบนแทน
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
@@ -656,8 +661,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isRobotIconOffsetInitialized) {
-      _robotIconOffset = Offset(screenSize.width / 2 - 28, screenSize.height - 180);
+      // ตั้งตำแหน่งไอคอนโรบอทไว้ด้านบนแทนตำแหน่งเดิมของกล่องบอท
+      _robotIconOffset = Offset(screenSize.width / 2 - 28, 380);
       _isRobotIconOffsetInitialized = true;
+    }
+
+    if (!_isLogsBoxOffsetInitialized) {
+      // ตั้งตำแหน่งกล่อง SNIPER KING BOT ให้อยู่ในกรอบสีขาวด้านล่าง (เหนือปุ่มควบคุม)
+      _logsBoxOffset = Offset((screenSize.width - 260) / 2, screenSize.height - 290);
+      _isLogsBoxOffsetInitialized = true;
     }
 
     return Scaffold(
@@ -773,14 +785,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // 2. ล็อกตำแหน่งกล่อง SNIPER KING BOT ให้อยู่กับที่ (จัดกึ่งกลางแนวนอน และกำหนด top ไว้ที่ 380)
+          // 2. กล่อง SNIPER KING BOT ย้ายมาอยู่ตำแหน่งกรอบสีขาวด้านล่าง (สามารถลากปรับได้เช่นกัน)
           Positioned(
-            left: (MediaQuery.of(context).size.width - 260) / 2,
-            top: 380,
-            child: _buildLogsBoxContent(),
+            left: _logsBoxOffset.dx,
+            top: _logsBoxOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildLogsBoxContent(),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _logsBoxOffset = details.offset;
+                });
+              },
+              child: _buildLogsBoxContent(),
+            ),
           ),
 
-          // 3. ปุ่มไอคอนหุ่นยนต์ (สามารถลากเปลี่ยนตำแหน่งได้อิสระ)
+          // 3. ปุ่มไอคอนหุ่นยนต์ (ย้ายมาอยู่ตำแหน่งด้านบนแทน)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
