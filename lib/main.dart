@@ -484,7 +484,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
@@ -494,10 +494,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // สถานะเปิด-ปิดกล่อง Position & Total Open Profit
-  bool _isOrdersBoxVisible = true;
-  Offset _ordersBoxOffset = const Offset(30, 80);
-
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
   final ScrollController _logScrollController = ScrollController();
@@ -505,33 +501,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ตำแหน่งปุ่มไอคอนโรบอทตรงกลาง
-  Offset _robotIconOffset = const Offset(0, 0);
-  bool _isRobotIconOffsetInitialized = false;
-
-  late AnimationController _floatController;
-  late Animation<double> _floatAnimation;
-
   @override
   void initState() {
     super.initState();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
     _listenToLogs();
-
-    _floatController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
-    _floatController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -589,7 +568,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
-            // กลับด้านให้ Log ล่าสุดขึ้นมาอยู่ตำแหน่งบนสุด (Index 0)
             _botLogs = tempLogs.reversed.toList();
           });
         }
@@ -599,7 +577,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  // เพิ่มฟังก์ชันสำหรับลบ Log ทั้งหมดออกจาก Firebase
   void _clearLogs() {
     try {
       _logsRef?.remove();
@@ -671,13 +648,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-
-    if (!_isRobotIconOffsetInitialized) {
-      _robotIconOffset = Offset(screenSize.width / 2 - 28, 350);
-      _isRobotIconOffsetInitialized = true;
-    }
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -692,19 +662,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Container(
             color: Colors.black.withOpacity(0.3),
           ),
+          
+          // โซนด้านล่าง: รวมกล่อง Position, กล่อง Logs และปุ่มควบคุม ไว้ด้วยกันอย่างเป็นระเบียบ ไม่ต้องลากไปมา
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Spacer(),
-                  Center(
-                    child: SizedBox(
-                      width: 260,
-                      child: _buildLogsBoxContent(),
-                    ),
+                  // กล่อง Position & Total Open Profit
+                  _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
+                  const SizedBox(height: 8),
+
+                  // กล่อง SNIPER KING BOT (Logs)
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildLogsBoxContent(),
                   ),
                   const SizedBox(height: 10),
+
+                  // แถวปุ่มควบคุม (Close / Start / Stop)
                   Row(
                     children: [
                       Expanded(
@@ -761,91 +738,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          
-          if (_isOrdersBoxVisible)
-            Positioned(
-              left: _ordersBoxOffset.dx,
-              top: _ordersBoxOffset.dy,
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _ordersBoxOffset = details.offset;
-                  });
-                },
-                child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
-              ),
-            ),
-
-          Positioned(
-            left: _robotIconOffset.dx,
-            top: _robotIconOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildRobotButtonContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _robotIconOffset = details.offset;
-                });
-              },
-              child: _buildRobotButtonContent(),
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRobotButtonContent() {
-    return AnimatedBuilder(
-      animation: _floatAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _floatAnimation.value),
-          child: child,
-        );
-      },
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isOrdersBoxVisible = !_isOrdersBoxVisible;
-          });
-        },
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.7),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/p.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: Colors.black);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -854,22 +747,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFFFB300),
-          width: 2.5,
+          width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 14,
+            color: Colors.red.withOpacity(0.4),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -881,12 +774,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
               Text(
                 'SNIPER KING BOT',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w900,
                   color: statusColor,
                   letterSpacing: 1.2,
@@ -900,16 +793,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: const Icon(
                   Icons.delete_sweep,
                   color: Colors.redAccent,
-                  size: 20,
+                  size: 18,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            height: 110,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            height: 90,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
@@ -921,13 +814,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('🤖 ', style: TextStyle(fontSize: 13)),
+                    Text('🤖 ', style: TextStyle(fontSize: 12)),
                     Text(
                       'BOT Alert Log',
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -947,9 +840,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           itemCount: _botLogs.length,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
+                              padding: const EdgeInsets.only(bottom: 3.0),
                               child: Text(
-                                _botLogs[index], // Index 0 คือข้อความล่าสุด จะแสดงอยู่บรรทัดบนสุด
+                                _botLogs[index],
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Color(0xFF00C853),
@@ -976,8 +869,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Container(
-      width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 200),
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 160),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -1107,6 +1000,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   );
                 },
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 6),
+            const Center(
+              child: Text(
+                'No open positions',
+                style: TextStyle(color: Colors.grey, fontSize: 10),
               ),
             ),
           ],
