@@ -883,10 +883,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               const SizedBox(width: 24),
               Text(
-                'SNIPER KING ROBOT',
+                'SNIPER KING BOT',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
                   color: statusColor,
                   letterSpacing: 1.2,
@@ -927,7 +927,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                        fontSize: 13,
                       ),
                     ),
                   ],
