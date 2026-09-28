@@ -494,10 +494,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // สถานะเปิด-ปิดกล่อง Position & Total Open Profit โดยให้เริ่มต้นเป็น true (แสดงขึ้นมา)
+  // สถานะเปิด-ปิดกล่อง Position & Total Open Profit
   bool _isOrdersBoxVisible = true;
-
-  // พิกัดกล่อง Position & Total Open Profit (ยังคงให้ลากเปลี่ยนได้ตามปกติ)
   Offset _ordersBoxOffset = const Offset(30, 80);
 
   List<String> _botLogs = [];
@@ -507,11 +505,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ล็อกตำแหน่งกล่อง SNIPER KING BOT ไว้คงที่ตามตำแหน่งในภาพ[span_2](start_span)[span_2](end_span) และขยับขึ้นเล็กน้อยเพื่อไม่ให้ทับปุ่ม START/STOP
-  bool _isLogsBoxOffsetInitialized = false;
-  Offset _logsBoxOffset = Offset.zero;
-
-  // ตำแหน่งปุ่มไอคอนโรบอทตรงกลาง (สามารถลากเปลี่ยนได้)
+  // ตำแหน่งปุ่มไอคอนโรบอทตรงกลาง
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
@@ -664,15 +658,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isRobotIconOffsetInitialized) {
-      // ตำแหน่งเริ่มต้นของไอคอนหุ่นยนต์ตรงกลาง (ตามในภาพ[span_3](start_span)[span_3](end_span))
       _robotIconOffset = Offset(screenSize.width / 2 - 28, 350);
       _isRobotIconOffsetInitialized = true;
-    }
-
-    if (!_isLogsBoxOffsetInitialized) {
-      // ล็อกตำแหน่งกล่อง SNIPER KING BOT ให้อยู่ตามภาพ[span_4](start_span)[span_4](end_span) แต่ขยับขึ้นเล็กน้อย (จาก -290 เป็น -320) เพื่อไม่ให้เส้นกรอบไปทับแถบปุ่ม START/STOP
-      _logsBoxOffset = Offset((screenSize.width - 260) / 2, screenSize.height - 320);
-      _isLogsBoxOffsetInitialized = true;
     }
 
     return Scaffold(
@@ -690,86 +677,77 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             color: Colors.black.withOpacity(0.3),
           ),
           SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(height: constraints.maxHeight * 0.72), 
-                            const Spacer(),
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: _closeAllOrders,
-                                          icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                                          label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFFFB300),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () => _toggleBotStatus(true),
-                                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF00C853),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () => _toggleBotStatus(false),
-                                          icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFD50000),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  // กล่อง Log อยู่เหนือปุ่มควบคุมพอดี ไม่ทับซ้อน
+                  Center(
+                    child: SizedBox(
+                      width: 260,
+                      child: _buildLogsBoxContent(),
                     ),
                   ),
-                );
-              },
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: _closeAllOrders,
+                            icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                            label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFB300),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00C853),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(false),
+                            icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
           
-          // 1. กล่อง Position & Total Open Profit (แสดง/ซ่อนได้ตามการกดไอคอนหุ่นยนต์ และลากย้ายตำแหน่งได้)
+          // 1. กล่อง Position & Total Open Profit (ลากย้ายได้อิสระ)
           if (_isOrdersBoxVisible)
             Positioned(
               left: _ordersBoxOffset.dx,
@@ -789,14 +767,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
 
-          // 2. กล่อง SNIPER KING BOT (ล็อกตำแหน่งไว้ที่พิกัดคำนวณด้านล่าง ไม่สามารถลากย้ายได้แล้ว)
-          Positioned(
-            left: _logsBoxOffset.dx,
-            top: _logsBoxOffset.dy,
-            child: _buildLogsBoxContent(),
-          ),
-
-          // 3. ปุ่มไอคอนหุ่นยนต์ตรงกลาง (เมื่อกดจะสลับเปิด/ปิดกล่อง Position & Total Open Profit)
+          // 2. ปุ่มไอคอนหุ่นยนต์ตรงกลาง (ลากย้ายได้อิสระ)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -831,7 +802,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _isOrdersBoxVisible = !_isOrdersBoxVisible; // กดแล้วเปิด/ปิดกล่อง Position & Total Open Profit
+            _isOrdersBoxVisible = !_isOrdersBoxVisible;
           });
         },
         child: Container(
@@ -870,7 +841,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
     return Container(
-      width: 260,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
