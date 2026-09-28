@@ -315,7 +315,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 2; // หน้า Home เป็นค่าเริ่มต้น (Index 2)
+  int _currentIndex = 2;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
@@ -855,7 +855,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ข้อ 1 & 2: จัดกึ่งกลางและเปลี่ยนตัวหนังสือใน Log เป็นสีเขียว
   Widget _buildLogsBoxContent() {
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
@@ -883,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center, // จัดกึ่งกลาง
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             'SNIPER KING BOT',
@@ -909,7 +908,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               border: Border.all(color: const Color(0xFF00C853), width: 1),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center, // จัดกึ่งกลางข้อความข้างใน Log
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -918,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Text(
                       'BOT Alert Log',
                       style: TextStyle(
-                        color: Color(0xFF00C853), // ตัวหนังสือสีเขียว
+                        color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -943,9 +942,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               padding: const EdgeInsets.only(bottom: 4.0),
                               child: Text(
                                 _botLogs[index],
-                                textAlign: TextAlign.center, // จัดกึ่งกลาง Log text
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Color(0xFF00C853), // ข้อความ Log เป็นสีเขียว
+                                  color: Color(0xFF00C853),
                                   fontSize: 11,
                                   fontFamily: 'monospace',
                                 ),
@@ -1132,8 +1131,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
   
-  // ข้อ 3: เหลือแค่ 3 คู่นี้เท่านั้น
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
@@ -1311,19 +1310,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       
-                      // ข้อ 4, 5, 6: ปุ่ม symbol เรียงแถวเดียวกัน ทรงสวยงาม มีสีทอง เขียว แดง และแสดงสถานะเลือกชัดเจน
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          
-                          // กำหนดสีตามปุ่มแบบที่คุณต้องการ (Gold, Green, Red)
                           Color buttonColor;
                           if (sym == 'XAUUSD') {
                             buttonColor = const Color(0xFFFFB300); // สีทอง
                           } else if (sym == 'BTCUSD') {
                             buttonColor = const Color(0xFF00C853); // สีเขียว
                           } else {
-                            buttonColor = const Color(0xFFD50000); // สีแดง (EURUSD)
+                            buttonColor = const Color(0xFFD50000); // สีแดง
                           }
 
                           return Expanded(
@@ -1367,28 +1363,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white12, width: 1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: lotMode,
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF161619),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            items: ['Fixed', 'Step', 'Double'].map((String item) {
-                              return DropdownMenuItem<String>(value: item, child: Text(item));
-                            }).toList(),
-                            onChanged: (val) => setState(() => lotMode = val!),
-                          ),
-                        ),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: lotModeOptions.map((mode) {
+                          bool isSelected = lotMode == mode;
+                          Color modeColor;
+                          if (mode == 'Fixed') {
+                            modeColor = const Color(0xFF00E5FF); // ฟ้า Cyan
+                          } else if (mode == 'Step') {
+                            modeColor = const Color(0xFF9C27B0); // ม่วง Purple
+                          } else {
+                            modeColor = const Color(0xFFFF9100); // ส้ม Orange
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      lotMode = mode;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    side: BorderSide(
+                                      color: modeColor,
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 12),
+
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
