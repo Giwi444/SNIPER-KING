@@ -494,8 +494,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
+  // ค่าพิกัดเริ่มต้นสำหรับกล่อง Position & Total Open Profit (สามารถลากเปลี่ยนได้)
   Offset _ordersBoxOffset = const Offset(30, 80);
-  Offset _logsBoxOffset = const Offset(30, 260);
 
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
@@ -754,6 +754,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
+          // 1. ล็อกตำแหน่งกล่อง Position & Total Open Profit (สามารถลากย้ายได้)
           Positioned(
             left: _ordersBoxOffset.dx,
             top: _ordersBoxOffset.dy,
@@ -772,24 +773,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
+          // 2. ล็อกตำแหน่งกล่อง SNIPER KING BOT ให้อยู่กับที่ (จัดกึ่งกลางแนวนอน และกำหนด top ไว้ที่ 380)
           Positioned(
-            left: _logsBoxOffset.dx,
-            top: _logsBoxOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildLogsBoxContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _logsBoxOffset = details.offset;
-                });
-              },
-              child: _buildLogsBoxContent(),
-            ),
+            left: (MediaQuery.of(context).size.width - 260) / 2,
+            top: 380,
+            child: _buildLogsBoxContent(),
           ),
 
+          // 3. ปุ่มไอคอนหุ่นยนต์ (สามารถลากเปลี่ยนตำแหน่งได้อิสระ)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
