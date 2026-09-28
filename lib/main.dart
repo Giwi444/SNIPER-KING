@@ -494,18 +494,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  Offset _dialogOffset = const Offset(30, 100);
-  bool _isLogDialogOpen = false;
+  // ตำแหน่งเริ่มต้นของกล่องที่ 1 (กล่องบน: สำหรับแสดงรายการออเดอร์)
+  Offset _ordersBoxOffset = const Offset(30, 80);
   
+  // ตำแหน่งเริ่มต้นของกล่องที่ 2 (กล่องล่าง: สำหรับแสดง Log)
+  Offset _logsBoxOffset = const Offset(30, 260);
+
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
   final ScrollController _logScrollController = ScrollController();
 
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
-
-  Offset _statusBoxOffset = const Offset(0, 0);
-  bool _isStatusOffsetInitialized = false;
 
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
@@ -658,11 +658,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
-    if (!_isStatusOffsetInitialized) {
-      _statusBoxOffset = Offset((screenSize.width - 240) / 2, screenSize.height - 280);
-      _isStatusOffsetInitialized = true;
-    }
-
     if (!_isRobotIconOffsetInitialized) {
       _robotIconOffset = Offset(screenSize.width / 2 - 28, screenSize.height - 180);
       _isRobotIconOffsetInitialized = true;
@@ -762,21 +757,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
+          // 1. กล่องสีขาวบน: สำหรับลากวางตำแหน่ง "รายการออเดอร์ (Orders)"
           Positioned(
-            left: _statusBoxOffset.dx,
-            top: _statusBoxOffset.dy,
+            left: _ordersBoxOffset.dx,
+            top: _ordersBoxOffset.dy,
             child: Draggable(
               feedback: Material(
                 color: Colors.transparent,
-                child: _buildStatusBoxContent(),
+                child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
               ),
               childWhenDragging: Container(),
               onDragEnd: (details) {
                 setState(() {
-                  _statusBoxOffset = details.offset;
+                  _ordersBoxOffset = details.offset;
                 });
               },
-              child: _buildStatusBoxContent(),
+              child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
+            ),
+          ),
+
+          // 2. กล่องสีขาวล่าง: สำหรับลากวางตำแหน่ง "ข้อความ Log ของ Bot"
+          Positioned(
+            left: _logsBoxOffset.dx,
+            top: _logsBoxOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildLogsBoxContent(),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _logsBoxOffset = details.offset;
+                });
+              },
+              child: _buildLogsBoxContent(),
             ),
           ),
 
@@ -797,25 +812,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: _buildRobotButtonContent(),
             ),
           ),
-
-          if (_isLogDialogOpen)
-            Positioned(
-              left: _dialogOffset.dx,
-              top: _dialogOffset.dy,
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _dialogOffset = details.offset;
-                  });
-                },
-                child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
-              ),
-            ),
         ],
       ),
     );
@@ -832,9 +828,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       },
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _isLogDialogOpen = !_isLogDialogOpen;
-          });
+          // สามารถใส่ฟังก์ชันเปิด-ปิดกล่องหรือการตั้งค่าเพิ่มเติมตรงนี้ได้หากต้องการ
         },
         child: Container(
           width: 56,
@@ -868,10 +862,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildStatusBoxContent() {
+  // กร่องแสดง Log (กล่องล่าง)
+  Widget _buildLogsBoxContent() {
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
     return Container(
+      width: 260,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -896,12 +892,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'SNIPER KING BOT',
+            'SNIPER KING BOT LOGS',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w900,
               color: statusColor,
-              letterSpacing: 1.5,
+              letterSpacing: 1.2,
               shadows: const [
                 Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
               ],
@@ -909,7 +905,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 10),
           Container(
-            width: 230,
+            width: double.infinity,
             height: 110,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -948,7 +944,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildPortfolioDialogContent({required double constraintsWidth}) {
+  // กรอบแสดงรายการออเดอร์ (กล่องบน)
+  Widget _buildOrdersBoxContent({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
@@ -956,7 +953,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Container(
       width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 280),
+      constraints: const BoxConstraints(maxHeight: 260),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -974,28 +971,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Position & Total Open Profit',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  setState(() {
-                    _isLogDialogOpen = false;
-                  });
-                },
+              Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Position & Total Open Profit',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
@@ -1037,7 +1019,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
 
           Flexible(
             child: activeOrders.isEmpty
