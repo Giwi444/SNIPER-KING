@@ -855,7 +855,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ปรับแก้กล่อง Log ให้ตัวหนังสือเป็นสีขาวพร้อมอิโมจิ 🤖 BOT Alert Log
+  // ข้อ 1 & 2: จัดกึ่งกลางและเปลี่ยนตัวหนังสือใน Log เป็นสีเขียว
   Widget _buildLogsBoxContent() {
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
@@ -883,9 +883,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center, // จัดกึ่งกลาง
         children: [
           Text(
             'SNIPER KING BOT',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -907,15 +909,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               border: Border.all(color: const Color(0xFF00C853), width: 1),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center, // จัดกึ่งกลางข้อความข้างใน Log
               children: [
                 const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
                       'BOT Alert Log',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF00C853), // ตัวหนังสือสีเขียว
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -940,8 +943,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               padding: const EdgeInsets.only(bottom: 4.0),
                               child: Text(
                                 _botLogs[index],
+                                textAlign: TextAlign.center, // จัดกึ่งกลาง Log text
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: Color(0xFF00C853), // ข้อความ Log เป็นสีเขียว
                                   fontSize: 11,
                                   fontFamily: 'monospace',
                                 ),
@@ -1127,7 +1131,9 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
-  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'THBUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'];
+  
+  // ข้อ 3: เหลือแค่ 3 คู่นี้เท่านั้น
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
   
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
@@ -1220,28 +1226,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // กำหนดสีประจำตัว Symbol ตามโจทย์
-  Color _getSymbolColor(String sym) {
-    switch (sym) {
-      case 'XAUUSD':
-        return const Color(0xFFFFB300); // สีทอง
-      case 'BTCUSD':
-        return const Color(0xFF00C853); // สีเขียว
-      case 'THBUSD':
-        return Colors.blueAccent;
-      case 'EURUSD':
-        return Colors.indigoAccent;
-      case 'GBPUSD':
-        return Colors.purpleAccent;
-      case 'USDJPY':
-        return Colors.orangeAccent;
-      case 'AUDUSD':
-        return Colors.tealAccent;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     double sl = double.tryParse(slPointsController.text) ?? 500;
@@ -1324,44 +1308,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ส่วนเลือก Trading Symbol เป็นปุ่มกดด้านบนสุด
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                      const SizedBox(height: 8),
+                      
+                      // ข้อ 4, 5, 6: ปุ่ม symbol เรียงแถวเดียวกัน ทรงสวยงาม มีสีทอง เขียว แดง และแสดงสถานะเลือกชัดเจน
+                      Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color symColor = _getSymbolColor(sym);
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                selectedSymbol = sym;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isSelected ? symColor.withOpacity(0.3) : const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected ? symColor : Colors.white24,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Text(
-                                sym,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.white70,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  fontSize: 12,
+                          
+                          // กำหนดสีตามปุ่มแบบที่คุณต้องการ (Gold, Green, Red)
+                          Color buttonColor;
+                          if (sym == 'XAUUSD') {
+                            buttonColor = const Color(0xFFFFB300); // สีทอง
+                          } else if (sym == 'BTCUSD') {
+                            buttonColor = const Color(0xFF00C853); // สีเขียว
+                          } else {
+                            buttonColor = const Color(0xFFD50000); // สีแดง (EURUSD)
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      selectedSymbol = sym;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    side: BorderSide(
+                                      color: buttonColor,
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    sym,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           );
                         }).toList(),
                       ),
+
                       const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 4),
