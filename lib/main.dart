@@ -494,7 +494,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // ค่าพิกัดเริ่มต้นสำหรับกล่อง Position & Total Open Profit (สามารถลากเปลี่ยนได้)
+  // สถานะเปิด-ปิดกล่อง Position & Total Open Profit โดยให้เริ่มต้นเป็น true (แสดงขึ้นมา)
+  bool _isOrdersBoxVisible = true;
+
+  // พิกัดกล่อง Position & Total Open Profit (ยังคงให้ลากเปลี่ยนได้ตามปกติ)
   Offset _ordersBoxOffset = const Offset(30, 80);
 
   List<String> _botLogs = [];
@@ -504,11 +507,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ปรับพิกัดเริ่มต้นของกล่อง SNIPER KING BOT ให้อยู่ในโซนกรอบสีขาวด้านล่าง (เหนือปุ่ม START/STOP)
-  Offset _logsBoxOffset = const Offset(50, 480);
+  // ล็อกตำแหน่งกล่อง SNIPER KING BOT ไว้คงที่ตามตำแหน่งในภาพ[span_2](start_span)[span_2](end_span) และขยับขึ้นเล็กน้อยเพื่อไม่ให้ทับปุ่ม START/STOP
   bool _isLogsBoxOffsetInitialized = false;
+  Offset _logsBoxOffset = Offset.zero;
 
-  // ปรับพิกัดเริ่มต้นของไอคอนโรบอทให้อยู่ตำแหน่งกลางด้านบนแทน
+  // ตำแหน่งปุ่มไอคอนโรบอทตรงกลาง (สามารถลากเปลี่ยนได้)
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
@@ -661,14 +664,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isRobotIconOffsetInitialized) {
-      // ตั้งตำแหน่งไอคอนโรบอทไว้ด้านบนแทนตำแหน่งเดิมของกล่องบอท
-      _robotIconOffset = Offset(screenSize.width / 2 - 28, 380);
+      // ตำแหน่งเริ่มต้นของไอคอนหุ่นยนต์ตรงกลาง (ตามในภาพ[span_3](start_span)[span_3](end_span))
+      _robotIconOffset = Offset(screenSize.width / 2 - 28, 350);
       _isRobotIconOffsetInitialized = true;
     }
 
     if (!_isLogsBoxOffsetInitialized) {
-      // ตั้งตำแหน่งกล่อง SNIPER KING BOT ให้อยู่ในกรอบสีขาวด้านล่าง (เหนือปุ่มควบคุม)
-      _logsBoxOffset = Offset((screenSize.width - 260) / 2, screenSize.height - 290);
+      // ล็อกตำแหน่งกล่อง SNIPER KING BOT ให้อยู่ตามภาพ[span_4](start_span)[span_4](end_span) แต่ขยับขึ้นเล็กน้อย (จาก -290 เป็น -320) เพื่อไม่ให้เส้นกรอบไปทับแถบปุ่ม START/STOP
+      _logsBoxOffset = Offset((screenSize.width - 260) / 2, screenSize.height - 320);
       _isLogsBoxOffsetInitialized = true;
     }
 
@@ -766,45 +769,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // 1. ล็อกตำแหน่งกล่อง Position & Total Open Profit (สามารถลากย้ายได้)
-          Positioned(
-            left: _ordersBoxOffset.dx,
-            top: _ordersBoxOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
+          // 1. กล่อง Position & Total Open Profit (แสดง/ซ่อนได้ตามการกดไอคอนหุ่นยนต์ และลากย้ายตำแหน่งได้)
+          if (_isOrdersBoxVisible)
+            Positioned(
+              left: _ordersBoxOffset.dx,
+              top: _ordersBoxOffset.dy,
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _ordersBoxOffset = details.offset;
+                  });
+                },
                 child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
               ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _ordersBoxOffset = details.offset;
-                });
-              },
-              child: _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
             ),
-          ),
 
-          // 2. กล่อง SNIPER KING BOT ย้ายมาอยู่ตำแหน่งกรอบสีขาวด้านล่าง (สามารถลากปรับได้เช่นกัน)
+          // 2. กล่อง SNIPER KING BOT (ล็อกตำแหน่งไว้ที่พิกัดคำนวณด้านล่าง ไม่สามารถลากย้ายได้แล้ว)
           Positioned(
             left: _logsBoxOffset.dx,
             top: _logsBoxOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildLogsBoxContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _logsBoxOffset = details.offset;
-                });
-              },
-              child: _buildLogsBoxContent(),
-            ),
+            child: _buildLogsBoxContent(),
           ),
 
-          // 3. ปุ่มไอคอนหุ่นยนต์ (ย้ายมาอยู่ตำแหน่งด้านบนแทน)
+          // 3. ปุ่มไอคอนหุ่นยนต์ตรงกลาง (เมื่อกดจะสลับเปิด/ปิดกล่อง Position & Total Open Profit)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -837,7 +829,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         );
       },
       child: GestureDetector(
-        onTap: () {},
+        onTap: () {
+          setState(() {
+            _isOrdersBoxVisible = !_isOrdersBoxVisible; // กดแล้วเปิด/ปิดกล่อง Position & Total Open Profit
+          });
+        },
         child: Container(
           width: 56,
           height: 56,
