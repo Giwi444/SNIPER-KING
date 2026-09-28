@@ -663,14 +663,13 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.black.withOpacity(0.3),
           ),
           
-          // โซนด้านล่าง: รวมกล่อง Position, กล่อง Logs และปุ่มควบคุม ไว้ด้วยกันอย่างเป็นระเบียบ ไม่ต้องลากไปมา
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // กล่อง Position & Total Open Profit
+                  // กล่อง Position & Total Open Profit (ใส่ไอคอนโรบอทกลับมาแล้ว)
                   _buildOrdersBoxContent(constraintsWidth: MediaQuery.of(context).size.width),
                   const SizedBox(height: 8),
 
@@ -890,8 +889,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 15),
-              SizedBox(width: 6),
+              // เพิ่มไอคอนโรบอทกลับเข้ามาตรงนี้ตามต้นฉบับ
+              Text('🤖 ', style: TextStyle(fontSize: 14)),
+              SizedBox(width: 2),
               Text(
                 'Position & Total Open Profit',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
