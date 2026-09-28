@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 1. HOME SCREEN
+// 1. HOME SCREEN (Updated with Realtime Logs)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -497,6 +497,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Offset _dialogOffset = const Offset(30, 100);
   bool _isLogDialogOpen = false;
   
+  // ตัวแปรควบคุมการเปิด/ปิดกล่อง Log และเก็บรายการ Log ทั้งหมดจาก Firebase
+  bool _isBotLogOpen = false;
+  List<String> _botLogs = [];
+  DatabaseReference? _logsRef;
+  final ScrollController _logScrollController = ScrollController();
+
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
@@ -514,6 +520,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.initState();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
+    _listenToLogs(); // เริ่มต้นดึงข้อมูล Log ทั้งหมดจาก Firebase
 
     _floatController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -528,6 +535,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _floatController.dispose();
+    _logScrollController.dispose();
     super.dispose();
   }
 
@@ -556,6 +564,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       });
     } catch (e) {
       print("Database listen error: $e");
+    }
+  }
+
+  // ฟังก์ชันดึงข้อมูล Log ทั้งหมดจาก Firebase (รองรับโหนด 'logs')
+  void _listenToLogs() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _logsRef = database.ref('logs'); // สามารถเปลี่ยนชื่อโหนดได้ตามโครงสร้าง Database ของคุณ
+      _logsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            _botLogs.clear();
+            if (data is Map) {
+              // เรียงลำดับหรือดึงข้อความทั้งหมด
+              data.forEach((key, value) {
+                if (value != null) {
+                  _botLogs.add(value.toString());
+                }
+              });
+            } else if (data is List) {
+              for (var e in data) {
+                if (e != null) {
+                  _botLogs.add(e.toString());
+                }
+              }
+            }
+          });
+
+          // เลื่อนหน้าต่าง Log ลงไปล่างสุดอัตโนมัติเมื่อมีข้อความใหม่เข้ามา
+          if (_isBotLogOpen) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (_logScrollController.hasClients) {
+                _logScrollController.jumpTo(_logScrollController.position.maxScrollExtent);
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {
+      print("Logs listen error: $e");
     }
   }
 
@@ -829,80 +881,125 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildStatusBoxContent() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF161619), Color(0xFF0B0B0E)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        border: Border.all(
-          color: const Color(0xFFFFB300),
-          width: 3.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isBotLogOpen = !_isBotLogOpen;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161619).withOpacity(0.95),
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF161619), Color(0xFF0B0B0E)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'SNIPER KING BOT',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFFFFD54F),
-              letterSpacing: 1.5,
-              shadows: [
-                Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
-              ],
+          border: Border.all(
+            color: const Color(0xFFFFB300),
+            width: 3.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                width: 1.5,
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'SNIPER KING BOT',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFFFFD54F),
+                letterSpacing: 1.5,
+                shadows: [
+                  Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isRunning ? Icons.play_arrow : Icons.stop,
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: (isRunning ? const Color(0xFF00C853) : Colors.red).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
                   color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                  size: 14,
+                  width: 1.5,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  isRunning ? 'RUNNING' : 'STOPPED',
-                  style: TextStyle(
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isRunning ? Icons.play_arrow : Icons.stop,
                     color: isRunning ? const Color(0xFF00C853) : Colors.red,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    size: 14,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    isRunning ? 'RUNNING' : 'STOPPED',
+                    style: TextStyle(
+                      color: isRunning ? const Color(0xFF00C853) : Colors.red,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            // แสดงกล่อง Log แบบเรียลไทม์ทั้งหมดที่ดึงมาจาก Firebase เมื่อกดที่กล่อง
+            if (_isBotLogOpen) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: 230,
+                height: 120, // จำกัดความสูงเพื่อให้เลื่อนดูข้อความทั้งหมดได้
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF00C853), width: 1),
+                ),
+                child: _botLogs.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No logs available',
+                          style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _logScrollController,
+                        shrinkWrap: true,
+                        itemCount: _botLogs.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 3.0),
+                            child: Text(
+                              _botLogs[index],
+                              style: const TextStyle(
+                                color: Color(0xFF00C853),
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  // ปรับลดขนาดกล่อง Dialog และลบปุ่ม "ปิดหน้าต่าง" ออกเรียบร้อย
   Widget _buildPortfolioDialogContent({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
