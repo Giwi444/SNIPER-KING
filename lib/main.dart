@@ -598,6 +598,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  // เพิ่มฟังก์ชันสำหรับลบ Log ทั้งหมดออกจาก Firebase
+  void _clearLogs() {
+    try {
+      _logsRef?.remove();
+      setState(() {
+        _botLogs.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cleared all logs successfully'), duration: Duration(seconds: 1)),
+      );
+    } catch (e) {
+      print("Clear logs error: $e");
+    }
+  }
+
   void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -862,18 +877,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'SNIPER KING BOT',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: statusColor,
-              letterSpacing: 1.2,
-              shadows: const [
-                Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const SizedBox(width: 24), // เว้นที่ให้สมดุลซ้ายขวา
+              Text(
+                'SNIPER KING BOT',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: statusColor,
+                  letterSpacing: 1.2,
+                  shadows: const [
+                    Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
+                  ],
+                ),
+              ),
+              // ปุ่มลบ Log (เคลียร์ข้อความใน Firebase)
+              GestureDetector(
+                onTap: _clearLogs,
+                child: const Icon(
+                  Icons.delete_sweep,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Container(
@@ -893,7 +923,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
-                      'BOT Alert Log ⛔', // เพิ่มอิโมจิ ⛔ ที่นี่
+                      'BOT Alert Log ⛔',
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
