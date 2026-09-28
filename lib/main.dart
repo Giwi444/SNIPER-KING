@@ -575,21 +575,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         final data = event.snapshot.value;
         if (mounted) {
           setState(() {
-            _botLogs.clear();
+            List<String> tempLogs = [];
             if (data is Map) {
               data.forEach((key, value) {
                 if (value != null) {
-                  _botLogs.add(value.toString());
+                  tempLogs.add(value.toString());
                 }
               });
             } else if (data is List) {
               for (var e in data) {
                 if (e != null) {
-                  _botLogs.add(e.toString());
+                  tempLogs.add(e.toString());
                 }
               }
             }
-            _botLogs = _botLogs.reversed.toList();
+            // กลับด้านให้ Log ล่าสุดขึ้นมาอยู่ตำแหน่งบนสุด (Index 0)
+            _botLogs = tempLogs.reversed.toList();
           });
         }
       });
@@ -880,12 +881,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(width: 24), // เว้นที่ให้สมดุลซ้ายขวา
+              const SizedBox(width: 24),
               Text(
-                'SNIPER KING BOT',
+                'SNIPER KING ROBOT',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
                   color: statusColor,
                   letterSpacing: 1.2,
@@ -894,7 +895,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ],
                 ),
               ),
-              // ปุ่มลบ Log (เคลียร์ข้อความใน Firebase)
               GestureDetector(
                 onTap: _clearLogs,
                 child: const Icon(
@@ -923,11 +923,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
-                      'BOT Alert Log ⛔',
+                      'BOT Alert Log',
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 15,
                       ),
                     ),
                   ],
@@ -949,7 +949,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 4.0),
                               child: Text(
-                                _botLogs[index],
+                                _botLogs[index], // Index 0 คือข้อความล่าสุด จะแสดงอยู่บรรทัดบนสุด
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Color(0xFF00C853),
