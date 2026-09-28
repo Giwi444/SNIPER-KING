@@ -874,7 +874,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        // ปรับเปลี่ยนการไล่เฉดสีเป็น แดง-ดำ-เหลือง สไตล์เดียวกับ Trading Account Info
         gradient: const LinearGradient(
           colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
           begin: Alignment.topLeft,
@@ -912,7 +911,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Container(
             width: 230,
             height: 110,
-            padding: const EdgeInsets.all(8),
+            // ปรับ padding ด้านบน/ล่าง ให้ชิดเส้นสีเขียวด้านบนมากขึ้น
+            padding: const EdgeInsets.only(top: 4, bottom: 4, left: 8, right: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
@@ -925,15 +925,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
                     ),
                   )
+                // จำกัดให้แสดงผลเฉพาะข้อความล่าสุดเพียงบรรทัดเดียว (itemCount = 1)
                 : ListView.builder(
                     controller: _logScrollController,
                     shrinkWrap: true,
-                    itemCount: _botLogs.length,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 1,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
+                        padding: const EdgeInsets.only(bottom: 0.0),
                         child: Text(
-                          _botLogs[index],
+                          _botLogs.first,
                           style: const TextStyle(
                             color: Color(0xFF00C853),
                             fontSize: 11,
@@ -1037,7 +1039,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          // ปรับลดระยะห่างตรงนี้ให้กล่องออเดอร์ Buy ขยับขึ้นไปชิด Total Open Profit มากขึ้น
+          const SizedBox(height: 2),
 
           Flexible(
             child: activeOrders.isEmpty
