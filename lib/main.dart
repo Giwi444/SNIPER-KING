@@ -1,654 +1,4 @@
-// ==========================================
-// HOME SCREEN (Complete Code)
-// ==========================================
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-
-class HomeScreen extends StatefulWidget {
-  final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  bool isRunning = false;
-  DatabaseReference? _dbRef;
-  
-  double balance = 0.0;
-  double equity = 0.0;
-  double profit = 0.0;
-  String symbol = "XAUUSD";
-  String timeframe = "M1";
-
-  Offset _dialogOffset = const Offset(30, 100);
-  bool _isLogDialogOpen = false;
-  
-  // ตัวแปรเก็บรายการ Log ทั้งหมดจาก Firebase
-  List<String> _botLogs = [];
-  DatabaseReference? _logsRef;
-  final ScrollController _logScrollController = ScrollController();
-
-  List<Map<dynamic, dynamic>> activeOrders = [];
-  DatabaseReference? _ordersRef;
-
-  Offset _statusBoxOffset = const Offset(0, 0);
-  bool _isStatusOffsetInitialized = false;
-
-  Offset _robotIconOffset = const Offset(0, 0);
-  bool _isRobotIconOffsetInitialized = false;
-
-  late AnimationController _floatController;
-  late Animation<double> _floatAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _initFirebaseAndListen();
-    _listenToOrdersForDialog();
-    _listenToLogs();
-
-    _floatController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _floatController.dispose();
-    _logScrollController.dispose();
-    super.dispose();
-  }
-
-  void _initFirebaseAndListen() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _dbRef = database.ref('status');
-
-      _dbRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-
-        if (data != null && mounted) {
-          setState(() {
-            isRunning = data['is_running'] ?? false;
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            profit = (data['profit'] ?? 0.0).toDouble();
-            symbol = data['symbol']?.toString() ?? 'XAUUSD';
-            timeframe = data['timeframe']?.toString() ?? 'M1';
-          });
-        }
-      });
-    } catch (e) {
-      print("Database listen error: $e");
-    }
-  }
-
-  // ฟังก์ชันดึงข้อมูล Log จาก Firebase และสลับให้ข้อความล่าสุดอยู่บนสุด
-  void _listenToLogs() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _logsRef = database.ref('logs');
-      _logsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            _botLogs.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value != null) {
-                  _botLogs.add(value.toString());
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e != null) {
-                  _botLogs.add(e.toString());
-                }
-              }
-            }
-            // กลับลำดับให้ข้อความล่าสุด (ใหม่ที่สุด) อยู่ตำแหน่งแรกสุด
-            _botLogs = _botLogs.reversed.toList();
-          });
-        }
-      });
-    } catch (e) {
-      print("Logs listen error: $e");
-    }
-  }
-
-  void _listenToOrdersForDialog() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _ordersRef = database.ref('orders');
-      _ordersRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            activeOrders.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(e));
-                }
-              }
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Orders listen error: $e");
-    }
-  }
-
-  void _toggleBotStatus(bool status) {
-    try {
-      _dbRef?.update({'is_running': status});
-    } catch (e) {
-      print("Toggle bot error: $e");
-    }
-  }
-
-  void _closeAllOrders() {
-    try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
-      );
-    } catch (e) {
-      print("Close all error: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-
-    if (!_isStatusOffsetInitialized) {
-      _statusBoxOffset = Offset((screenSize.width - 240) / 2, screenSize.height - 280);
-      _isStatusOffsetInitialized = true;
-    }
-
-    if (!_isRobotIconOffsetInitialized) {
-      _robotIconOffset = Offset(screenSize.width / 2 - 28, screenSize.height - 180);
-      _isRobotIconOffsetInitialized = true;
-    }
-
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/p.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(height: constraints.maxHeight * 0.72), 
-                            const Spacer(),
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: _closeAllOrders,
-                                          icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                                          label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFFFB300),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () => _toggleBotStatus(true),
-                                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                                          label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF00C853),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 48,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () => _toggleBotStatus(false),
-                                          icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                                          label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFD50000),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          
-          Positioned(
-            left: _statusBoxOffset.dx,
-            top: _statusBoxOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildStatusBoxContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _statusBoxOffset = details.offset;
-                });
-              },
-              child: _buildStatusBoxContent(),
-            ),
-          ),
-
-          Positioned(
-            left: _robotIconOffset.dx,
-            top: _robotIconOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildRobotButtonContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _robotIconOffset = details.offset;
-                });
-              },
-              child: _buildRobotButtonContent(),
-            ),
-          ),
-
-          if (_isLogDialogOpen)
-            Positioned(
-              left: _dialogOffset.dx,
-              top: _dialogOffset.dy,
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _dialogOffset = details.offset;
-                  });
-                },
-                child: _buildPortfolioDialogContent(constraintsWidth: MediaQuery.of(context).size.width),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRobotButtonContent() {
-    return AnimatedBuilder(
-      animation: _floatAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _floatAnimation.value),
-          child: child,
-        );
-      },
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isLogDialogOpen = !_isLogDialogOpen;
-          });
-        },
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.7),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/p.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: Colors.black);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // กล่องสถานะ: ใช้ "ชื่อบอท" เป็นตัวเปลี่ยนสีตามสถานะ และแสดง Log ไว้ด้านล่าง
-  Widget _buildStatusBoxContent() {
-    final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF161619), Color(0xFF0B0B0E)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        border: Border.all(
-          color: const Color(0xFFFFB300),
-          width: 3.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ชื่อบอทเปลี่ยนสีตามสถานะการทำงาน (เขียว/แดง)
-          Text(
-            'SNIPER KING BOT',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: statusColor,
-              letterSpacing: 1.5,
-              shadows: const [
-                Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          // กล่อง Log แสดงผลเรียลไทม์ใต้ชื่อบอท (ข้อความใหม่สุดอยู่บนสุด)
-          Container(
-            width: 230,
-            height: 110,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF00C853), width: 1),
-            ),
-            child: _botLogs.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No logs available',
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _logScrollController,
-                    shrinkWrap: true,
-                    itemCount: _botLogs.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          _botLogs[index],
-                          style: const TextStyle(
-                            color: Color(0xFF00C853),
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPortfolioDialogContent({required double constraintsWidth}) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isTotalProfit = totalOrdersProfit >= 0;
-
-    return Container(
-      width: constraintsWidth * 0.85,
-      constraints: const BoxConstraints(maxHeight: 260),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB300), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.8),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Position & Total Open Profit',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  setState(() {
-                    _isLogDialogOpen = false;
-                  });
-                },
-              ),
-            ],
-          ),
-          const Divider(color: Colors.white24, height: 12),
-          
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isTotalProfit
-                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'TOTAL OPEN PROFIT',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                ),
-                Text(
-                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          Flexible(
-            child: activeOrders.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: Text(
-                        'No active orders currently',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = activeOrders[index];
-                      final String type = order['type']?.toString() ?? 'BUY';
-                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String ordSymbol = order['symbol']?.toString() ?? symbol;
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool orderProfit = profit >= 0;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 9)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1124,12 +474,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// HOME SCREEN (Complete Code)
+// HOME SCREEN
 // ==========================================
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -1151,7 +497,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Offset _dialogOffset = const Offset(30, 100);
   bool _isLogDialogOpen = false;
   
-  // ตัวแปรเก็บรายการ Log ทั้งหมดจาก Firebase
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
   final ScrollController _logScrollController = ScrollController();
@@ -1220,7 +565,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  // ฟังก์ชันดึงข้อมูล Log จาก Firebase และสลับให้ข้อความล่าสุดอยู่บนสุด
   void _listenToLogs() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -1246,7 +590,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
-            // กลับลำดับให้ข้อความล่าสุด (ใหม่ที่สุด) อยู่ตำแหน่งแรกสุด
             _botLogs = _botLogs.reversed.toList();
           });
         }
@@ -1525,7 +868,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // กล่องสถานะ: ใช้ "ชื่อบอท" เป็นตัวเปลี่ยนสีตามสถานะ และแสดง Log ไว้ด้านล่าง
   Widget _buildStatusBoxContent() {
     final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
 
@@ -1554,7 +896,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ชื่อบอทเปลี่ยนสีตามสถานะการทำงาน (เขียว/แดง)
           Text(
             'SNIPER KING BOT',
             style: TextStyle(
@@ -1568,7 +909,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 10),
-          // กล่อง Log แสดงผลเรียลไทม์ใต้ชื่อบอท (ข้อความใหม่สุดอยู่บนสุด)
           Container(
             width: 230,
             height: 110,
@@ -1780,7 +1120,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 }
 
 // ==========================================
-// 2. SETTINGS SCREEN
+// SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1792,7 +1132,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
-  final List<String> symbolOptions = [  'XAUUSD',  'BTCUSD',   'THBUSD',   'EURUSD',   'GBPUSD',   'USDJPY',   'AUDUSD'];
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'THBUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'];
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
   final TextEditingController swingBarsController = TextEditingController();
@@ -2145,7 +1485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ==========================================
-// 3. ORDERS SCREEN
+// ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -2549,7 +1889,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// 4. TRADE HISTORY SCREEN
+// TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2832,7 +2172,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// 5. ALERTS SCREEN
+// ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -2972,10 +2312,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   },
                 ),
         ],
-      ),
-    );
-  }
-}
       ),
     );
   }
