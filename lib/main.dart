@@ -561,7 +561,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  /// ฟังก์ชันสั่งให้หน้าจอ Log ไหลไปตำแหน่งเริ่มต้น (เมื่อใช้ reverse: true จุด minScrollExtent คือด้านล่างสุด)
   void _scrollToBottom() {
     if (_logScrollController.hasClients) {
       _logScrollController.animateTo(
@@ -600,7 +599,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             _botLogs = tempLogs;
           });
 
-          // สั่งให้หน้าจอ Log ไหลไปหาข้อความใหม่ทันทีอย่างสมูท
           Future.delayed(const Duration(milliseconds: 100), () {
             _scrollToBottom();
           });
@@ -635,21 +633,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
-          setState(() {
-            activeOrders.clear();
-            if (data is Map) {
-              data.forEach((key, value) {
-                if (value is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(value));
-                }
-              });
-            } else if (data is List) {
-              for (var e in data) {
-                if (e is Map) {
-                  activeOrders.add(Map<dynamic, dynamic>.from(e));
-                }
+          List<Map<dynamic, dynamic>> newOrders = [];
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(value));
+              }
+            });
+          } else if (data is List) {
+            for (var e in data) {
+              if (e is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(e));
               }
             }
+          }
+
+          setState(() {
+            // 1. ถ้ามีออเดอร์เพิ่มขึ้น (เปิดออเดอร์ใหม่) และกล่องถูกซ่อนอยู่ -> ให้เด้งเปิดอัตโนมัติ
+            if (newOrders.length > activeOrders.length && !_isOrdersBoxVisible) {
+              _isOrdersBoxVisible = true;
+            }
+            
+            // 2. ถ้าออเดอร์หมดเกลี้ยง (ปิดโพสิชั่นทั้งหมด) -> ให้ปิดซ่อนกล่องอัตโนมัติทันที
+            if (newOrders.isEmpty && activeOrders.isNotEmpty) {
+              _isOrdersBoxVisible = false;
+            }
+
+            activeOrders = newOrders;
           });
         }
       });
@@ -942,10 +952,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         )
                       : ListView.builder(
                           controller: _logScrollController,
-                          reverse: true, // เปิด reverse เพื่อให้ข้อความใหม่ดันขึ้นอัตโนมัติแบบโปร
+                          reverse: true,
                           itemCount: _botLogs.length,
                           itemBuilder: (context, index) {
-                            // คำนวณ index ให้แสดงผลสอดคล้องกับ reverse: true
                             final logItem = _botLogs[_botLogs.length - 1 - index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 4.0),
@@ -1094,7 +1103,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ),
                                 const SizedBox(width: 6),
                                 Column(
-                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
                                     Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
