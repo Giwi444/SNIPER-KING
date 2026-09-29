@@ -494,7 +494,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // ควบคุมการแสดง-ซ่อนกล่อง Position & Total Open Profit
   bool _isOrdersBoxVisible = true;
 
   List<String> _botLogs = [];
@@ -504,7 +503,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ตำแหน่งปุ่มไอคอนโรบอท
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
@@ -563,7 +561,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  // ปรับปรุงการรับค่า Logs ทั่วไปจาก MT5 เพื่อแสดงสถานะการทำงาน ข้อผิดพลาด หรือเหตุผลทางเทคนิค
   void _listenToLogs() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -589,7 +586,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
-            // เรียงลำดับให้ข้อความใหม่ล่าสุดแสดงขึ้นด้านบนหรือเลื่อนดูได้สะดวก
             _botLogs = tempLogs.reversed.toList();
           });
         }
@@ -1119,10 +1115,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String lotMode = 'Fixed';
   String selectedSymbol = 'XAUUSD';
+  String tradingMode = 'Sniper'; // โหมดระบบเทรดใหม่
+  String lotMode = 'Fixed';
   
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  final List<String> tradingModeOptions = ['Sniper', 'Grid', 'Hedging']; // ตัวเลือกโหมดระบบเทรด
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -1168,8 +1166,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
             selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
+            lotMode = data['lot_mode']?.toString() ?? 'Double';
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
             swingBarsController.text = data['swing_bars']?.toString() ?? '30';
@@ -1192,8 +1191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _saveSettingsToFirebase() {
     try {
       _settingsRef?.update({
-        'lot_mode': lotMode,
         'symbol': selectedSymbol,
+        'trading_mode': tradingMode,
+        'lot_mode': lotMode,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
         'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
@@ -1339,6 +1339,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   child: Text(
                                     sym,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      // ==========================================
+                      // โหมดระบบเทรด (Trading Mode) เพิ่มใหม่ต่อจาก Trading Symbol
+                      // ==========================================
+                      const SizedBox(height: 16),
+                      const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = tradingMode == mode;
+                          Color modeColor;
+                          if (mode == 'Sniper') {
+                            modeColor = const Color(0xFFE91E63); // สีชมพูแดงเด่นชัด
+                          } else if (mode == 'Grid') {
+                            modeColor = const Color(0xFF00BCD4); // สีฟ้าคราม
+                          } else {
+                            modeColor = const Color(0xFFFF5722); // สีส้มแดง
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      tradingMode = mode;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    side: BorderSide(
+                                      color: modeColor,
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
                                     style: TextStyle(
                                       color: isSelected ? Colors.white : Colors.white70,
                                       fontWeight: FontWeight.bold,
