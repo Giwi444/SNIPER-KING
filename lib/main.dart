@@ -586,7 +586,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
-            _botLogs = tempLogs.reversed.toList();
+            // เก็บข้อมูลตามลำดับปกติ ไม่ต้อง reversed ที่นี่
+            _botLogs = tempLogs;
           });
         }
       });
@@ -926,13 +927,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         )
                       : ListView.builder(
                           controller: _logScrollController,
-                          shrinkWrap: false,
+                          reverse: true, // ทำให้ข้อความใหม่สุดเด้งมาอยู่ด้านบนสุดทันที
                           itemCount: _botLogs.length,
                           itemBuilder: (context, index) {
+                            // ดึงข้อมูลแบบย้อนหลังจากท้ายสุดมาแสดงเป็นอันดับแรก
+                            final logItem = _botLogs[_botLogs.length - 1 - index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 4.0),
                               child: Text(
-                                _botLogs[index],
+                                logItem,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Color(0xFF00C853),
@@ -1076,7 +1079,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ),
                                 const SizedBox(width: 6),
                                 Column(
-                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
                                     Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
@@ -1116,11 +1119,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String selectedSymbol = 'XAUUSD';
-  String tradingMode = 'Sniper'; // โหมดระบบเทรดใหม่
+  String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  final List<String> tradingModeOptions = ['Liquidity', 'Breakout', 'Enqulfing']; // ตัวเลือกโหมดระบบเทรด
+  final List<String> tradingModeOptions = ['Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -1352,9 +1355,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }).toList(),
                       ),
 
-                      // ==========================================
-                      // โหมดระบบเทรด (Trading Mode) เพิ่มใหม่ต่อจาก Trading Symbol
-                      // ==========================================
                       const SizedBox(height: 16),
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
@@ -1364,11 +1364,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           bool isSelected = tradingMode == mode;
                           Color modeColor;
                           if (mode == 'Sniper') {
-                            modeColor = const Color(0xFFE91E63); // สีชมพูแดงเด่นชัด
+                            modeColor = const Color(0xFFE91E63);
                           } else if (mode == 'Grid') {
-                            modeColor = const Color(0xFF00BCD4); // สีฟ้าคราม
+                            modeColor = const Color(0xFF00BCD4);
                           } else {
-                            modeColor = const Color(0xFFFF5722); // สีส้มแดง
+                            modeColor = const Color(0xFFFF5722);
                           }
 
                           return Expanded(
