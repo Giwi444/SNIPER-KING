@@ -1144,7 +1144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
-  // เพิ่มตัวแปรและรายการ Timeframe ครบถ้วน (M1 ถึง H4)
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
   String selectedTf = "M1";
 
@@ -1159,7 +1158,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
 
-  // เพิ่ม Controller สำหรับเวลาเทรด
   final TextEditingController startTimeController = TextEditingController(text: "08:00");
   final TextEditingController endTimeController = TextEditingController(text: "22:00");
 
@@ -1203,9 +1201,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
             lotMode = data['lot_mode']?.toString() ?? 'Double';
-            selectedTf = data['timeframe']?.toString() ?? 'M1'; // โหลดค่า Timeframe
-            startTimeController.text = data['start_time_th']?.toString() ?? '08:00'; // โหลดเวลาเริ่มต้น
-            endTimeController.text = data['end_time_th']?.toString() ?? '22:00'; // โหลดเวลาสิ้นสุด
+            selectedTf = data['timeframe']?.toString() ?? 'M1';
+            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
+            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
 
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
@@ -1233,9 +1231,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'symbol': selectedSymbol,
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
-        'timeframe': selectedTf, // บันทึก Timeframe
-        'start_time_th': startTimeController.text, // บันทึกเวลาเริ่มต้น
-        'end_time_th': endTimeController.text, // บันทึกเวลาสิ้นสุด
+        'timeframe': selectedTf,
+        'start_time_th': startTimeController.text,
+        'end_time_th': endTimeController.text,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
         'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
@@ -1396,7 +1394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      // ส่วนเลือก Timeframe
+                      // แก้ไข Timeframe ให้แสดงเฉพาะค่า (เช่น M1) กระชับ ไม่ยาวเกินไป
                       const Text('Timeframe (ระยะเวลากราฟ)', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       Container(
@@ -1414,7 +1412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             items: timeframes.map((String tf) {
                               return DropdownMenuItem<String>(
                                 value: tf,
-                                child: Text("Timeframe: $tf", style: const TextStyle(color: Colors.white, fontSize: 13)),
+                                child: Text(tf, style: const TextStyle(color: Colors.white, fontSize: 13)),
                               );
                             }).toList(),
                             onChanged: (String? newValue) {
@@ -1427,7 +1425,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      // ส่วนตั้งค่าเวลาเริ่มต้นและสิ้นสุด (เวลาไทย)
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
@@ -1571,6 +1568,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      
+                      // ย้าย Calculated TP มาวางไว้ก่อนถึง Enable Daily Target ตามต้องการ
                       Row(
                         children: [
                           Expanded(
@@ -1582,7 +1581,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 border: Border.all(color: Colors.white12, width: 1),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
                                   const SizedBox(height: 2),
@@ -1596,6 +1595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
@@ -1655,6 +1655,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // จัดให้ตัวเลขและข้อความภายในช่องกรอกข้อมูลอยู่กึ่งกลาง (textAlign: TextAlign.center)
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1671,6 +1672,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
+            textAlign: TextAlign.center, // จัดข้อความ/ตัวเลขให้อยู่ตรงกลาง
             style: const TextStyle(color: Colors.white, fontSize: 13),
             onChanged: (val) => setState(() {}),
             decoration: const InputDecoration(
