@@ -561,6 +561,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  /// ฟังก์ชันสั่งให้หน้าจอ Log ไหลไปตำแหน่งเริ่มต้น (เมื่อใช้ reverse: true จุด minScrollExtent คือด้านล่างสุด)
+  void _scrollToBottom() {
+    if (_logScrollController.hasClients) {
+      _logScrollController.animateTo(
+        _logScrollController.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   void _listenToLogs() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -586,8 +597,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
-            // เก็บข้อมูลตามลำดับปกติ ไม่ต้อง reversed ที่นี่
             _botLogs = tempLogs;
+          });
+
+          // สั่งให้หน้าจอ Log ไหลไปหาข้อความใหม่ทันทีอย่างสมูท
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _scrollToBottom();
           });
         }
       });
@@ -927,10 +942,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         )
                       : ListView.builder(
                           controller: _logScrollController,
-                          reverse: true, // ทำให้ข้อความใหม่สุดเด้งมาอยู่ด้านบนสุดทันที
+                          reverse: true, // เปิด reverse เพื่อให้ข้อความใหม่ดันขึ้นอัตโนมัติแบบโปร
                           itemCount: _botLogs.length,
                           itemBuilder: (context, index) {
-                            // ดึงข้อมูลแบบย้อนหลังจากท้ายสุดมาแสดงเป็นอันดับแรก
+                            // คำนวณ index ให้แสดงผลสอดคล้องกับ reverse: true
                             final logItem = _botLogs[_botLogs.length - 1 - index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 4.0),
@@ -1079,7 +1094,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ),
                                 const SizedBox(width: 6),
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                 crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
                                     Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
