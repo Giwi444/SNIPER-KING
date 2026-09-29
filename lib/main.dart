@@ -1394,46 +1394,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      // แก้ไข Timeframe ให้แสดงเฉพาะค่า (เช่น M1) กระชับ ไม่ยาวเกินไป
-                      const Text('Timeframe (ระยะเวลากราฟ)', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white12, width: 1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedTf,
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF161619),
-                            items: timeframes.map((String tf) {
-                              return DropdownMenuItem<String>(
-                                value: tf,
-                                child: Text(tf, style: const TextStyle(color: Colors.white, fontSize: 13)),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedTf = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
@@ -1568,29 +1528,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
+
+                      // ย้าย Start Time และ End Time ลงมาวางไว้บริเวณใกล้กับ Calculated TP
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       
-                      // ย้าย Calculated TP มาวางไว้ก่อนถึง Enable Daily Target ตามต้องการ
+                      // นำ Timeframe (ขนาดกะทัดรัด) มาวางคู่กับช่อง Calculated TP ในบรรทัดเดียวกันเพื่อให้สมมาตร
                       Row(
                         children: [
                           Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white12, width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${calculatedTP.toStringAsFixed(1)} Points',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 46,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0B0B0E),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white12, width: 1),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: selectedTf,
+                                      isExpanded: true,
+                                      dropdownColor: const Color(0xFF161619),
+                                      items: timeframes.map((String tf) {
+                                        return DropdownMenuItem<String>(
+                                          value: tf,
+                                          child: Center(
+                                            child: Text(tf, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          selectedTf = newValue!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 46,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0B0B0E),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white12, width: 1),
+                                  ),
+                                  child: Text(
+                                    '${calculatedTP.toStringAsFixed(1)} Pts',
                                     style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
