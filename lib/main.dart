@@ -1144,16 +1144,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
+  // เพิ่มตัวแปรและรายการ Timeframe ครบถ้วน (M1 ถึง H4)
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
+  String selectedTf = "M1";
+
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
   final List<String> tradingModeOptions = ['Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
-  final TextEditingController maxOrdersController = TextEditingController(); // เพิ่ม Controller สำหรับ Max Orders = 10
+  final TextEditingController maxOrdersController = TextEditingController(); 
   final TextEditingController swingBarsController = TextEditingController();
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
+
+  // เพิ่ม Controller สำหรับเวลาเทรด
+  final TextEditingController startTimeController = TextEditingController(text: "08:00");
+  final TextEditingController endTimeController = TextEditingController(text: "22:00");
 
   bool enableDailyTarget = true;
   final TextEditingController dailyTargetController = TextEditingController();
@@ -1195,9 +1203,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
             lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedTf = data['timeframe']?.toString() ?? 'M1'; // โหลดค่า Timeframe
+            startTimeController.text = data['start_time_th']?.toString() ?? '08:00'; // โหลดเวลาเริ่มต้น
+            endTimeController.text = data['end_time_th']?.toString() ?? '22:00'; // โหลดเวลาสิ้นสุด
+
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; // โหลดค่า Max Orders จาก Firebase (ค่าเริ่มต้น 10)
+            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
             swingBarsController.text = data['swing_bars']?.toString() ?? '30';
             slPointsController.text = data['sl_points']?.toString() ?? '500';
             riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
@@ -1221,9 +1233,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'symbol': selectedSymbol,
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
+        'timeframe': selectedTf, // บันทึก Timeframe
+        'start_time_th': startTimeController.text, // บันทึกเวลาเริ่มต้น
+        'end_time_th': endTimeController.text, // บันทึกเวลาสิ้นสุด
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
-        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, // บันทึกค่า Max Orders ลง Firebase
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
         'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
         'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
@@ -1235,7 +1250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters & Max Orders Synced & Saved to EA Successfully!'),
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
           backgroundColor: Color(0xFFFFB300),
         ),
       );
@@ -1381,6 +1396,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
+                      // ส่วนเลือก Timeframe
+                      const Text('Timeframe (ระยะเวลากราฟ)', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white12, width: 1),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedTf,
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF161619),
+                            items: timeframes.map((String tf) {
+                              return DropdownMenuItem<String>(
+                                value: tf,
+                                child: Text("Timeframe: $tf", style: const TextStyle(color: Colors.white, fontSize: 13)),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedTf = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      // ส่วนตั้งค่าเวลาเริ่มต้นและสิ้นสุด (เวลาไทย)
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
@@ -1501,7 +1557,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          // เพิ่มฟิลด์ Max Orders เข้ามาในหน้าจอตั้งค่า
                           Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
                           const SizedBox(width: 10),
                           Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
