@@ -1120,7 +1120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  final List<String> tradingModeOptions = ['Sniper', 'Grid', 'Hedging']; // ตัวเลือกโหมดระบบเทรด
+  final List<String> tradingModeOptions = ['Liquidity', 'Breakout', 'Enqulfing']; // ตัวเลือกโหมดระบบเทรด
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
