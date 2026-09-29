@@ -649,12 +649,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           }
 
           setState(() {
-            // 1. ถ้ามีออเดอร์เพิ่มขึ้น (เปิดออเดอร์ใหม่) และกล่องถูกซ่อนอยู่ -> ให้เด้งเปิดอัตโนมัติ
             if (newOrders.length > activeOrders.length && !_isOrdersBoxVisible) {
               _isOrdersBoxVisible = true;
             }
             
-            // 2. ถ้าออเดอร์หมดเกลี้ยง (ปิดโพสิชั่นทั้งหมด) -> ให้ปิดซ่อนกล่องอัตโนมัติทันที
             if (newOrders.isEmpty && activeOrders.isNotEmpty) {
               _isOrdersBoxVisible = false;
             }
@@ -1152,6 +1150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
+  final TextEditingController maxOrdersController = TextEditingController(); // เพิ่ม Controller สำหรับ Max Orders = 10
   final TextEditingController swingBarsController = TextEditingController();
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
@@ -1198,6 +1197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             lotMode = data['lot_mode']?.toString() ?? 'Double';
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
+            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; // โหลดค่า Max Orders จาก Firebase (ค่าเริ่มต้น 10)
             swingBarsController.text = data['swing_bars']?.toString() ?? '30';
             slPointsController.text = data['sl_points']?.toString() ?? '500';
             riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
@@ -1223,6 +1223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'lot_mode': lotMode,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, // บันทึกค่า Max Orders ลง Firebase
         'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
         'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
@@ -1234,7 +1235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters & Symbol Synced & Saved to EA Successfully!'),
+          content: Text('Parameters & Max Orders Synced & Saved to EA Successfully!'),
           backgroundColor: Color(0xFFFFB300),
         ),
       );
@@ -1500,16 +1501,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                          // เพิ่มฟิลด์ Max Orders เข้ามาในหน้าจอตั้งค่า
+                          Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
                           const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(12),
