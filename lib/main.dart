@@ -563,6 +563,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  // ปรับปรุงการรับค่า Logs ทั่วไปจาก MT5 เพื่อแสดงสถานะการทำงาน ข้อผิดพลาด หรือเหตุผลทางเทคนิค
   void _listenToLogs() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -588,6 +589,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 }
               }
             }
+            // เรียงลำดับให้ข้อความใหม่ล่าสุดแสดงขึ้นด้านบนหรือเลื่อนดูได้สะดวก
             _botLogs = tempLogs.reversed.toList();
           });
         }
@@ -695,7 +697,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 children: [
                   const Spacer(),
-                  // กล่อง Position & Total Open Profit ถูกย้ายมาเรียงต่อกันในคอนโซลแนวตั้ง (Column) ร่วมกับกล่อง Logs และปุ่มควบคุม
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
                       width: 260,
@@ -767,7 +768,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           
-          // บอลลูนโรบอท (ยังคงไว้ทำหน้าที่เป็นปุ่มเปิด-ปิดกล่อง Position เช่นเดิม)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -910,7 +910,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
-                      'BOT Alert Log',
+                      'BOT Status & System Log',
                       style: TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.bold,
@@ -924,7 +924,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: _botLogs.isEmpty
                       ? const Center(
                           child: Text(
-                            'No logs available',
+                            'No system logs available',
                             style: TextStyle(color: Colors.white70, fontSize: 11),
                           ),
                         )
@@ -1080,7 +1080,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ),
                                 const SizedBox(width: 6),
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                 crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
                                     Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
