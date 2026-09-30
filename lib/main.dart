@@ -625,11 +625,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             List<String> tempLogs = [];
             if (data is Map) {
-              data.forEach((key, value) {
-                if (value != null) {
-                  tempLogs.add(value.toString());
+              // จัดลำดับ Map ตามคีย์ (เพื่อให้ข้อความที่ส่งมาทีหลังแสดงผลถูกต้องตามเวลา)
+              var sortedEntries = data.entries.toList()
+                ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+              
+              for (var entry in sortedEntries) {
+                if (entry.value != null) {
+                  tempLogs.add(entry.value.toString());
                 }
-              });
+              }
             } else if (data is List) {
               for (var e in data) {
                 if (e != null) {
@@ -760,7 +764,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // ปรับลดขนาดและจัดตำแหน่งกล่อง Connected ให้กะทัดรัด ไม่ไปทับหุ่นยนต์
                   Align(
                     alignment: Alignment.topRight,
                     child: Padding(
@@ -956,7 +959,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildLogsBoxContent() {
-    // เชื่อมโยงสีข้อความ "★ SNIPER KING BOT ★" กับสถานะการทำงาน (isRunning)
     final Color botStatusColor = isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000);
 
     return Container(
@@ -988,7 +990,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 24),
-              // ข้อความ "★ SNIPER KING BOT ★" เปลี่ยนสีตามสถานะ START/STOP อัตโนมัติ
               SizedBox(
                 height: 24,
                 width: 170,
@@ -1064,7 +1065,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         )
                       : AnimatedBuilder(
-                          // เพิ่มเอฟเฟกต์ป้ายไฟวิ่งเลื่อนขึ้นอย่างต่อเนื่องสำหรับ Log
                           animation: _logMarqueeController,
                           builder: (context, child) {
                             return ListView.builder(
