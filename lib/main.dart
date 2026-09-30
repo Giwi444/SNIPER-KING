@@ -484,7 +484,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool isRunning = false;
   DatabaseReference? _dbRef;
   
@@ -509,6 +509,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
+  // เพิ่ม AnimationController สำหรับทำป้ายไฟวิ่ง (Marquee)
+  late AnimationController _marqueeController;
+
   bool isConnected = false;
 
   @override
@@ -527,11 +530,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
+
+    // กำหนดความเร็วและรอบของการวิ่งตัวหนังสือ (ปรับเวลาได้ตามต้องการ เช่น 7 วินาทีต่อรอบ)
+    _marqueeController = AnimationController(
+      duration: const Duration(seconds: 7),
+      vsync: this,
+    )..repeat();
   }
 
   @override
   void dispose() {
     _floatController.dispose();
+    _marqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -719,6 +729,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _isRobotIconOffsetInitialized = true;
     }
 
+    final Color statusColor = isConnected ? const Color(0xFF00C853) : Colors.red;
+    final String statusText = isConnected ? 'CONNECTED' : 'DISCONNECTED';
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -738,37 +751,55 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // ================= ย้ายป้าย CONNECTED มาไว้ที่มุมบนขวาของหน้า Home ตรงนี้ =================
+                  // ================= ป้ายสถานะระบบแบบตัวหนังสือวิ่งเลื่อน (Marquee Style) มุมบนขวา =================
                   Align(
                     alignment: Alignment.topRight,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      width: 140, // กำหนดความกว้างกรอบป้ายไฟวิ่ง
+                      height: 26,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       decoration: BoxDecoration(
-                        color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                        color: statusColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                          color: statusColor,
                           width: 1,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isConnected ? Icons.bolt : Icons.wifi_off,
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            size: 13,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isConnected ? 'CONNECTED' : 'DISCONNECTED',
-                            style: TextStyle(
-                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      child: ClipRect(
+                        child: AnimatedBuilder(
+                          animation: _marqueeController,
+                          builder: (context, child) {
+                            return Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Positioned(
+                                  // คำนวณตำแหน่งพิกัดให้วิ่งเลื่อนจากขวาไปซ้ายวนลูปต่อเนื่อง
+                                  left: 140 - (_marqueeController.value * 210),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isConnected ? Icons.bolt : Icons.wifi_off,
+                                        color: statusColor,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '$statusText • LIVE DATA STREAMING • $statusText • LIVE DATA STREAMING • ',
+                                        style: TextStyle(
+                                          color: statusColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
