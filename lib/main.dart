@@ -512,8 +512,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // AnimationController สำหรับป้ายไฟวิ่ง (Marquee Style) แนวนอน
   late AnimationController _marqueeController;
 
-  // AnimationController สำหรับทำป้ายไฟวิ่งข้อความ "SNIPER KING BOT" จากล่างขึ้นบน
-  late AnimationController _titleMarqueeController;
+  // AnimationController สำหรับทำป้ายไฟกระพริบแฟรช (Flashing Marquee Style) สำหรับข้อความ "SNIPER KING BOT"
+  late AnimationController _flashMarqueeController;
 
   bool isConnected = false;
 
@@ -539,18 +539,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    // กำหนดความเร็วป้ายไฟวิ่งข้อความจากล่างขึ้นบน (วนลูป)
-    _titleMarqueeController = AnimationController(
-      duration: const Duration(seconds: 3),
+    // กำหนดความเร็วการกระพริบแฟรชของป้ายไฟ (Flashing Marquee Style)
+    _flashMarqueeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-    )..repeat();
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _floatController.dispose();
     _marqueeController.dispose();
-    _titleMarqueeController.dispose();
+    _flashMarqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -760,7 +760,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // ================= ป้ายสถานะระบบ (Connected) ขยับลงมาด้านขวาเพื่อไม่ให้บังส่วนหัวไอคอนโรบอท =================
                   Align(
                     alignment: Alignment.topRight,
                     child: Padding(
@@ -956,8 +955,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildLogsBoxContent() {
-    final Color statusColor = isRunning ? const Color(0xFF00C853) : Colors.red;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -987,40 +984,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 24),
-              // ตัวหนังสือ "SNIPER KING BOT" แบบป้ายไฟวิ่ง (Marquee Style) จากล่างขึ้นบน
+              // ป้ายไฟกระพริบแฟรช (Flashing Marquee Style) สำหรับข้อความ "SNIPER KING BOT"
               SizedBox(
-                height: 20,
-                width: 160,
-                child: ClipRect(
-                  child: AnimatedBuilder(
-                    animation: _titleMarqueeController,
-                    builder: (context, child) {
-                      double value = _titleMarqueeController.value;
-                      // คำนวณพิกัดให้วิ่งเลื่อนขึ้นบน (จากล่างขึ้นบน)
-                      double offsetY = 20 * (1 - value) - (value * 20);
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Positioned(
-                            top: offsetY,
-                            child: Text(
-                              'SNIPER KING BOT',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                                color: statusColor,
-                                letterSpacing: 1.2,
-                                shadows: const [
-                                  Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
-                                ],
-                              ),
+                height: 24,
+                width: 170,
+                child: AnimatedBuilder(
+                  animation: _flashMarqueeController,
+                  builder: (context, child) {
+                    // สร้างเอฟเฟกต์กระพริบเปลี่ยนสีและความสว่าง (Glowing & Flashing Neon Effect)
+                    final double flashVal = _flashMarqueeController.value;
+                    final Color neonColor = Color.lerp(const Color(0xFFFFB300), const Color(0xFF00FF55), flashVal)!;
+                    
+                    return Center(
+                      child: Text(
+                        '★ SNIPER KING BOT ★',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: neonColor,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: neonColor.withOpacity(0.8),
+                              blurRadius: 8 + (flashVal * 6),
+                              offset: const Offset(0, 0),
                             ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                            const Shadow(
+                              color: Colors.black,
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               GestureDetector(
