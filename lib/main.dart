@@ -512,8 +512,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // AnimationController สำหรับป้ายไฟวิ่ง (Marquee Style) แนวนอน
   late AnimationController _marqueeController;
 
-  // AnimationController สำหรับทำป้ายไฟกระพริบแฟรช (Flashing Marquee Style) สำหรับข้อความ "SNIPER KING BOT"
-  late AnimationController _flashMarqueeController;
+  // AnimationController สำหรับทำป้ายไฟวิ่งแนวตั้ง (Auto-scroll Marquee Ticker) สำหรับข้อความ Log
+  late AnimationController _logMarqueeController;
 
   bool isConnected = false;
 
@@ -539,18 +539,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    // กำหนดความเร็วการกระพริบแฟรชของป้ายไฟ (Flashing Marquee Style)
-    _flashMarqueeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+    // กำหนด Controller สำหรับป้ายไฟวิ่ง Log แนวตั้ง
+    _logMarqueeController = AnimationController(
+      duration: const Duration(seconds: 15),
       vsync: this,
-    )..repeat(reverse: true);
+    )..repeat();
   }
 
   @override
   void dispose() {
     _floatController.dispose();
     _marqueeController.dispose();
-    _flashMarqueeController.dispose();
+    _logMarqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -605,7 +605,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _scrollToBottom() {
     if (_logScrollController.hasClients) {
       _logScrollController.animateTo(
-        _logScrollController.position.minScrollExtent,
+        _logScrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -760,17 +760,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
+                  // ปรับลดขนาดและจัดตำแหน่งกล่อง Connected ให้กะทัดรัด ไม่ไปทับหุ่นยนต์
                   Align(
                     alignment: Alignment.topRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 36.0),
+                      padding: const EdgeInsets.only(top: 8.0, right: 4.0),
                       child: Container(
-                        width: 140,
-                        height: 26,
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        width: 110,
+                        height: 22,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: statusColor,
                             width: 1,
@@ -784,21 +785,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 alignment: Alignment.centerLeft,
                                 children: [
                                   Positioned(
-                                    left: 140 - (_marqueeController.value * 210),
+                                    left: 110 - (_marqueeController.value * 180),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           isConnected ? Icons.bolt : Icons.wifi_off,
                                           color: statusColor,
-                                          size: 13,
+                                          size: 11,
                                         ),
-                                        const SizedBox(width: 4),
+                                        const SizedBox(width: 3),
                                         Text(
-                                          '$statusText • LIVE DATA STREAMING • $statusText • LIVE DATA STREAMING • ',
+                                          '$statusText • LIVE • $statusText • LIVE • ',
                                           style: TextStyle(
                                             color: statusColor,
-                                            fontSize: 10,
+                                            fontSize: 9,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -955,6 +956,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildLogsBoxContent() {
+    // เชื่อมโยงสีข้อความ "★ SNIPER KING BOT ★" กับสถานะการทำงาน (isRunning)
+    final Color botStatusColor = isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -984,42 +988,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 24),
-              // ป้ายไฟกระพริบแฟรช (Flashing Marquee Style) สำหรับข้อความ "SNIPER KING BOT"
+              // ข้อความ "★ SNIPER KING BOT ★" เปลี่ยนสีตามสถานะ START/STOP อัตโนมัติ
               SizedBox(
                 height: 24,
                 width: 170,
-                child: AnimatedBuilder(
-                  animation: _flashMarqueeController,
-                  builder: (context, child) {
-                    // สร้างเอฟเฟกต์กระพริบเปลี่ยนสีและความสว่าง (Glowing & Flashing Neon Effect)
-                    final double flashVal = _flashMarqueeController.value;
-                    final Color neonColor = Color.lerp(const Color(0xFFFFB300), const Color(0xFF00FF55), flashVal)!;
-                    
-                    return Center(
-                      child: Text(
-                        '★ SNIPER KING BOT ★',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: neonColor,
-                          letterSpacing: 1.2,
-                          shadows: [
-                            Shadow(
-                              color: neonColor.withOpacity(0.8),
-                              blurRadius: 8 + (flashVal * 6),
-                              offset: const Offset(0, 0),
-                            ),
-                            const Shadow(
-                              color: Colors.black,
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
+                child: Center(
+                  child: Text(
+                    '★ SNIPER KING BOT ★',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: botStatusColor,
+                      letterSpacing: 1.2,
+                      shadows: [
+                        Shadow(
+                          color: botStatusColor.withOpacity(0.8),
+                          blurRadius: 8,
+                          offset: const Offset(0, 0),
                         ),
-                      ),
-                    );
-                  },
+                        const Shadow(
+                          color: Colors.black,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               GestureDetector(
@@ -1068,23 +1063,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             style: TextStyle(color: Colors.white70, fontSize: 11),
                           ),
                         )
-                      : ListView.builder(
-                          controller: _logScrollController,
-                          reverse: true,
-                          itemCount: _botLogs.length,
-                          itemBuilder: (context, index) {
-                            final logItem = _botLogs[_botLogs.length - 1 - index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
-                              child: Text(
-                                logItem,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF00C853),
-                                  fontSize: 11,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
+                      : AnimatedBuilder(
+                          // เพิ่มเอฟเฟกต์ป้ายไฟวิ่งเลื่อนขึ้นอย่างต่อเนื่องสำหรับ Log
+                          animation: _logMarqueeController,
+                          builder: (context, child) {
+                            return ListView.builder(
+                              controller: _logScrollController,
+                              itemCount: _botLogs.length,
+                              itemBuilder: (context, index) {
+                                final logItem = _botLogs[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 4.0),
+                                  child: Text(
+                                    logItem,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFF00C853),
+                                      fontSize: 11,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),
