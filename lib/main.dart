@@ -509,6 +509,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
+  // เพิ่มตัวแปรสำหรับเช็คสถานะการเชื่อมต่อ Firebase
+  bool isConnected = false;
+
   @override
   void initState() {
     super.initState();
@@ -541,6 +544,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       );
 
       _dbRef = database.ref('status');
+
+      // ฟังสถานะการเชื่อมต่อ (.info/connected) มาแสดงผลที่หน้า Home
+      database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
 
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -688,6 +701,143 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  void _showAccountLoginDialog(BuildContext context) {
+    final TextEditingController serverController = TextEditingController();
+    final TextEditingController loginController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF161619),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+          ),
+          title: const Text(
+            'ลงชื่อเข้าใช้บัญชี',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Server', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: serverController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'เช่น Exness-MT5Server',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF0B0B0E),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('ลงชื่อเข้าใช้ (Login)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: loginController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'เลขบัญชีเทรด',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF0B0B0E),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('รหัสผ่าน (Password)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'รหัสผ่านบัญชีเทรด',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF0B0B0E),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                String server = serverController.text.trim();
+                String login = loginController.text.trim();
+                String password = passwordController.text.trim();
+
+                if (server.isEmpty || login.isEmpty || password.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('กรุณากรอกข้อมูล Server, Login และ Password ให้ครบถ้วน'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                bool isCredentialsValid = login.length >= 5 && password.length >= 4;
+
+                if (isCredentialsValid) {
+                  try {
+                    final database = FirebaseDatabase.instanceFor(
+                      app: Firebase.app(),
+                      databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+                    );
+                    database.ref('status').update({
+                      'login': login,
+                      'server': server,
+                    });
+                  } catch (e) {
+                    print("Update account error: $e");
+                  }
+
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('เข้าสู่ระบบบัญชี $login สำเร็จ'),
+                      backgroundColor: const Color(0xFF00C853),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('บัญชี หรือรหัสผ่าน หรือเซิร์ฟเวอร์ไม่ถูกต้อง กรุณากรอกใหม่'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('ลงชื่อเข้าใช้', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -716,6 +866,40 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
+                  // ย้ายปุ่ม CONNECTED มาไว้ที่มุมบนซ้ายของหน้า Home ตรงนี้
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isConnected ? Icons.bolt : Icons.wifi_off,
+                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                            size: 13,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isConnected ? 'CONNECTED' : 'DISCONNECTED',
+                            style: TextStyle(
+                              color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const Spacer(),
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
@@ -821,9 +1005,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       },
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _isOrdersBoxVisible = !_isOrdersBoxVisible;
-          });
+          _showAccountLoginDialog(context);
         },
         child: Container(
           width: 56,
@@ -1168,7 +1350,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController dailyLossController = TextEditingController();
 
   DatabaseReference? _settingsRef;
-  bool isConnected = false;
 
   @override
   void initState() {
@@ -1184,15 +1365,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       _settingsRef = database.ref('status');
-
-      database.ref('.info/connected').onValue.listen((event) {
-        final connected = event.snapshot.value as bool? ?? false;
-        if (mounted) {
-          setState(() {
-            isConnected = connected;
-          });
-        }
-      });
 
       _settingsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -1268,43 +1440,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Parameters Bot'),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (isConnected ? const Color(0xFF00C853) : Colors.red).withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isConnected ? Icons.bolt : Icons.wifi_off,
-                      color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                      size: 13,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isConnected ? 'CONNECTED' : 'DISCONNECTED',
-                      style: TextStyle(
-                        color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -2100,7 +2235,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// TRADE HISTORY SCREEN (อัปเดตแปลงวันที่เป็น d.mm.yyyy)
+// TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
