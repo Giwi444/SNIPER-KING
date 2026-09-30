@@ -1529,7 +1529,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // ย้าย Start Time และ End Time ลงมาวางไว้บริเวณใกล้กับ Calculated TP
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
@@ -1539,7 +1538,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      // นำ Timeframe (ขนาดกะทัดรัด) มาวางคู่กับช่อง Calculated TP ในบรรทัดเดียวกันเพื่อให้สมมาตร
                       Row(
                         children: [
                           Expanded(
@@ -1666,7 +1664,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // จัดให้ตัวเลขและข้อความภายในช่องกรอกข้อมูลอยู่กึ่งกลาง (textAlign: TextAlign.center)
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1683,7 +1680,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            textAlign: TextAlign.center, // จัดข้อความ/ตัวเลขให้อยู่ตรงกลาง
+            textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white, fontSize: 13),
             onChanged: (val) => setState(() {}),
             decoration: const InputDecoration(
@@ -2103,7 +2100,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// TRADE HISTORY SCREEN
+// TRADE HISTORY SCREEN (อัปเดตแปลงวันที่เป็น d.mm.yyyy)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2187,7 +2184,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
     DateTime now = DateTime.now();
     return allTradeHistory.where((trade) {
       String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      DateTime? tradeDate = DateTime.tryParse(timeStr.replaceAll('.', '-'));
+      if (timeStr.isEmpty) return false;
+
+      String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
+      DateTime? tradeDate;
+
+      try {
+        List<String> parts = formattedTime.split(' ')[0].split('-');
+        if (parts.length == 3) {
+          int? p1 = int.tryParse(parts[0]);
+          int? p2 = int.tryParse(parts[1]);
+          int? p3 = int.tryParse(parts[2]);
+
+          if (p1 != null && p2 != null && p3 != null) {
+            if (p1 > 1000) {
+              tradeDate = DateTime(p1, p2, p3);
+            } else {
+              int year = p3;
+              if (year < 100) year += 2000;
+              tradeDate = DateTime(year, p2, p1);
+            }
+          }
+        }
+      } catch (e) {
+        tradeDate = null;
+      }
+
+      tradeDate ??= DateTime.tryParse(formattedTime);
+      if (tradeDate == null && formattedTime.length >= 10) {
+        tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+      }
+
       if (tradeDate == null) return false;
 
       if (selectedFilter == 'วันนี้') {
@@ -2204,6 +2231,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
       return true;
     }).toList();
+  }
+
+  String _formatDisplayDate(String rawDate) {
+    if (rawDate.isEmpty) return '';
+    try {
+      List<String> spaceSplit = rawDate.split(' ');
+      String datePart = spaceSplit[0];
+      String timePart = spaceSplit.length > 1 ? ' ${spaceSplit[1]}' : '';
+
+      String cleanDate = datePart.replaceAll('.', '-').replaceAll('/', '-');
+      List<String> parts = cleanDate.split('-');
+      
+      if (parts.length == 3) {
+        int? p1 = int.tryParse(parts[0]);
+        int? p2 = int.tryParse(parts[1]);
+        int? p3 = int.tryParse(parts[2]);
+
+        if (p1 != null && p2 != null && p3 != null) {
+          String day, month, year;
+          if (p1 > 1000) {
+            year = p1.toString();
+            month = p2.toString().padLeft(2, '0');
+            day = p3.toString();
+          } else {
+            day = p1.toString();
+            month = p2.toString().padLeft(2, '0');
+            year = p3 < 100 ? '${2000 + p3}' : p3.toString();
+          }
+          return '$day.$month.$year$timePart';
+        }
+      }
+    } catch (e) {
+      // Return raw if fails
+    }
+    return rawDate;
   }
 
   @override
@@ -2319,7 +2381,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
                           final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
                           final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                          final String closeTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                          
+                          final String rawCloseTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                          final String closeTime = _formatDisplayDate(rawCloseTime);
+
                           bool isBuy = type.toUpperCase().contains('BUY');
                           bool isProfit = profit >= 0;
 
