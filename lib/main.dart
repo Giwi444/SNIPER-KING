@@ -509,10 +509,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
-  // AnimationController สำหรับป้ายไฟวิ่ง (Marquee Style) แนวนอน
   late AnimationController _marqueeController;
-
-  // AnimationController สำหรับทำป้ายไฟวิ่งแนวตั้ง (Auto-scroll Marquee Ticker) สำหรับข้อความ Log
   late AnimationController _logMarqueeController;
 
   bool isConnected = false;
@@ -539,7 +536,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    // กำหนด Controller สำหรับป้ายไฟวิ่ง Log แนวตั้ง
     _logMarqueeController = AnimationController(
       duration: const Duration(seconds: 15),
       vsync: this,
@@ -625,7 +621,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             List<String> tempLogs = [];
             if (data is Map) {
-              // จัดลำดับ Map ตามคีย์ (เพื่อให้ข้อความที่ส่งมาทีหลังแสดงผลถูกต้องตามเวลา)
               var sortedEntries = data.entries.toList()
                 ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
               
@@ -1268,7 +1263,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  final List<String> tradingModeOptions = ['Liquidity', 'Breakout', 'Enqulfing'];
+  // เพิ่ม 'All Mode' เข้าไปในรายการ Trading Mode
+  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -1470,13 +1466,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
+                      // จัดวางปุ่ม 4 ปุ่มในแถวเดียวกันอย่างสวยงาม เป็นระเบียบ สีแตกต่างกัน
                       Row(
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
                           Color modeColor;
-                          if (mode == 'Sniper') {
+                          if (mode == 'All Mode') {
+                            modeColor = const Color(0xFFFFD700); // สีทองเด่นชัดสำหรับ All Mode
+                          } else if (mode == 'Liquidity') {
                             modeColor = const Color(0xFFE91E63);
-                          } else if (mode == 'Grid') {
+                          } else if (mode == 'Breakout') {
                             modeColor = const Color(0xFF00BCD4);
                           } else {
                             modeColor = const Color(0xFFFF5722);
@@ -1484,7 +1483,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 3.0),
                               child: SizedBox(
                                 height: 45,
                                 child: ElevatedButton(
@@ -1495,9 +1494,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     side: BorderSide(
                                       color: modeColor,
@@ -1509,9 +1508,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ),
