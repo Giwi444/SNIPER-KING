@@ -509,8 +509,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
-  // เพิ่ม AnimationController สำหรับทำป้ายไฟวิ่ง (Marquee)
+  // AnimationController สำหรับป้ายไฟวิ่ง (Marquee Style) แนวนอน
   late AnimationController _marqueeController;
+
+  // AnimationController สำหรับทำป้ายไฟวิ่งข้อความ "SNIPER KING BOT" จากล่างขึ้นบน
+  late AnimationController _titleMarqueeController;
 
   bool isConnected = false;
 
@@ -531,9 +534,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
 
-    // กำหนดความเร็วและรอบของการวิ่งตัวหนังสือ (ปรับเวลาได้ตามต้องการ เช่น 7 วินาทีต่อรอบ)
     _marqueeController = AnimationController(
       duration: const Duration(seconds: 7),
+      vsync: this,
+    )..repeat();
+
+    // กำหนดความเร็วป้ายไฟวิ่งข้อความจากล่างขึ้นบน (วนลูป)
+    _titleMarqueeController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat();
   }
@@ -542,6 +550,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _floatController.dispose();
     _marqueeController.dispose();
+    _titleMarqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -751,54 +760,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // ================= ป้ายสถานะระบบแบบตัวหนังสือวิ่งเลื่อน (Marquee Style) มุมบนขวา =================
+                  // ================= ป้ายสถานะระบบ (Connected) ขยับลงมาด้านขวาเพื่อไม่ให้บังส่วนหัวไอคอนโรบอท =================
                   Align(
                     alignment: Alignment.topRight,
-                    child: Container(
-                      width: 140, // กำหนดความกว้างกรอบป้ายไฟวิ่ง
-                      height: 26,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: statusColor,
-                          width: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 36.0),
+                      child: Container(
+                        width: 140,
+                        height: 26,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: statusColor,
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: ClipRect(
-                        child: AnimatedBuilder(
-                          animation: _marqueeController,
-                          builder: (context, child) {
-                            return Stack(
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                Positioned(
-                                  // คำนวณตำแหน่งพิกัดให้วิ่งเลื่อนจากขวาไปซ้ายวนลูปต่อเนื่อง
-                                  left: 140 - (_marqueeController.value * 210),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isConnected ? Icons.bolt : Icons.wifi_off,
-                                        color: statusColor,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$statusText • LIVE DATA STREAMING • $statusText • LIVE DATA STREAMING • ',
-                                        style: TextStyle(
+                        child: ClipRect(
+                          child: AnimatedBuilder(
+                            animation: _marqueeController,
+                            builder: (context, child) {
+                              return Stack(
+                                alignment: Alignment.centerLeft,
+                                children: [
+                                  Positioned(
+                                    left: 140 - (_marqueeController.value * 210),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isConnected ? Icons.bolt : Icons.wifi_off,
                                           color: statusColor,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                          size: 13,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '$statusText • LIVE DATA STREAMING • $statusText • LIVE DATA STREAMING • ',
+                                          style: TextStyle(
+                                            color: statusColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -976,17 +987,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(width: 24),
-              Text(
-                'SNIPER KING BOT',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: statusColor,
-                  letterSpacing: 1.2,
-                  shadows: const [
-                    Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
-                  ],
+              // ตัวหนังสือ "SNIPER KING BOT" แบบป้ายไฟวิ่ง (Marquee Style) จากล่างขึ้นบน
+              SizedBox(
+                height: 20,
+                width: 160,
+                child: ClipRect(
+                  child: AnimatedBuilder(
+                    animation: _titleMarqueeController,
+                    builder: (context, child) {
+                      double value = _titleMarqueeController.value;
+                      // คำนวณพิกัดให้วิ่งเลื่อนขึ้นบน (จากล่างขึ้นบน)
+                      double offsetY = 20 * (1 - value) - (value * 20);
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            top: offsetY,
+                            child: Text(
+                              'SNIPER KING BOT',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: statusColor,
+                                letterSpacing: 1.2,
+                                shadows: const [
+                                  Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
               GestureDetector(
