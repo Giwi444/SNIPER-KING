@@ -1263,7 +1263,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  // เพิ่ม 'All Mode' เข้าไปในรายการ Trading Mode
   final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
@@ -1284,6 +1283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController dailyLossController = TextEditingController();
 
   DatabaseReference? _settingsRef;
+  bool _isSaving = false; // ตัวแปรป้องกันการรีเฟรชค่าทับตอนบันทึก
 
   @override
   void initState() {
@@ -1301,6 +1301,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _settingsRef = database.ref('status');
 
       _settingsRef?.onValue.listen((DatabaseEvent event) {
+        // ถ้าระบบกำลังเซฟอยู่ จะไม่ยอมให้ Stream ดึงข้อมูลเก่ามาทับหน้าจอ
+        if (_isSaving) return;
+
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
@@ -1331,9 +1334,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _saveSettingsToFirebase() {
+  void _saveSettingsToFirebase() async {
+    setState(() {
+      _isSaving = true; // ล็อกสถานะกำลังบันทึก
+    });
+
     try {
-      _settingsRef?.update({
+      await _settingsRef?.update({
         'symbol': selectedSymbol,
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
@@ -1358,8 +1365,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           backgroundColor: Color(0xFFFFB300),
         ),
       );
+
+      // หน่วงเวลารอให้บอทอ่านค่าใหม่เรียบร้อยก่อนปลดล็อก (2 วินาที)
+      await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
       print("Save settings error: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false; // ปลดล็อกสถานะ
+        });
+      }
     }
   }
 
@@ -1466,13 +1482,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      // จัดวางปุ่ม 4 ปุ่มในแถวเดียวกันอย่างสวยงาม เป็นระเบียบ สีแตกต่างกัน
                       Row(
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
                           Color modeColor;
                           if (mode == 'All Mode') {
-                            modeColor = const Color(0xFFFFD700); // สีทองเด่นชัดสำหรับ All Mode
+                            modeColor = const Color(0xFFFFD700);
                           } else if (mode == 'Liquidity') {
                             modeColor = const Color(0xFFE91E63);
                           } else if (mode == 'Breakout') {
