@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-//#1  HOME SCREEN
+// #1  HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1033,10 +1033,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               border: Border.all(color: const Color(0xFF00C853), width: 1),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // เปลี่ยนจาก center เป็น start เพื่อให้กล่องย่อยชิดซ้าย
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(
-                  mainAxisAlignment: MainAxisAlignment.start, // เปลี่ยนจาก center เป็น start
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
@@ -1070,7 +1070,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   padding: const EdgeInsets.only(bottom: 4.0),
                                   child: Text(
                                     logItem,
-                                    textAlign: TextAlign.left, // เปลี่ยนจาก center เป็น left ให้ชิดซ้าย
+                                    textAlign: TextAlign.left,
                                     style: const TextStyle(
                                       color: Color(0xFF00C853),
                                       fontSize: 11,
@@ -2182,13 +2182,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // พารามิเตอร์ Dashboard Money Target & Loss Control
-  bool dashboardEnableMoneyTarget = true;
-  final TextEditingController dashboardMoneyTargetController = TextEditingController(text: "10.0");
-
-  bool dashboardEnableMoneyLoss = true;
-  final TextEditingController dashboardMoneyLossController = TextEditingController(text: "10.0");
-
   DatabaseReference? _settingsRef;
 
   @override
@@ -2229,12 +2222,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
-
-            dashboardEnableMoneyTarget = data['DashboardEnableMoneyTarget'] ?? true;
-            dashboardMoneyTargetController.text = data['DashboardMoneyTarget']?.toString() ?? '10.0';
-
-            dashboardEnableMoneyLoss = data['DashboardEnableMoneyLoss'] ?? true;
-            dashboardMoneyLossController.text = data['DashboardMoneyLoss']?.toString() ?? '10.0';
           });
         }
       });
@@ -2262,11 +2249,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
-        
-        'DashboardEnableMoneyTarget': dashboardEnableMoneyTarget,
-        'DashboardMoneyTarget': double.tryParse(dashboardMoneyTargetController.text) ?? 10.0,
-        'DashboardEnableMoneyLoss': dashboardEnableMoneyLoss,
-        'DashboardMoneyLoss': double.tryParse(dashboardMoneyLossController.text) ?? 10.0,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2598,82 +2580,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 1. DASHBOARD MONEY TARGET & LOSS CONTROL
-                      // ==========================================
-                      const Text(
-                        'DASHBOARD MONEY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
-                      ),
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Target Profit', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: dashboardEnableMoneyTarget,
-                                        activeColor: const Color(0xFF00C853),
-                                        onChanged: (val) => setState(() => dashboardEnableMoneyTarget = val),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Target (\$)', dashboardMoneyTargetController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Loss Limit', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: dashboardEnableMoneyLoss,
-                                        activeColor: Colors.redAccent,
-                                        onChanged: (val) => setState(() => dashboardEnableMoneyLoss = val),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Limit (\$)', dashboardMoneyLossController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Divider(color: Colors.white12),
-                      const SizedBox(height: 8),
-
-                      // ==========================================
-                      // 2. DAILY TARGET & LOSS CONTROL
+                      // DAILY TARGET & LOSS CONTROL
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
