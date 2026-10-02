@@ -815,14 +815,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const Spacer(),
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
-                      width: 260,
-                      child: _buildOrdersBoxContent(constraintsWidth: 260),
+                      width: double.infinity, // ขยายให้เต็มขอบเส้นสีขาว
+                      child: _buildOrdersBoxContent(constraintsWidth: double.infinity),
                     ),
                     const SizedBox(height: 10),
                   ],
                   Center(
                     child: SizedBox(
-                      width: 260,
+                      width: double.infinity, // ขยายความกว้างเต็มขอบเส้นสีขาว
                       child: _buildLogsBoxContent(),
                     ),
                   ),
@@ -987,7 +987,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(width: 24),
               SizedBox(
                 height: 24,
-                width: 170,
                 child: Center(
                   child: Text(
                     '★ SNIPER KING BOT ★',
@@ -2674,7 +2673,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 2. DAILY TARGET & LOSS CONTROL (ปรับดีไซน์ให้เหมือนกัน)
+                      // 2. DAILY TARGET & LOSS CONTROL
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
