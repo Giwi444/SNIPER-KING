@@ -815,14 +815,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const Spacer(),
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
-                      width: double.infinity, // ขยายให้เต็มขอบเส้นสีขาว
+                      width: double.infinity,
                       child: _buildOrdersBoxContent(constraintsWidth: double.infinity),
                     ),
                     const SizedBox(height: 10),
                   ],
                   Center(
                     child: SizedBox(
-                      width: double.infinity, // ขยายความกว้างเต็มขอบเส้นสีขาว
+                      width: double.infinity,
                       child: _buildLogsBoxContent(),
                     ),
                   ),
@@ -1033,10 +1033,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               border: Border.all(color: const Color(0xFF00C853), width: 1),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start, // เปลี่ยนจาก center เป็น start เพื่อให้กล่องย่อยชิดซ้าย
               children: [
                 const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start, // เปลี่ยนจาก center เป็น start
                   children: [
                     Text('🤖 ', style: TextStyle(fontSize: 13)),
                     Text(
@@ -1070,7 +1070,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   padding: const EdgeInsets.only(bottom: 4.0),
                                   child: Text(
                                     logItem,
-                                    textAlign: TextAlign.center,
+                                    textAlign: TextAlign.left, // เปลี่ยนจาก center เป็น left ให้ชิดซ้าย
                                     style: const TextStyle(
                                       color: Color(0xFF00C853),
                                       fontSize: 11,
