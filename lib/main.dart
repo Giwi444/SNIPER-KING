@@ -305,7 +305,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// MAIN NAVIGATION SCREEN
+// #0 MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// HOME SCREEN
+//#1  HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1245,7 +1245,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 // ==========================================
-// ORDERS SCREEN
+// #2 ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1649,7 +1649,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// TRADE HISTORY SCREEN
+//#3  TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2000,7 +2000,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// ALERTS SCREEN
+// #4 ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -2146,7 +2146,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// SETTINGS SCREEN
+// #5 SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2183,7 +2183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // พารามิเตอร์ใหม่ตามโจทย์
+  // พารามิเตอร์ Dashboard Money Target & Loss Control
   bool dashboardEnableMoneyTarget = true;
   final TextEditingController dashboardMoneyTargetController = TextEditingController(text: "10.0");
 
@@ -2231,7 +2231,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
-            // โหลดค่าพารามิเตอร์ใหม่
             dashboardEnableMoneyTarget = data['DashboardEnableMoneyTarget'] ?? true;
             dashboardMoneyTargetController.text = data['DashboardMoneyTarget']?.toString() ?? '10.0';
 
@@ -2265,7 +2264,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
         
-        // บันทึกค่าพารามิเตอร์ใหม่ลง Firebase
         'DashboardEnableMoneyTarget': dashboardEnableMoneyTarget,
         'DashboardMoneyTarget': double.tryParse(dashboardMoneyTargetController.text) ?? 10.0,
         'DashboardEnableMoneyLoss': dashboardEnableMoneyLoss,
@@ -2601,7 +2599,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // ส่วนจัดการ Dashboard Money Target & Loss Control
+                      // 1. DASHBOARD MONEY TARGET & LOSS CONTROL
                       // ==========================================
                       const Text(
                         'DASHBOARD MONEY TARGET & LOSS CONTROL', 
@@ -2674,37 +2672,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
+
+                      // ==========================================
+                      // 2. DAILY TARGET & LOSS CONTROL (ปรับดีไซน์ให้เหมือนกัน)
+                      // ==========================================
+                      const Text(
+                        'DAILY TARGET & LOSS CONTROL', 
+                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 10),
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Enable Daily Target', style: TextStyle(color: Colors.white, fontSize: 13)),
-                          Switch(
-                            value: enableDailyTarget,
-                            activeColor: const Color(0xFF00C853),
-                            onChanged: (val) => setState(() => enableDailyTarget = val),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyTarget,
+                                        activeColor: const Color(0xFF00C853),
+                                        onChanged: (val) => setState(() => enableDailyTarget = val),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyLoss,
+                                        activeColor: Colors.redAccent,
+                                        onChanged: (val) => setState(() => enableDailyLoss = val),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      if (enableDailyTarget) ...[
-                        const SizedBox(height: 6),
-                        _buildControllerInputField('Daily Target (\$)', dailyTargetController, TextInputType.number),
-                      ],
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Enable Daily Loss', style: TextStyle(color: Colors.white, fontSize: 13)),
-                          Switch(
-                            value: enableDailyLoss,
-                            activeColor: Colors.redAccent,
-                            onChanged: (val) => setState(() => enableDailyLoss = val),
-                          ),
-                        ],
-                      ),
-                      if (enableDailyLoss) ...[
-                        const SizedBox(height: 6),
-                        _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
-                      ],
+
                     ],
                   ),
                 ),
