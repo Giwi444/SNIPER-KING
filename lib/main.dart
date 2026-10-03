@@ -513,6 +513,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _marqueeController;
   late AnimationController _logMarqueeController;
 
+  // Animation สำหรับแถบเคลือนไหวไปมา (StatusBar Animation)
+  late AnimationController _statusBarAnimationController;
+
   bool isConnected = false;
 
   @override
@@ -541,6 +544,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
+
+    // สร้าง Animation Controller สำหรับแถบเคลือนไหวไปมา
+    _statusBarAnimationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
   }
 
   @override
@@ -548,6 +557,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _floatController.dispose();
     _marqueeController.dispose();
     _logMarqueeController.dispose();
+    _statusBarAnimationController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -975,7 +985,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 2),
-          // ย้ายกล่องสถานะเข้ามาไว้ใต้ข้อความหัวข้อ โดยเอาขอบและพื้นหลังออก เหลือแต่ตัวหนังสือวิ่ง
           SizedBox(
             width: 140,
             height: 18,
@@ -1090,19 +1099,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
-    bool isTotalProfit = totalOrdersProfit >= 0;
 
     String displayType = "รวมทั้งหมด";
     double displayLot = activeOrders.fold(0.0, (sum, item) => sum + (double.tryParse(item['lot']?.toString() ?? '0.01') ?? 0.01));
     double displayProfit = totalOrdersProfit;
-    String displayPriceText = "Avg Price Mode";
 
     if (_selectedOrderIndex != null && _selectedOrderIndex! < activeOrders.length) {
       final selectedOrder = activeOrders[_selectedOrderIndex!];
       displayType = selectedOrder['type']?.toString() ?? 'BUY';
       displayLot = double.tryParse(selectedOrder['lot']?.toString() ?? '0.01') ?? 0.01;
       displayProfit = double.tryParse(selectedOrder['profit']?.toString() ?? '0.0') ?? 0.0;
-      displayPriceText = "Entry: ${selectedOrder['price_open'] ?? 'N/A'}";
     }
 
     bool isDisplayProfit = displayProfit >= 0;
@@ -1171,39 +1177,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 4),
 
+          // ส่วนที่แก้ไข: เปลี่ยนจากกราฟเส้นเดิมมาเป็นแถบเคลืิอนไหวไปมาได้เหมือนตามภาพที่ 2[span_2](start_span)[span_2](end_span)
           Container(
             width: double.infinity,
-            height: 55,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            height: 48,
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: const Color(0xFF0B0B0E),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white38, width: 2),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: const Size(double.infinity, 45),
-                  painter: MiniChartPainter(isProfit: isDisplayProfit),
-                ),
-                Positioned(
-                  left: 6,
-                  bottom: 2,
-                  child: Text(
-                    displayPriceText,
-                    style: const TextStyle(color: Color(0xFFFFB300), fontSize: 9, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Positioned(
-                  right: 6,
-                  top: 2,
-                  child: Text(
-                    _selectedOrderIndex == null ? 'Mode: เส้นราคาเฉลี่ยรวม' : 'Mode: โฟกัสรายไม้ #${_selectedOrderIndex! + 1}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 8),
-                  ),
-                ),
-              ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: AnimatedBuilder(
+                animation: _statusBarAnimationController,
+                builder: (context, child) {
+                  return Stack(
+                    children: [
+                      // แถบสีแบ่งสัดส่วน 6 ช่อง (NO, LOW, MEDIUM, NORMAL, HIGH, MAX)
+                      Row(
+                        children: [
+                          Expanded(child: Container(color: const Color(0xFFE53935), alignment: Alignment.center, child: const Text('NO', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
+                          Expanded(child: Container(color: const Color(0xFFFF6F00), alignment: Alignment.center, child: const Text('LOW', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
+                          Expanded(child: Container(color: const Color(0xFFFFB300), alignment: Alignment.center, child: const Text('MEDIUM', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)))),
+                          Expanded(child: Container(color: const Color(0xFFFDD835), alignment: Alignment.center, child: const Text('NORMAL', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)))),
+                          Expanded(child: Container(color: const Color(0xFF7CB342), alignment: Alignment.center, child: const Text('HIGH', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
+                          Expanded(child: Container(color: const Color(0xFF00C853), alignment: Alignment.center, child: const Text('MAX', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
+                        ],
+                      ),
+                      // แถบแสงหรือตัวเลื่อนเคลืิอนไหวไปมา (Indicator Highlight)
+                      Align(
+                        alignment: Alignment(_statusBarAnimationController.value * 2 - 1, 0),
+                        child: Container(
+                          width: 45,
+                          height: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -1313,36 +1331,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ],
     );
   }
-}
-
-class MiniChartPainter extends CustomPainter {
-  final bool isProfit;
-  MiniChartPainter({required this.isProfit});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    path.moveTo(0, size.height * 0.7);
-    path.quadraticBezierTo(size.width * 0.25, size.height * 0.2, size.width * 0.5, size.height * 0.5);
-    path.quadraticBezierTo(size.width * 0.75, size.height * 0.8, size.width, size.height * 0.3);
-
-    canvas.drawPath(path, paint);
-
-    final linePaint = Paint()
-      ..color = const Color(0xFFFFB300)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    
-    canvas.drawLine(Offset(0, size.height * 0.5), Offset(size.width, size.height * 0.5), linePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 // ==========================================
