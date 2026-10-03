@@ -495,6 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String timeframe = "M1";
 
   bool _isOrdersBoxVisible = true;
+  int? _selectedOrderIndex; // ระบบเลือกดูรายไม้ (Order Selector)
 
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
@@ -695,6 +696,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             
             if (newOrders.isEmpty && activeOrders.isNotEmpty) {
               _isOrdersBoxVisible = false;
+              _selectedOrderIndex = null;
+            }
+
+            if (_selectedOrderIndex != null && _selectedOrderIndex! >= newOrders.length) {
+              _selectedOrderIndex = null;
             }
 
             activeOrders = newOrders;
@@ -816,7 +822,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
                       width: double.infinity,
-                      child: _buildOrdersBoxContent(constraintsWidth: double.infinity),
+                      child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
                     ),
                     const SizedBox(height: 10),
                   ],
@@ -1091,15 +1097,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildOrdersBoxContent({required double constraintsWidth}) {
+  // ==========================================
+  // CHART DETAIL & ORDER SELECTOR POPUP BOX
+  // ==========================================
+  Widget _buildChartDetailPopupBox({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
     bool isTotalProfit = totalOrdersProfit >= 0;
 
+    // คำนวณล็อตและข้อมูลตามไม้ที่ถูกเลือก หรือภาพรวม
+    String displayType = "รวมทั้งหมด";
+    double displayLot = activeOrders.fold(0.0, (sum, item) => sum + (double.tryParse(item['lot']?.toString() ?? '0.01') ?? 0.01));
+    double displayProfit = totalOrdersProfit;
+    String displayPriceText = "Avg Price Mode";
+
+    if (_selectedOrderIndex != null && _selectedOrderIndex! < activeOrders.length) {
+      final selectedOrder = activeOrders[_selectedOrderIndex!];
+      displayType = selectedOrder['type']?.toString() ?? 'BUY';
+      displayLot = double.tryParse(selectedOrder['lot']?.toString() ?? '0.01') ?? 0.01;
+      displayProfit = double.tryParse(selectedOrder['profit']?.toString() ?? '0.0') ?? 0.0;
+      displayPriceText = "Entry: ${selectedOrder['price_open'] ?? 'N/A'}";
+    }
+
+    bool isDisplayProfit = displayProfit >= 0;
+
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 180),
+      constraints: const BoxConstraints(maxHeight: 260),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -1117,58 +1142,95 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Row(
+          // Header ส่วนรายละเอียดแบบ MT5 Style
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 15),
-              SizedBox(width: 6),
-              Text(
-                'Position & Total Open Profit',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              Row(
+                children: [
+                  const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 15),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$symbol ($timeframe) - Order Detail View',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ],
               ),
+              if (_selectedOrderIndex != null)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedOrderIndex = null; // กดเพื่อกลับมาดูภาพรวมเฉลี่ย
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFB300).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFFFB300), width: 1),
+                    ),
+                    child: const Text('ดูภาพรวมทั้งหมด', style: TextStyle(color: Color(0xFFFFB300), fontSize: 9, fontWeight: FontWeight.bold)),
+                  ),
+                ),
             ],
           ),
           const Divider(color: Colors.white24, height: 6),
-          
+
+          // แถวข้อมูลย่อจำลองภาพสไตล์ MT5 (P&L, Pips, Lot, ทิศทาง)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildMetricCell('P&L สุทธิ', '${isDisplayProfit ? "+" : ""}\$${displayProfit.toStringAsFixed(2)}', isDisplayProfit ? const Color(0xFF00C853) : Colors.redAccent),
+              _buildMetricCell('ทิศทาง', displayType, Colors.amberAccent),
+              _buildMetricCell('จำนวนล็อต', displayLot.toStringAsFixed(2), Colors.white),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // ส่วนแสดงกราฟจำลอง (Interactive Chart View) พร้อมเส้น Entry / Average Price
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            height: 55,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isTotalProfit
-                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              color: const Color(0xFF0B0B0E),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                const Text(
-                  'TOTAL OPEN PROFIT',
-                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                // เส้นกราฟจำลองแนวโน้มแท่งเทียน
+                CustomPaint(
+                  size: const Size(double.infinity, 45),
+                  painter: MiniChartPainter(isProfit: isDisplayProfit),
                 ),
-                Text(
-                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                Positioned(
+                  left: 6,
+                  bottom: 2,
+                  child: Text(
+                    displayPriceText,
+                    style: const TextStyle(color: Color(0xFFFFB300), fontSize: 9, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  top: 2,
+                  child: Text(
+                    _selectedOrderIndex == null ? 'Mode: เส้นราคาเฉลี่ยรวม' : 'Mode: โฟกัสรายไม้ #${_selectedOrderIndex! + 1}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 8),
                   ),
                 ),
               ],
             ),
           ),
-          
           const SizedBox(height: 4),
+
+          // Order Selector List (กล่องลิสต์รายการย่อยด้านล่างสำหรับเลือกคลิกดูทีละไม้)
           activeOrders.isEmpty
               ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  padding: EdgeInsets.symmetric(vertical: 4.0),
                   child: Center(
                     child: Text('No open positions', style: TextStyle(color: Colors.grey, fontSize: 11)),
                   ),
@@ -1185,53 +1247,74 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       final String ordSymbol = order['symbol']?.toString() ?? symbol;
                       bool isBuy = type.toUpperCase().contains('BUY');
                       bool orderProfit = profit >= 0;
+                      bool isSelected = _selectedOrderIndex == index;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 3),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4),
-                            width: 1,
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            // ระบบโต้ตอบ Interactive Click เลือกดูรายไม้
+                            _selectedOrderIndex = isSelected ? null : index;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFFFB300).withOpacity(0.2) : const Color(0xFF0B0B0E),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isSelected 
+                                  ? const Color(0xFFFFB300) 
+                                  : (isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4)),
+                              width: isSelected ? 1.5 : 1,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      type,
+                                      style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 9),
+                                    ),
                                   ),
-                                  child: Text(
-                                    type,
-                                    style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 9),
+                                  const SizedBox(width: 6),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('$ordSymbol #${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+                                      Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(ordSymbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
-                                    Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
+                                ],
                               ),
-                            ),
-                          ],
+                              Row(
+                                children: [
+                                  Text(
+                                    '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                                    color: isSelected ? const Color(0xFFFFB300) : Colors.grey,
+                                    size: 14,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -1241,6 +1324,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
+  Widget _buildMetricCell(String label, String value, Color valueColor) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 9)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+// Custom Painter สำหรับวาดเส้นกราฟจำลองในกล่องป๊อปอัพ
+class MiniChartPainter extends CustomPainter {
+  final bool isProfit;
+  MiniChartPainter({required this.isProfit});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = isProfit ? const Color(0xFF00C853) : const Color(0xFFD50000)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    path.moveTo(0, size.height * 0.7);
+    path.quadraticBezierTo(size.width * 0.25, size.height * 0.2, size.width * 0.5, size.height * 0.5);
+    path.quadraticBezierTo(size.width * 0.75, size.height * 0.8, size.width, size.height * 0.3);
+
+    canvas.drawPath(path, paint);
+
+    // วาดเส้นราคา Entry / Average พาดขวาง
+    final linePaint = Paint()
+      ..color = const Color(0xFFFFB300)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    
+    canvas.drawLine(Offset(0, size.height * 0.5), Offset(size.width, size.height * 0.5), linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 // ==========================================
