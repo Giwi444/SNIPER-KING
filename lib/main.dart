@@ -743,9 +743,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _isRobotIconOffsetInitialized = true;
     }
 
-    final Color statusColor = isConnected ? const Color(0xFF00C853) : Colors.red;
-    final String statusText = isConnected ? 'CONNECTED' : 'DISCONNECTED';
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -765,59 +762,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8.0, right: 4.0),
-                      child: Container(
-                        width: 110,
-                        height: 22,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: statusColor,
-                            width: 1,
-                          ),
-                        ),
-                        child: ClipRect(
-                          child: AnimatedBuilder(
-                            animation: _marqueeController,
-                            builder: (context, child) {
-                              return Stack(
-                                alignment: Alignment.centerLeft,
-                                children: [
-                                  Positioned(
-                                    left: 110 - (_marqueeController.value * 180),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          isConnected ? Icons.bolt : Icons.wifi_off,
-                                          color: statusColor,
-                                          size: 11,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          '$statusText • LIVE • $statusText • LIVE • ',
-                                          style: TextStyle(
-                                            color: statusColor,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                   const Spacer(),
                   if (_isOrdersBoxVisible) ...[
                     SizedBox(
@@ -961,6 +905,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildLogsBoxContent() {
     final Color botStatusColor = isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000);
+    final Color statusColor = isConnected ? const Color(0xFF00C853) : Colors.red;
+    final String statusText = isConnected ? 'CONNECTED' : 'DISCONNECTED';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1028,7 +974,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 2),
+          // ย้ายกล่องสถานะเข้ามาไว้ใต้ข้อความหัวข้อ โดยเอาขอบและพื้นหลังออก เหลือแต่ตัวหนังสือวิ่ง
+          SizedBox(
+            width: 140,
+            height: 18,
+            child: ClipRect(
+              child: AnimatedBuilder(
+                animation: _marqueeController,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        left: 140 - (_marqueeController.value * 220),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isConnected ? Icons.bolt : Icons.wifi_off,
+                              color: statusColor,
+                              size: 10,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$statusText • LIVE • $statusText • LIVE • ',
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
           Container(
             width: double.infinity,
             height: 110,
@@ -1106,7 +1092,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
     bool isTotalProfit = totalOrdersProfit >= 0;
 
-    // คำนวณล็อตและข้อมูลตามไม้ที่ถูกเลือก หรือภาพรวม
     String displayType = "รวมทั้งหมด";
     double displayLot = activeOrders.fold(0.0, (sum, item) => sum + (double.tryParse(item['lot']?.toString() ?? '0.01') ?? 0.01));
     double displayProfit = totalOrdersProfit;
@@ -1142,7 +1127,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header ส่วนรายละเอียดแบบ MT5 Style
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1160,7 +1144,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _selectedOrderIndex = null; // กดเพื่อกลับมาดูภาพรวมเฉลี่ย
+                      _selectedOrderIndex = null;
                     });
                   },
                   child: Container(
@@ -1177,7 +1161,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const Divider(color: Colors.white24, height: 6),
 
-          // แถวข้อมูลย่อจำลองภาพสไตล์ MT5 (P&L, Pips, Lot, ทิศทาง)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -1188,7 +1171,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 4),
 
-          // ส่วนแสดงกราฟจำลอง (Interactive Chart View) พร้อมเส้น Entry / Average Price
           Container(
             width: double.infinity,
             height: 55,
@@ -1201,7 +1183,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // เส้นกราฟจำลองแนวโน้มแท่งเทียน
                 CustomPaint(
                   size: const Size(double.infinity, 45),
                   painter: MiniChartPainter(isProfit: isDisplayProfit),
@@ -1227,7 +1208,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 4),
 
-          // Order Selector List (กล่องลิสต์รายการย่อยด้านล่างสำหรับเลือกคลิกดูทีละไม้)
           activeOrders.isEmpty
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4.0),
@@ -1252,7 +1232,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       return GestureDetector(
                         onTap: () {
                           setState(() {
-                            // ระบบโต้ตอบ Interactive Click เลือกดูรายไม้
                             _selectedOrderIndex = isSelected ? null : index;
                           });
                         },
@@ -1336,7 +1315,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// Custom Painter สำหรับวาดเส้นกราฟจำลองในกล่องป๊อปอัพ
 class MiniChartPainter extends CustomPainter {
   final bool isProfit;
   MiniChartPainter({required this.isProfit});
@@ -1355,7 +1333,6 @@ class MiniChartPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // วาดเส้นราคา Entry / Average พาดขวาง
     final linePaint = Paint()
       ..color = const Color(0xFFFFB300)
       ..strokeWidth = 1.0
@@ -2704,9 +2681,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
 
-                      // ==========================================
-                      // DAILY TARGET & LOSS CONTROL
-                      // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
                         style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
