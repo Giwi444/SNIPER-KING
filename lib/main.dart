@@ -495,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String timeframe = "M1";
 
   bool _isOrdersBoxVisible = true;
-  int? _selectedOrderIndex; // ระบบเลือกดูรายไม้ (Order Selector)
+  int? _selectedOrderIndex;
 
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
@@ -512,9 +512,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   late AnimationController _marqueeController;
   late AnimationController _logMarqueeController;
-
-  // Animation สำหรับแถบเคลือนไหวไปมา (StatusBar Animation)
-  late AnimationController _statusBarAnimationController;
 
   bool isConnected = false;
 
@@ -544,12 +541,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
-
-    // สร้าง Animation Controller สำหรับแถบเคลือนไหวไปมา
-    _statusBarAnimationController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat(reverse: true);
   }
 
   @override
@@ -557,7 +548,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _floatController.dispose();
     _marqueeController.dispose();
     _logMarqueeController.dispose();
-    _statusBarAnimationController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -1113,6 +1103,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     bool isDisplayProfit = displayProfit >= 0;
 
+    // คำนวณความเข้มและตำแหน่งของแถบแสดงกำไร/ขาดทุน
+    // สมให้ช่วงกำไร/ขาดทุนสูงสุดที่ -100 ถึง +100 ดอลลาร์ เป็นสเกลเต็มขีด (-1.0 ถึง 1.0)
+    double normalizedProfit = (displayProfit / 50.0).clamp(-1.0, 1.0); 
+    
+    // คำนวณสีและความเข้มตามกำไร/ขาดทุน (น้อยจาง - มากเข้ม)
+    Color gaugeColor;
+    double opacity = (displayProfit.abs() / 50.0).clamp(0.2, 1.0); // ยิ่งมากยิ่งเข้ม (Alpha สูงสุด 1.0 ต่ำสุด 0.2)
+
+    if (displayProfit > 0) {
+      gaugeColor = const Color(0xFF00C853).withOpacity(opacity); // ฝั่งกำไร: สีเขียว
+    } else if (displayProfit < 0) {
+      gaugeColor = const Color(0xFFD50000).withOpacity(opacity); // ฝั่งขาดทุน: สีแดง
+    } else {
+      gaugeColor = const Color(0xFFFFB300); // เท่ากับ 0: สีเหลืองกลาง
+    }
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxHeight: 260),
@@ -1177,51 +1183,66 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 4),
 
-          // ส่วนที่แก้ไข: เปลี่ยนจากกราฟเส้นเดิมมาเป็นแถบเคลืิอนไหวไปมาได้เหมือนตามภาพที่ 2[span_2](start_span)[span_2](end_span)
+          // แถบแสดงผล P&L แบบ Dynamic สีเปลี่ยนตามความมากน้อย (ซ้ายแดงเข้มไปจาง, ขวาเขียวจางไปเข้ม)
           Container(
             width: double.infinity,
-            height: 48,
+            height: 38,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: const Color(0xFF0B0B0E),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white38, width: 2),
-            ),
-            child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: AnimatedBuilder(
-                animation: _statusBarAnimationController,
-                builder: (context, child) {
-                  return Stack(
-                    children: [
-                      // แถบสีแบ่งสัดส่วน 6 ช่อง (NO, LOW, MEDIUM, NORMAL, HIGH, MAX)
-                      Row(
-                        children: [
-                          Expanded(child: Container(color: const Color(0xFFE53935), alignment: Alignment.center, child: const Text('NO', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
-                          Expanded(child: Container(color: const Color(0xFFFF6F00), alignment: Alignment.center, child: const Text('LOW', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
-                          Expanded(child: Container(color: const Color(0xFFFFB300), alignment: Alignment.center, child: const Text('MEDIUM', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)))),
-                          Expanded(child: Container(color: const Color(0xFFFDD835), alignment: Alignment.center, child: const Text('NORMAL', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)))),
-                          Expanded(child: Container(color: const Color(0xFF7CB342), alignment: Alignment.center, child: const Text('HIGH', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
-                          Expanded(child: Container(color: const Color(0xFF00C853), alignment: Alignment.center, child: const Text('MAX', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)))),
-                        ],
-                      ),
-                      // แถบแสงหรือตัวเลื่อนเคลืิอนไหวไปมา (Indicator Highlight)
-                      Align(
-                        alignment: Alignment(_statusBarAnimationController.value * 2 - 1, 0),
-                        child: Container(
-                          width: 45,
-                          height: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.35),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                        ),
-                      ),
+              border: Border.all(color: Colors.white38, width: 1.5),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // ไล่สีพื้นหลังของแถบ (ซ้ายแดง -> ตรงกลางเหลือง -> ขวาเขียว)
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.shade900,
+                        Colors.red.shade400.withOpacity(0.4),
+                        const Color(0xFFFFB300),
+                        const Color(0xFF00C853).withOpacity(0.4),
+                        const Color(0xFF00C853),
+                      ],
+                      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                    ),
+                  ),
+                ),
+                // ข้อความแสดงสถานะตรงกลางแถบ
+                Text(
+                  displayProfit == 0 
+                      ? "P/L: \$0.00 (NEUTRAL)" 
+                      : "${isDisplayProfit ? "PROFIT: +" : "LOSS: "}\$${displayProfit.toStringAsFixed(2)}",
+                  style: TextStyle(
+                    color: displayProfit == 0 ? Colors.black : Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 2, offset: const Offset(0, 1)),
                     ],
-                  );
-                },
-              ),
+                  ),
+                ),
+                // ตัวชี้ตำแหน่ง (Indicator) ที่วิ่งตามค่ากำไร ขาดทุนจริง
+                Align(
+                  alignment: Alignment(normalizedProfit, 0),
+                  child: Container(
+                    width: 14,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: gaugeColor, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(color: gaugeColor.withOpacity(0.8), blurRadius: 6, spreadRadius: 1),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 4),
