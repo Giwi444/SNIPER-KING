@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -496,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String timeframe = "M1";
 
   bool _isOrdersBoxVisible = true;
-  bool _isDashboardVisible = true; // ตัวแปรควบคุมการยุบ/ขยายกล่องใหญ่กรอบสีขาว
+  bool _isMinimizedToBubble = false; // สถานะสำหรับซ่อนหน้าต่างทั้งหมดเหลือแค่บอลลูนหุ่นยนต์
   int? _selectedOrderIndex;
 
   List<String> _botLogs = [];
@@ -759,61 +758,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Container(
             color: Colors.black.withOpacity(0.3),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  // ห่อด้วย Container สร้างกรอบสีขาวจำลองหน้าจอคอมพิวเตอร์ตามที่อธิบาย
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white, width: 2), // กรอบสีขาวภายนอก
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // แถบเมนูด้านบนขวาจำลองเหมือนหน้าจอคอมพิวเตอร์
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFB300).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: const Color(0xFFFFB300), width: 1),
+          
+          // หากไม่ได้กด Minimze ให้แสดงหน้าต่างหลัก (กล่องกรอบสีขาว) ปกติ
+          if (!_isMinimizedToBubble)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFB300).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFFFFB300), width: 1),
+                                ),
+                                child: const Text(
+                                  'Home • Orders • Settings • History • Alert',
+                                  style: TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                              child: const Text(
-                                'Home • Orders • Settings • History • Alert',
-                                style: TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.bold),
+                              const SizedBox(width: 6),
+                              // ปุ่มขีดลบ (Minimize) ตรงวงรีสีขาวตามรูปภาพ เพื่อยุบแอพเหลือแค่บอลลูนหุ่นยนต์
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _isMinimizedToBubble = true; // ยุบหน้าจอแอพทั้งหมดให้เหลือแค่บอลลูน
+                                  });
+                                },
+                                child: Container(
+                                  width: 16,
+                                  height: 4,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isDashboardVisible = !_isDashboardVisible; // กดปุ่มมุมขวาเพื่อยุบ/ขยายได้เช่นกัน
-                                  _isOrdersBoxVisible = _isDashboardVisible;
-                                });
-                              },
-                              child: Container(
-                                width: 16,
-                                height: 4,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                color: Colors.white, // ปุ่มขีดลบจำลองminimize
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-
-                        // เงื่อนไขควบคุมการยุบ/ขยายเนื้อหาภายในกล่องใหญ่
-                        if (_isDashboardVisible) ...[
+                            ],
+                          ),
+                          const SizedBox(height: 6),
                           if (_isOrdersBoxVisible) ...[
                             SizedBox(
                               width: double.infinity,
@@ -881,15 +878,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                           const SizedBox(height: 4),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           
-          // ปุ่มบอลลูนหุ่นยนต์ที่สามารถลากไปมาได้ และใช้กดเพื่อสั่งยุบ/ขยายกล่องใหญ่กรอบสีขาว
+          // ปุ่มบอลลูนหุ่นยนต์ลอยได้ สามารถลากไปมาได้ และใช้กดเพื่อเปิดขยายหน้าต่างแอพกลับคืนมา
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -924,8 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _isDashboardVisible = !_isDashboardVisible; // กดบอลลูนหุ่นยนต์เพื่อยุบ/ขยายกล่องใหญ่กรอบสีขาวทันที
-            _isOrdersBoxVisible = _isDashboardVisible;
+            _isMinimizedToBubble = !_isMinimizedToBubble; // กดบอลลูนเพื่อสลับเปิด/ปิดหน้าต่างแอพหลัก
           });
         },
         child: Container(
