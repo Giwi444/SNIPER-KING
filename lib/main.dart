@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1  HOME SCREEN
+// #1  HOME SCREEN (พร้อม Floating Icon ลอยได้)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -834,6 +834,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
+          // Floating Icon (ไอคอนลอยหุ่นยนต์ที่สามารถลากและแตะซ่อน/เปิดหน้าต่างแดชบอร์ดได้)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -1102,21 +1103,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     bool isDisplayProfit = displayProfit >= 0;
-
-    // คำนวณความเข้มและตำแหน่งของแถบแสดงกำไร/ขาดทุน
-    // สมให้ช่วงกำไร/ขาดทุนสูงสุดที่ -100 ถึง +100 ดอลลาร์ เป็นสเกลเต็มขีด (-1.0 ถึง 1.0)
     double normalizedProfit = (displayProfit / 50.0).clamp(-1.0, 1.0); 
     
-    // คำนวณสีและความเข้มตามกำไร/ขาดทุน (น้อยจาง - มากเข้ม)
     Color gaugeColor;
-    double opacity = (displayProfit.abs() / 50.0).clamp(0.2, 1.0); // ยิ่งมากยิ่งเข้ม (Alpha สูงสุด 1.0 ต่ำสุด 0.2)
+    double opacity = (displayProfit.abs() / 50.0).clamp(0.2, 1.0);
 
     if (displayProfit > 0) {
-      gaugeColor = const Color(0xFF00C853).withOpacity(opacity); // ฝั่งกำไร: สีเขียว
+      gaugeColor = const Color(0xFF00C853).withOpacity(opacity);
     } else if (displayProfit < 0) {
-      gaugeColor = const Color(0xFFD50000).withOpacity(opacity); // ฝั่งขาดทุน: สีแดง
+      gaugeColor = const Color(0xFFD50000).withOpacity(opacity);
     } else {
-      gaugeColor = const Color(0xFFFFB300); // เท่ากับ 0: สีเหลืองกลาง
+      gaugeColor = const Color(0xFFFFB300);
     }
 
     return Container(
@@ -1183,7 +1180,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 4),
 
-          // แถบแสดงผล P&L แบบ Dynamic สีเปลี่ยนตามความมากน้อย (ซ้ายแดงเข้มไปจาง, ขวาเขียวจางไปเข้ม)
           Container(
             width: double.infinity,
             height: 38,
@@ -1196,7 +1192,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // ไล่สีพื้นหลังของแถบ (ซ้ายแดง -> ตรงกลางเหลือง -> ขวาเขียว)
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
@@ -1212,7 +1207,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // ข้อความแสดงสถานะตรงกลางแถบ
                 Text(
                   displayProfit == 0 
                       ? "P/L: \$0.00 (NEUTRAL)" 
@@ -1226,7 +1220,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-                // ตัวชี้ตำแหน่ง (Indicator) ที่วิ่งตามค่ากำไร ขาดทุนจริง
                 Align(
                   alignment: Alignment(normalizedProfit, 0),
                   child: Container(
