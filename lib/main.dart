@@ -635,14 +635,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               });
 
               if (_hasOverlayPermission) {
-                // เรียกคำสั่งเปิดหน้าต่างลอย Overlay ทันทีเมื่อได้รับสิทธิ์
+                // แก้ไขการเรียก showOverlay ให้ถูกต้องตามพารามิเตอร์ที่แพ็กเกจรองรับ
                 await FlutterOverlayWindow.showOverlay(
-                  enableDrag: true,
-                  overlayTitle: "Sniper King Overlay",
-                  overlayContent: "Running",
-                  flag: OverlayFlag.defaultFlag,
+                  height: 200,
+                  width: 200,
+                  alignment: OverlayAlignment.center,
                   visibility: NotificationVisibility.visibilityPublic,
-                  positionSize: const OverlayPosition(100, 100),
+                  flag: OverlayFlag.defaultFlag,
                 );
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1010,18 +1009,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
           });
-          // ตัวอย่างการเรียกเปิด/ปิดหน้าต่างลอย Overlay เมื่อกดที่ปุ่มลอย
+          // แก้ไขการเปิด/ปิดหน้าต่างลอย Overlay ภายใต้เงื่อนไขที่ถูกต้อง
           if (await FlutterOverlayWindow.isActive()) {
             await FlutterOverlayWindow.closeOverlay();
           } else {
             if (await FlutterOverlayWindow.isPermissionGranted()) {
               await FlutterOverlayWindow.showOverlay(
-                enableDrag: true,
-                overlayTitle: "Sniper King Overlay",
-                overlayContent: "Running",
-                flag: OverlayFlag.defaultFlag,
+                height: 200,
+                width: 200,
+                alignment: OverlayAlignment.center,
                 visibility: NotificationVisibility.visibilityPublic,
-                positionSize: const OverlayPosition(100, 100),
+                flag: OverlayFlag.defaultFlag,
               );
             }
           }
