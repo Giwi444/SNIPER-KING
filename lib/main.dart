@@ -56,7 +56,8 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             setState(() {
               _isExpanded = true;
             });
-            await FlutterOverlayWindow.resizeOverlay(350, 500);
+            // แก้ไขโดยระบุพารามิเตอร์ให้ครบ 3 ตัว (width, height, flag) ตามที่แพ็กเกจกำหนด
+            await FlutterOverlayWindow.resizeOverlay(350, 500, true);
           },
           child: Container(
             width: 65,
@@ -135,7 +136,8 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                       setState(() {
                         _isExpanded = false;
                       });
-                      await FlutterOverlayWindow.resizeOverlay(80, 80);
+                      // แก้ไขโดยระบุพารามิเตอร์ให้ครบ 3 ตัว
+                      await FlutterOverlayWindow.resizeOverlay(80, 80, true);
                     },
                   ),
                 ],
