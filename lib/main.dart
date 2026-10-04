@@ -474,7 +474,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1  HOME SCREEN (พร้อม Floating Icon ลอยได้)
+// #1  HOME SCREEN (พร้อม Floating Icon พับซ่อนแดชบอร์ดทั้งหมด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -494,7 +494,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  bool _isOrdersBoxVisible = true;
+  // ใช้ตัวแปรนี้ควบคุมการซ่อน/แสดง แดชบอร์ดทั้งหมด (Order Detail, Logs Box และปุ่มควบคุม)
+  bool _isDashboardVisible = true;
   int? _selectedOrderIndex;
 
   List<String> _botLogs = [];
@@ -690,12 +691,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
 
           setState(() {
-            if (newOrders.length > activeOrders.length && !_isOrdersBoxVisible) {
-              _isOrdersBoxVisible = true;
+            if (newOrders.length > activeOrders.length && !_isDashboardVisible) {
+              _isDashboardVisible = true;
             }
             
             if (newOrders.isEmpty && activeOrders.isNotEmpty) {
-              _isOrdersBoxVisible = false;
               _selectedOrderIndex = null;
             }
 
@@ -763,78 +763,79 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 children: [
                   const Spacer(),
-                  if (_isOrdersBoxVisible) ...[
+                  // เมื่อ _isDashboardVisible เป็น true จะแสดงแดชบอร์ดทั้งหมด แต่ถ้าเป็น false จะถูกซ่อนไป
+                  if (_isDashboardVisible) ...[
                     SizedBox(
                       width: double.infinity,
                       child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
                     ),
                     const SizedBox(height: 10),
-                  ],
-                  Center(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: _buildLogsBoxContent(),
+                    Center(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: _buildLogsBoxContent(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: _closeAllOrders,
-                            icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                            label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: _closeAllOrders,
+                              icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                              label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFB300),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(true),
-                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _toggleBotStatus(true),
+                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C853),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(false),
-                            icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _toggleBotStatus(false),
+                              icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD50000),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
                 ],
               ),
             ),
           ),
           
-          // Floating Icon (ไอคอนลอยหุ่นยนต์ที่สามารถลากและแตะซ่อน/เปิดหน้าต่างแดชบอร์ดได้)
+          // Floating Icon (ไอคอนลอยหุ่นยนต์ ใช้แตะเพื่อพับซ่อน/เปิดแสดงแดชบอร์ดทั้งหมด)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -869,7 +870,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _isOrdersBoxVisible = !_isOrdersBoxVisible;
+            _isDashboardVisible = !_isDashboardVisible;
           });
         },
         child: Container(
