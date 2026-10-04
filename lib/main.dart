@@ -1,175 +1,9 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-// ==========================================
-// ENTRY POINT สำหรับหน้าต่างลอย (Overlay)
-// ==========================================
-@pragma("vm:entry-point")
-void overlayMain() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: OverlayWidget(),
-    ),
-  );
-}
-
-// Widget สำหรับตัว Overlay (ไอคอนกลม และ แดชบอร์ดขยาย)
-class OverlayWidget extends StatefulWidget {
-  const OverlayWidget({super.key});
-
-  @override
-  State<OverlayWidget> createState() => _OverlayWidgetState();
-}
-
-class _OverlayWidgetState extends State<OverlayWidget> {
-  bool _isExpanded = false; // สถานะ: false = วงกลมเล็ก, true = แดชบอร์ดเต็ม
-
-  @override
-  void initState() {
-    super.initState();
-    // รับฟังข้อมูลที่ส่งมาจากแอปหลักผ่าน Overlay
-    FlutterOverlayWindow.overlayListener.listen((data) {
-      if (data != null && data is Map) {
-        setState(() {
-          if (data.containsKey('isExpanded')) {
-            _isExpanded = data['isExpanded'];
-          }
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // ถ้ายุบเป็นไอคอนวงกลม
-    if (!_isExpanded) {
-      return Material(
-        color: Colors.transparent,
-        child: GestureDetector(
-          onTap: () async {
-            setState(() {
-              _isExpanded = true;
-            });
-            await FlutterOverlayWindow.resizeOverlay(350, 500, true);
-          },
-          child: Container(
-            width: 65,
-            height: 65,
-            decoration: BoxDecoration(
-              color: Colors.blueAccent,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.smart_toy,
-                color: Colors.white,
-                size: 35,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // ถ้าขยายเป็นแดชบอร์ดเต็มตัว
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFFB300), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              blurRadius: 10,
-              spreadRadius: 3,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFD50000),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(14),
-                  topRight: Radius.circular(14),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.bolt, color: Color(0xFF00C853), size: 22),
-                      SizedBox(width: 8),
-                      Text(
-                        "Sniper King Active",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () async {
-                      setState(() {
-                        _isExpanded = false;
-                      });
-                      await FlutterOverlayWindow.resizeOverlay(80, 80, true);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Status: Running / Connected",
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      "ระบบลอยหน้าจอกำลังทำงานร่วมกับแอปอื่น...",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// MAIN APP ENTRY POINT
-// ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -185,7 +19,7 @@ void main() async {
       ),
     );
   } catch (e) {
-    log("Firebase init error: $e");
+    print("Firebase init error: $e");
   }
 
   runApp(const LiquiditySweepApp());
@@ -261,7 +95,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       setState(() {
         currentPinInput = "";
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
       );
@@ -473,7 +306,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// MAIN NAVIGATION SCREEN
+// #0 MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -510,7 +343,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     } catch (e) {
-      log("Account listen error: $e");
+      print("Account listen error: $e");
     }
   }
 
@@ -542,7 +375,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     } catch (e) {
-      log("Alerts count error: $e");
+      print("Alerts count error: $e");
     }
   }
 
@@ -642,7 +475,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// HOME SCREEN
+// #1  HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -662,6 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
+  bool _isOrdersBoxVisible = true;
   bool _isDashboardVisible = true;
   int? _selectedOrderIndex;
 
@@ -735,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      log("Connection listen error: $e");
+      print("Connection listen error: $e");
     }
   }
 
@@ -763,7 +597,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      log("Database listen error: $e");
+      print("Database listen error: $e");
     }
   }
 
@@ -814,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      log("Logs listen error: $e");
+      print("Logs listen error: $e");
     }
   }
 
@@ -828,7 +662,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const SnackBar(content: Text('Cleared all logs successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      log("Clear logs error: $e");
+      print("Clear logs error: $e");
     }
   }
 
@@ -858,11 +692,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
 
           setState(() {
-            if (newOrders.length > activeOrders.length && !_isDashboardVisible) {
-              _isDashboardVisible = true;
+            if (newOrders.length > activeOrders.length && !_isOrdersBoxVisible) {
+              _isOrdersBoxVisible = true;
             }
             
             if (newOrders.isEmpty && activeOrders.isNotEmpty) {
+              _isOrdersBoxVisible = false;
               _selectedOrderIndex = null;
             }
 
@@ -875,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      log("Orders listen error: $e");
+      print("Orders listen error: $e");
     }
   }
 
@@ -883,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       _dbRef?.update({'is_running': status});
     } catch (e) {
-      log("Toggle bot error: $e");
+      print("Toggle bot error: $e");
     }
   }
 
@@ -897,7 +732,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
       );
     } catch (e) {
-      log("Close all error: $e");
+      print("Close all error: $e");
     }
   }
 
@@ -930,71 +765,71 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 children: [
                   const Spacer(),
-                  if (_isDashboardVisible) ...[
+                  if (_isOrdersBoxVisible) ...[
                     SizedBox(
                       width: double.infinity,
                       child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
                     ),
                     const SizedBox(height: 10),
-                    Center(
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: _buildLogsBoxContent(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              onPressed: _closeAllOrders,
-                              icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                              label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFB300),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(true),
-                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00C853),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleBotStatus(false),
-                              icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD50000),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
+                  Center(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: _buildLogsBoxContent(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: _closeAllOrders,
+                            icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                            label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFB300),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(true),
+                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00C853),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _toggleBotStatus(false),
+                            icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -1036,6 +871,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         onTap: () async {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
+            _isOrdersBoxVisible = _isDashboardVisible;
           });
           
           if (!_isDashboardVisible) {
@@ -1293,6 +1129,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ==========================================
+  // CHART DETAIL & ORDER SELECTOR POPUP BOX
+  // ==========================================
   Widget _buildChartDetailPopupBox({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
@@ -1310,6 +1149,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     bool isDisplayProfit = displayProfit >= 0;
+
     double normalizedProfit = (displayProfit / 50.0).clamp(-1.0, 1.0); 
     
     Color gaugeColor;
@@ -1555,7 +1395,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 // ==========================================
-// ORDERS SCREEN
+// #2 ORDERS SCREEN
 // ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -1611,7 +1451,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      log("Status symbol listen error: $e");
+      print("Status symbol listen error: $e");
     }
   }
 
@@ -1637,7 +1477,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      log("Financial listen error: $e");
+      print("Financial listen error: $e");
     }
   }
 
@@ -1672,7 +1512,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      log("Orders listen error: $e");
+      print("Orders listen error: $e");
     }
   }
 
@@ -1959,7 +1799,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// TRADE HISTORY SCREEN
+//#3  TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2033,7 +1873,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       });
     } catch (e) {
-      log("History listen error: $e");
+      print("History listen error: $e");
     }
   }
 
@@ -2310,7 +2150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// ALERTS SCREEN
+// #4 ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -2370,19 +2210,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
         }
       });
     } catch (e) {
-      log("Alerts listen error: $e");
+      print("Alerts listen error: $e");
     }
   }
 
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      log("Delete alert error: $e");
+      print("Delete alert error: $e");
     }
   }
 
@@ -2392,12 +2231,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
       setState(() {
         alertItems.clear();
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cleared all alerts successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      log("Clear all alerts error: $e");
+      print("Clear all alerts error: $e");
     }
   }
 
@@ -2458,7 +2296,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// SETTINGS SCREEN
+// #5 SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2539,7 +2377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       });
     } catch (e) {
-      log("Load settings error: $e");
+      print("Load settings error: $e");
     }
   }
 
@@ -2571,7 +2409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     } catch (e) {
-      log("Save settings error: $e");
+      print("Save settings error: $e");
     }
   }
 
@@ -2830,29 +2668,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                                 const SizedBox(height: 4),
                                 Container(
+                                  height: 46,
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF0B0B0E),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white24),
+                                    border: Border.all(color: Colors.white12, width: 1),
                                   ),
                                   child: DropdownButtonHideUnderline(
                                     child: DropdownButton<String>(
                                       value: selectedTf,
-                                      dropdownColor: const Color(0xFF161619),
                                       isExpanded: true,
-                                      items: timeframes.map((tf) {
-                                        return DropdownMenuItem(
+                                      dropdownColor: const Color(0xFF161619),
+                                      items: timeframes.map((String tf) {
+                                        return DropdownMenuItem<String>(
                                           value: tf,
-                                          child: Text(tf, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                          child: Center(
+                                            child: Text(tf, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                          ),
                                         );
                                       }).toList(),
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() {
-                                            selectedTf = val;
-                                          });
-                                        }
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          selectedTf = newValue!;
+                                        });
                                       },
                                     ),
                                   ),
@@ -2862,84 +2701,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Container(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 15.0),
-                                child: Text(
-                                  'TP Points (Calculated):\n${calculatedTP.toStringAsFixed(0)} Pts',
-                                  style: const TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 46,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0B0B0E),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white12, width: 1),
+                                  ),
+                                  child: Text(
+                                    '${calculatedTP.toStringAsFixed(1)} Pts',
+                                    style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                         ],
                       ),
 
                       const SizedBox(height: 16),
-                      const Divider(color: Colors.white24),
+                      const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
 
+                      const Text(
+                        'DAILY TARGET & LOSS CONTROL', 
+                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 10),
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Enable Daily Target (\$)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          Switch(
-                            value: enableDailyTarget,
-                            activeColor: const Color(0xFF00C853),
-                            onChanged: (val) {
-                              setState(() {
-                                enableDailyTarget = val;
-                              });
-                            },
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyTarget,
+                                        activeColor: const Color(0xFF00C853),
+                                        onChanged: (val) => setState(() => enableDailyTarget = val),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyLoss,
+                                        activeColor: Colors.redAccent,
+                                        onChanged: (val) => setState(() => enableDailyLoss = val),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      if (enableDailyTarget)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-                          child: _buildControllerInputField('Daily Profit Target (\$)', dailyTargetController, TextInputType.number),
-                        ),
 
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Enable Daily Max Loss (\$)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          Switch(
-                            value: enableDailyLoss,
-                            activeColor: const Color(0xFFD50000),
-                            onChanged: (val) {
-                              setState(() {
-                                enableDailyLoss = val;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      if (enableDailyLoss)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-                          child: _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
-                        ),
-
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _saveSettingsToFirebase,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: const Text(
-                            'SAVE & SYNC SETTINGS',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                        ),
-                      ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveSettingsToFirebase,
+                    icon: const Icon(Icons.save, color: Colors.white),
+                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ],
@@ -2956,21 +2829,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
         const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF0B0B0E),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            onChanged: (val) => setState(() {}),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
             ),
           ),
         ),
