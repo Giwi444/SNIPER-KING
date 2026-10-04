@@ -601,7 +601,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     )..repeat();
   }
 
-  // ฟังก์ชันตรวจสอบสิทธิ์ทับแอปอื่นผ่าน FlutterOverlayWindow
   Future<void> _checkOverlayPermission() async {
     bool status = await FlutterOverlayWindow.isPermissionGranted();
     setState(() {
@@ -628,14 +627,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB300)),
             onPressed: () async {
               Navigator.pop(context);
-              // ขอสิทธิ์การแสดงทับแอปอื่นผ่าน FlutterOverlayWindow
               bool? res = await FlutterOverlayWindow.requestPermission();
               setState(() {
                 _hasOverlayPermission = res ?? false;
               });
 
               if (_hasOverlayPermission) {
-                // แก้ไขการเรียก showOverlay ให้ถูกต้องตามพารามิเตอร์ที่แพ็กเกจรองรับ
                 await FlutterOverlayWindow.showOverlay(
                   height: 200,
                   width: 200,
@@ -874,7 +871,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // ปุ่มขอสิทธิ์ทับแอปอื่น (สามารถกดเปิดการตั้งค่าได้)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Row(
@@ -972,7 +968,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // Floating Icon ลอยควบคุมเปิด/ปิดแสดงแดชบอร์ด
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -1009,7 +1004,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
           });
-          // แก้ไขการเปิด/ปิดหน้าต่างลอย Overlay ภายใต้เงื่อนไขที่ถูกต้อง
           if (await FlutterOverlayWindow.isActive()) {
             await FlutterOverlayWindow.closeOverlay();
           } else {
