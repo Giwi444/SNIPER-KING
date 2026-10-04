@@ -759,7 +759,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             color: Colors.black.withOpacity(0.3),
           ),
           
-          // หากไม่ได้กด Minimze ให้แสดงหน้าต่างหลัก (กล่องกรอบสีขาว) ปกติ
+          // หากไม่ได้กด Minimze ให้แสดงหน้าต่างหลักปกติ
           if (!_isMinimizedToBubble)
             SafeArea(
               child: Padding(
@@ -794,11 +794,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              // ปุ่มขีดลบ (Minimize) ตรงวงรีสีขาวตามรูปภาพ เพื่อยุบแอพเหลือแค่บอลลูนหุ่นยนต์
+                              // ปุ่มขีดลบ (-) ที่มุมซ้ายบนสำหรับซ่อนหน้าต่างหลักและแสดงแค่ไอคอนบอลลูน
                               GestureDetector(
                                 onTap: () {
                                   setState(() {
-                                    _isMinimizedToBubble = true; // ยุบหน้าจอแอพทั้งหมดให้เหลือแค่บอลลูน
+                                    _isMinimizedToBubble = true;
                                   });
                                 },
                                 child: Container(
@@ -885,7 +885,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           
-          // ปุ่มบอลลูนหุ่นยนต์ลอยได้ สามารถลากไปมาได้ และใช้กดเพื่อเปิดขยายหน้าต่างแอพกลับคืนมา
+          // ปุ่มบอลลูนหุ่นยนต์ลอยได้ สามารถลากไปมาได้ และกดเพื่อสลับเปิด-ปิดหน้าต่างหลัก
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -920,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _isMinimizedToBubble = !_isMinimizedToBubble; // กดบอลลูนเพื่อสลับเปิด/ปิดหน้าต่างแอพหลัก
+            _isMinimizedToBubble = !_isMinimizedToBubble;
           });
         },
         child: Container(
