@@ -185,7 +185,7 @@ void main() async {
       ),
     );
   } catch (e) {
-    print("Firebase init error: $e");
+    log("Firebase init error: $e");
   }
 
   runApp(const LiquiditySweepApp());
@@ -261,6 +261,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       setState(() {
         currentPinInput = "";
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
       );
@@ -509,7 +510,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     } catch (e) {
-      print("Account listen error: $e");
+      log("Account listen error: $e");
     }
   }
 
@@ -541,7 +542,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     } catch (e) {
-      print("Alerts count error: $e");
+      log("Alerts count error: $e");
     }
   }
 
@@ -641,7 +642,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// HOME SCREEN (พร้อมระบบขอสิทธิ์ทับแอปอื่น และ Floating Bubble)
+// HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -714,6 +715,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _checkOverlayPermission() async {
     bool status = await FlutterOverlayWindow.isPermissionGranted();
+    if (!mounted) return;
     setState(() {
       _hasOverlayPermission = status;
     });
@@ -739,6 +741,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onPressed: () async {
               Navigator.pop(context);
               bool? res = await FlutterOverlayWindow.requestPermission();
+              if (!mounted) return;
               setState(() {
                 _hasOverlayPermission = res ?? false;
               });
@@ -753,6 +756,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   positionGravity: PositionGravity.auto,
                 );
 
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('เปิดใช้งานโหมดลอยทับแอปอื่นเรียบร้อยแล้ว')),
                 );
@@ -789,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      print("Connection listen error: $e");
+      log("Connection listen error: $e");
     }
   }
 
@@ -817,7 +821,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      print("Database listen error: $e");
+      log("Database listen error: $e");
     }
   }
 
@@ -868,7 +872,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      print("Logs listen error: $e");
+      log("Logs listen error: $e");
     }
   }
 
@@ -882,7 +886,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const SnackBar(content: Text('Cleared all logs successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      print("Clear logs error: $e");
+      log("Clear logs error: $e");
     }
   }
 
@@ -929,7 +933,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      print("Orders listen error: $e");
+      log("Orders listen error: $e");
     }
   }
 
@@ -937,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       _dbRef?.update({'is_running': status});
     } catch (e) {
-      print("Toggle bot error: $e");
+      log("Toggle bot error: $e");
     }
   }
 
@@ -951,7 +955,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
       );
     } catch (e) {
-      print("Close all error: $e");
+      log("Close all error: $e");
     }
   }
 
@@ -1117,7 +1121,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             _isDashboardVisible = !_isDashboardVisible;
           });
           
-          // ควบคุมการเปิด-ปิดหน้าต่าง Overlay ข้ามแอป
           if (!_isDashboardVisible) {
             if (await FlutterOverlayWindow.isActive()) {
               await FlutterOverlayWindow.closeOverlay();
@@ -1666,7 +1669,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      print("Status symbol listen error: $e");
+      log("Status symbol listen error: $e");
     }
   }
 
@@ -1692,7 +1695,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      print("Financial listen error: $e");
+      log("Financial listen error: $e");
     }
   }
 
@@ -1727,7 +1730,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
     } catch (e) {
-      print("Orders listen error: $e");
+      log("Orders listen error: $e");
     }
   }
 
@@ -2088,7 +2091,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       });
     } catch (e) {
-      print("History listen error: $e");
+      log("History listen error: $e");
     }
   }
 
@@ -2425,18 +2428,19 @@ class _AlertsScreenState extends State<AlertsScreen> {
         }
       });
     } catch (e) {
-      print("Alerts listen error: $e");
+      log("Alerts listen error: $e");
     }
   }
 
   void _deleteAlert(String key) {
     try {
       _alertsRef?.child(key).remove();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Deleted alert successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      print("Delete alert error: $e");
+      log("Delete alert error: $e");
     }
   }
 
@@ -2446,11 +2450,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
       setState(() {
         alertItems.clear();
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cleared all alerts successfully'), duration: Duration(seconds: 1)),
       );
     } catch (e) {
-      print("Clear all alerts error: $e");
+      log("Clear all alerts error: $e");
     }
   }
 
@@ -2592,7 +2597,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       });
     } catch (e) {
-      print("Load settings error: $e");
+      log("Load settings error: $e");
     }
   }
 
@@ -2624,7 +2629,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     } catch (e) {
-      print("Save settings error: $e");
+      log("Save settings error: $e");
     }
   }
 
@@ -2972,7 +2977,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       if (enableDailyLoss)
                         Padding(
-                          padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                          padding: const EdgeInsets.only(top: 0.4, bottom: 8.0),
                           child: _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
                         ),
 
