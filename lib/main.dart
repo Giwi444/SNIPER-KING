@@ -56,7 +56,6 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             setState(() {
               _isExpanded = true;
             });
-            // แก้ไขโดยระบุพารามิเตอร์ให้ครบ 3 ตัว (width, height, flag) ตามที่แพ็กเกจกำหนด
             await FlutterOverlayWindow.resizeOverlay(350, 500, true);
           },
           child: Container(
@@ -136,7 +135,6 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                       setState(() {
                         _isExpanded = false;
                       });
-                      // แก้ไขโดยระบุพารามิเตอร์ให้ครบ 3 ตัว
                       await FlutterOverlayWindow.resizeOverlay(80, 80, true);
                     },
                   ),
@@ -684,12 +682,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _logMarqueeController;
 
   bool isConnected = false;
-  bool _hasOverlayPermission = false;
 
   @override
   void initState() {
     super.initState();
-    _checkOverlayPermission();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
     _listenToLogs();
@@ -713,62 +709,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
-  }
-
-  Future<void> _checkOverlayPermission() async {
-    bool status = await FlutterOverlayWindow.isPermissionGranted();
-    if (!mounted) return;
-    setState(() {
-      _hasOverlayPermission = status;
-    });
-  }
-
-  void _requestOverlayPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF161619),
-        title: const Text('อนุญาตการแสดงทับแอปอื่น', style: TextStyle(color: Color(0xFFFFB300))),
-        content: const Text(
-          'เพื่อให้ไอคอนควบคุมลอยแสดงทับแอปพลิเคชันอื่นได้ (เช่น MetaTrader / TikTok) กรุณากดอนุญาตสิทธิ์ "การแสดงทับบนแอปอื่น" ในการตั้งค่าระบบของอุปกรณ์',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB300)),
-            onPressed: () async {
-              Navigator.pop(context);
-              bool? res = await FlutterOverlayWindow.requestPermission();
-              if (!mounted) return;
-              setState(() {
-                _hasOverlayPermission = res ?? false;
-              });
-
-              if (_hasOverlayPermission) {
-                await FlutterOverlayWindow.showOverlay(
-                  height: 80,
-                  width: 80,
-                  alignment: OverlayAlignment.centerRight,
-                  visibility: NotificationVisibility.visibilityPublic,
-                  flag: OverlayFlag.defaultFlag,
-                  positionGravity: PositionGravity.auto,
-                );
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('เปิดใช้งานโหมดลอยทับแอปอื่นเรียบร้อยแล้ว')),
-                );
-              }
-            },
-            child: const Text('ไปตั้งค่าสิทธิ์', style: TextStyle(color: Colors.black)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -989,31 +929,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _requestOverlayPermissionDialog,
-                          icon: Icon(
-                            _hasOverlayPermission ? Icons.check_circle : Icons.warning_amber_rounded,
-                            color: _hasOverlayPermission ? const Color(0xFF00C853) : Colors.amber,
-                            size: 16,
-                          ),
-                          label: Text(
-                            _hasOverlayPermission ? 'เปิดโหมดทับแอปแล้ว' : 'ขอสิทธิ์ทับแอปอื่น',
-                            style: const TextStyle(fontSize: 10, color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF161619),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            side: const BorderSide(color: Color(0xFFFFB300), width: 1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   const Spacer(),
                   if (_isDashboardVisible) ...[
                     SizedBox(
