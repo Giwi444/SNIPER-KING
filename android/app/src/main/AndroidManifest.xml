@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- เพิ่มสิทธิ์สำหรับแสดงผลทับแอปอื่น -->
+
+    <!-- 1. เพิ่มสิทธิ์แสดงทับแอปอื่น ตรงนี้ -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    
+
     <application
         android:name="${applicationName}"
         android:label="SniperKing"
@@ -17,23 +17,24 @@
             android:windowSoftInputMode="adjustResize">
             
             <meta-data
-                android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"/>
-                
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme" />
+              
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <!-- เพิ่ม Service สำหรับตัวบอลลูนลอยทับแอป -->
-        <service
-            android:name="flutter.overlay.window.OverlayService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
-
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 2. เพิ่ม Service ของ flutter_overlay_window ไว้ข้างใน <application> ตรงนี้ -->
+        <service
+            android:name="flutter.overlay.window.FlutterOverlayWindow"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
     </application>
 </manifest>
