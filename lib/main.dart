@@ -496,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String timeframe = "M1";
 
   bool _isOrdersBoxVisible = true;
-  bool _isDashboardVisible = true;
+  bool _isDashboardVisible = true; // ตัวแปรควบคุมการยุบ/ขยายกล่องแดชบอร์ด
   int? _selectedOrderIndex;
 
   List<String> _botLogs = [];
@@ -765,72 +765,75 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 children: [
                   const Spacer(),
-                  if (_isOrdersBoxVisible) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
+                  // ใช้เงื่อนไขควบคุมการแสดงผลแดชบอร์ด (ยุบ/ขยาย)
+                  if (_isDashboardVisible) ...[
+                    if (_isOrdersBoxVisible) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    Center(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: _buildLogsBoxContent(),
+                      ),
                     ),
                     const SizedBox(height: 10),
-                  ],
-                  Center(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: _buildLogsBoxContent(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: _closeAllOrders,
+                              icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                              label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFB300),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _toggleBotStatus(true),
+                              icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                              label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C853),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _toggleBotStatus(false),
+                              icon: const Icon(Icons.stop, color: Colors.white, size: 18),
+                              label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD50000),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: _closeAllOrders,
-                            icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                            label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(true),
-                            icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                            label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00C853),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _toggleBotStatus(false),
-                            icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                            label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                  ],
                 ],
               ),
             ),
@@ -870,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: () async {
           setState(() {
-            _isDashboardVisible = !_isDashboardVisible;
+            _isDashboardVisible = !_isDashboardVisible; // สลับสถานะเปิด/ปิดแดชบอร์ด
             _isOrdersBoxVisible = _isDashboardVisible;
           });
           
@@ -1129,9 +1132,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ==========================================
-  // CHART DETAIL & ORDER SELECTOR POPUP BOX
-  // ==========================================
   Widget _buildChartDetailPopupBox({required double constraintsWidth}) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
@@ -1149,7 +1149,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     bool isDisplayProfit = displayProfit >= 0;
-
     double normalizedProfit = (displayProfit / 50.0).clamp(-1.0, 1.0); 
     
     Color gaugeColor;
