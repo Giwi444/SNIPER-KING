@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -18,36 +19,146 @@ void overlayMain() {
   );
 }
 
-// Widget ที่จะแสดงผลบนหน้าต่างลอยทับแอปอื่น
-class OverlayWidget extends StatelessWidget {
+// Widget สำหรับตัว Overlay (ไอคอนกลม และ แดชบอร์ดขยาย)
+class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
 
   @override
+  State<OverlayWidget> createState() => _OverlayWidgetState();
+}
+
+class _OverlayWidgetState extends State<OverlayWidget> {
+  bool _isExpanded = false; // สถานะ: false = วงกลมเล็ก, true = แดชบอร์ดเต็ม
+
+  @override
+  void initState() {
+    super.initState();
+    // รับฟังข้อมูลที่ส่งมาจากแอปหลักผ่าน Overlay
+    FlutterOverlayWindow.overlayListener.listen((data) {
+      if (data != null && data is Map) {
+        setState(() {
+          if (data.containsKey('isExpanded')) {
+            _isExpanded = data['isExpanded'];
+          }
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // ถ้ายุบเป็นไอคอนวงกลม
+    if (!_isExpanded) {
+      return Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: () async {
+            setState(() {
+              _isExpanded = true;
+            });
+            await FlutterOverlayWindow.resizeWindow(350, 500);
+          },
+          child: Container(
+            width: 65,
+            height: 65,
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.smart_toy,
+                color: Colors.white,
+                size: 35,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ถ้าขยายเป็นแดชบอร์ดเต็มตัว
     return Material(
       color: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        margin: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.85),
+          color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFFFB300), width: 2),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.bolt, color: Color(0xFF00C853), size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Sniper King Active',
-              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 10,
+              spreadRadius: 3,
             ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () async {
-                await FlutterOverlayWindow.closeOverlay();
-              },
-              child: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFD50000),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  topRight: Radius.circular(14),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.bolt, color: Color(0xFF00C853), size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        "Sniper King Active",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () async {
+                      setState(() {
+                        _isExpanded = false;
+                      });
+                      await FlutterOverlayWindow.resizeWindow(80, 80);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Status: Running / Connected",
+                      style: TextStyle(color: Color(0xFF00C853), fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "ระบบลอยหน้าจอกำลังทำงานร่วมกับแอปอื่น...",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -634,11 +745,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
               if (_hasOverlayPermission) {
                 await FlutterOverlayWindow.showOverlay(
-                  height: 200,
-                  width: 200,
-                  alignment: OverlayAlignment.center,
+                  height: 80,
+                  width: 80,
+                  alignment: OverlayAlignment.centerRight,
                   visibility: NotificationVisibility.visibilityPublic,
                   flag: OverlayFlag.defaultFlag,
+                  positionGravity: PositionGravity.auto,
                 );
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1004,19 +1116,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
           });
+          
+          // ควบคุมการเปิด-ปิดหน้าต่าง Overlay ข้ามแอป
           if (!_isDashboardVisible) {
             if (await FlutterOverlayWindow.isActive()) {
               await FlutterOverlayWindow.closeOverlay();
             }
           } else {
             if (await FlutterOverlayWindow.isPermissionGranted()) {
-              await FlutterOverlayWindow.showOverlay(
-                height: 200,
-                width: 200,
-                alignment: OverlayAlignment.center,
-                visibility: NotificationVisibility.visibilityPublic,
-                flag: OverlayFlag.defaultFlag,
-              );
+              if (!await FlutterOverlayWindow.isActive()) {
+                await FlutterOverlayWindow.showOverlay(
+                  height: 80,
+                  width: 80,
+                  alignment: OverlayAlignment.centerRight,
+                  visibility: NotificationVisibility.visibilityPublic,
+                  flag: OverlayFlag.defaultFlag,
+                  positionGravity: PositionGravity.auto,
+                );
+              }
             }
           }
         },
