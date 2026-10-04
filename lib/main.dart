@@ -56,7 +56,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             setState(() {
               _isExpanded = true;
             });
-            await FlutterOverlayWindow.resizeWindow(350, 500);
+            await FlutterOverlayWindow.resizeOverlay(350, 500);
           },
           child: Container(
             width: 65,
@@ -135,7 +135,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                       setState(() {
                         _isExpanded = false;
                       });
-                      await FlutterOverlayWindow.resizeWindow(80, 80);
+                      await FlutterOverlayWindow.resizeOverlay(80, 80);
                     },
                   ),
                 ],
@@ -2977,7 +2977,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       if (enableDailyLoss)
                         Padding(
-                          padding: const EdgeInsets.only(top: 0.4, bottom: 8.0),
+                          padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
                           child: _buildControllerInputField('Daily Loss Limit (\$)', dailyLossController, TextInputType.number),
                         ),
 
@@ -2990,11 +2990,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFB300),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            elevation: 4,
                           ),
                           child: const Text(
-                            'SAVE & SYNC TO EA',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1),
+                            'SAVE & SYNC SETTINGS',
+                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                         ),
                       ),
@@ -3009,7 +3008,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType type) {
+  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3017,24 +3016,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 4),
         TextField(
           controller: controller,
-          keyboardType: type,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
+          keyboardType: keyboardType,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
           decoration: InputDecoration(
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             filled: true,
             fillColor: const Color(0xFF0B0B0E),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.white24),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFFFB300)),
+              borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
             ),
           ),
         ),
