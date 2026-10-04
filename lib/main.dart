@@ -2,7 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
+// ==========================================
+// ENTRY POINT สำหรับหน้าต่างลอย (Overlay)
+// ==========================================
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: OverlayWidget(),
+    ),
+  );
+}
+
+// Widget ที่จะแสดงผลบนหน้าต่างลอยทับแอปอื่น
+class OverlayWidget extends StatelessWidget {
+  const OverlayWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.bolt, color: Color(0xFF00C853), size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Sniper King Active',
+              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () async {
+                await FlutterOverlayWindow.closeOverlay();
+              },
+              child: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// MAIN APP ENTRY POINT
+// ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -545,12 +601,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     )..repeat();
   }
 
-  // ฟังก์ชันตรวจสอบและขออนุญาตสิทธิ์ทับแอปอื่น (Display over other apps)
+  // ฟังก์ชันตรวจสอบสิทธิ์ทับแอปอื่นผ่าน FlutterOverlayWindow
   Future<void> _checkOverlayPermission() async {
-    // ในระบบจริงสามารถใช้แพ็กเกจเช่น permission_handler หรือ system_alert_window เพื่อขอสิทธิ์
-    // ตัวอย่างจำลองการขอสิทธิ์และการแสดง Dialog แนะนำผู้ใช้
+    bool status = await FlutterOverlayWindow.isPermissionGranted();
     setState(() {
-      _hasOverlayPermission = true; // สมมติว่าได้รับสิทธิ์แล้ว หรือใช้ Dialog แจ้งเตือนขอสิทธิ์
+      _hasOverlayPermission = status;
     });
   }
 
@@ -571,15 +626,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB300)),
-            onPressed: () {
-              // เปิดหน้าตั้งค่าสิทธิ์ระบบ Android (สามารถใช้ platform channel หรือ permission handler)
-              setState(() {
-                _hasOverlayPermission = true;
-              });
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('เปิดใช้งานโหมดลอยทับแอปอื่นเรียบร้อยแล้ว')),
-              );
+              // ขอสิทธิ์การแสดงทับแอปอื่นผ่าน FlutterOverlayWindow
+              bool? res = await FlutterOverlayWindow.requestPermission();
+              setState(() {
+                _hasOverlayPermission = res ?? false;
+              });
+
+              if (_hasOverlayPermission) {
+                // เรียกคำสั่งเปิดหน้าต่างลอย Overlay ทันทีเมื่อได้รับสิทธิ์
+                await FlutterOverlayWindow.showOverlay(
+                  enableDrag: true,
+                  overlayTitle: "Sniper King Overlay",
+                  overlayContent: "Running",
+                  flag: OverlayFlag.defaultFlag,
+                  visibility: NotificationVisibility.visibilityPublic,
+                  positionSize: const OverlayPosition(100, 100),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('เปิดใช้งานโหมดลอยทับแอปอื่นเรียบร้อยแล้ว')),
+                );
+              }
             },
             child: const Text('ไปตั้งค่าสิทธิ์', style: TextStyle(color: Colors.black)),
           ),
@@ -937,10 +1006,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       },
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
           });
+          // ตัวอย่างการเรียกเปิด/ปิดหน้าต่างลอย Overlay เมื่อกดที่ปุ่มลอย
+          if (await FlutterOverlayWindow.isActive()) {
+            await FlutterOverlayWindow.closeOverlay();
+          } else {
+            if (await FlutterOverlayWindow.isPermissionGranted()) {
+              await FlutterOverlayWindow.showOverlay(
+                enableDrag: true,
+                overlayTitle: "Sniper King Overlay",
+                overlayContent: "Running",
+                flag: OverlayFlag.defaultFlag,
+                visibility: NotificationVisibility.visibilityPublic,
+                positionSize: const OverlayPosition(100, 100),
+              );
+            }
+          }
         },
         child: Container(
           width: 56,
