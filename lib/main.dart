@@ -1004,14 +1004,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             _isDashboardVisible = !_isDashboardVisible;
           });
-          // เมื่อกดที่บอลลูน หาก Dashboard กำลังจะถูกปิด ให้ปิด Overlay ทับแอปอื่นด้วย 
-          // แต่ยังคงแสดงบอลลูน (Floating Bubble) ไว้บนหน้าจอเพื่อให้สามารถกดเปิดกลับมาได้
           if (!_isDashboardVisible) {
             if (await FlutterOverlayWindow.isActive()) {
               await FlutterOverlayWindow.closeOverlay();
             }
           } else {
-            // เมื่อกดเปิด Dashboard ให้เรียกหน้าต่าง Overlay ขึ้นมาทับแอปอื่น (ถ้าได้รับสิทธิ์แล้ว)
             if (await FlutterOverlayWindow.isPermissionGranted()) {
               await FlutterOverlayWindow.showOverlay(
                 height: 200,
@@ -2822,7 +2819,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Enable Daily Target ($)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Text('Enable Daily Target (\$)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                           Switch(
                             value: enableDailyTarget,
                             activeColor: const Color(0xFF00C853),
@@ -2844,7 +2841,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Enable Daily Max Loss ($)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Text('Enable Daily Max Loss (\$)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                           Switch(
                             value: enableDailyLoss,
                             activeColor: const Color(0xFFD50000),
