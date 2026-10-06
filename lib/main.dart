@@ -505,12 +505,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ตำแหน่งลากบอลลูน Symbol ด้านซ้าย
   Offset _orderBubbleOffset = const Offset(20, 100);
   bool _isOrderBubblePressed = false;
   bool isConnected = false;
 
-  // Controller สำหรับแอนิเมชันบอลลูนเด้งขึ้นเด้งลง (Bounce Animation)
   late final AnimationController _bounceController = AnimationController(
     duration: const Duration(seconds: 1),
     vsync: this,
@@ -520,17 +518,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
   );
 
-  // ควบคุมการเปิด-ปิดกล่องข้อความรายงานสถานะบอทด้วยบอลลูน
   bool _isReportBoxVisible = true;
 
-  // ตัวแปรสำหรับการแสดงผลกล่อง Bid / Ask เมื่อกดที่บอลลูน Symbol
   bool _isBidAskBoxVisible = false;
   Offset _bidAskBoxOffset = const Offset(80, 160);
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
-  // ตัวแปรสำหรับข้อความสัญญาณเทรดพิมพ์ดีด
   String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
   String _displayedTypewriterText = "";
   Timer? _typewriterTimer;
@@ -891,7 +886,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // บอลลูนควบคุมที่มีแอนิเมชันเด้งขึ้นเด้งลง
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -2865,7 +2859,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderSide: const BorderSide(color: Colors.white24),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.other(Radius.zero),
+        borderRadius: BorderRadius.circular(12), // แก้ไขจุดที่ผิดพลาดตรงนี้
         borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
       ),
     );
