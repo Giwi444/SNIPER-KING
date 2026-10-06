@@ -592,7 +592,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      // แก้ไขให้ชี้ไปที่ 'status' ตามโครงสร้าง Firebase จริง เพื่อดึง bid และ ask
       _marketRef = database.ref('status');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -1018,18 +1017,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       width: 220,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
+        // ไล่แถบขอบกล่องด้วยเฉดสีแดงพรีเมียม
         gradient: const LinearGradient(
-          colors: [Color(0xFFD50000), Color(0xFF3A0000), Color(0xFF000000)],
+          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
-            blurRadius: 12,
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1093,13 +1091,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ],
-            ),
-            const SizedBox(height: 6),
-            const Center(
-              child: Text(
-                '*(ลากเพื่อย้ายตำแหน่ง)',
-                style: TextStyle(color: Colors.grey, fontSize: 9),
-              ),
             ),
           ],
         ),
