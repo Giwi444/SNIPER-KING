@@ -499,9 +499,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
+  List<String> _botLogs = [];
+  DatabaseReference? _logsRef;
+
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
+  // ตำแหน่งลากบอลลูน Symbol ด้านซ้าย
+  Offset _orderBubbleOffset = const Offset(20, 100);
+  bool _isOrderBubblePressed = false;
   bool isConnected = false;
 
   // ตัวแปรสำหรับข้อความสัญญาณเทรดพิมพ์ดีด
@@ -514,6 +520,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
+    _listenToLogs();
     _listenToConnectionStatus();
 
     _startTypewriterEffect(latestSignalText);
@@ -585,6 +592,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("Database listen error: $e");
+    }
+  }
+
+  void _listenToLogs() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _logsRef = database.ref('logs');
+      _logsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          setState(() {
+            List<String> tempLogs = [];
+            if (data is Map) {
+              var sortedEntries = data.entries.toList()
+                ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+              for (var entry in sortedEntries) {
+                if (entry.value != null) {
+                  tempLogs.add(entry.value.toString());
+                }
+              }
+            } else if (data is List) {
+              for (var e in data) {
+                if (e != null) {
+                  tempLogs.add(e.toString());
+                }
+              }
+            }
+            _botLogs = tempLogs;
+            
+            if (_botLogs.isNotEmpty) {
+              String lastLog = _botLogs.last;
+              latestSignalText = "> $lastLog";
+              _startTypewriterEffect(latestSignalText);
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print("Logs listen error: $e");
     }
   }
 
@@ -789,11 +838,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     
-                    // นำกล่องรายงานออเดอร์ (จากกรอบเขียว) มาวางแทนที่ตำแหน่งกล่อง Log เดิม และล็อคตำแหน่งไว้
+                    // นำกล่องรายงานสถานะบอทมาวางแทนที่ตำแหน่งกล่อง Log เดิม และเพิ่มความสูงให้เห็นข้อความอย่างน้อย 2 ข้อความ
                     _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
                     const SizedBox(height: 120),
                   ],
+                ),
+              ),
+            ),
+          ),
+          
+          // บอลลูน Symbol ด้านซ้าย (ยังใช้งานได้ปกติ)
+          Positioned(
+            left: _orderBubbleOffset.dx,
+            top: _orderBubbleOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildSymbolBubbleWidget(),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _orderBubbleOffset = details.offset;
+                });
+              },
+              child: GestureDetector(
+                onTapDown: (_) {
+                  setState(() {
+                    _isOrderBubblePressed = true;
+                  });
+                },
+                onTapUp: (_) {
+                  setState(() {
+                    _isOrderBubblePressed = false;
+                  });
+                },
+                onTapCancel: () {
+                  setState(() {
+                    _isOrderBubblePressed = false;
+                  });
+                },
+                child: AnimatedScale(
+                  scale: _isOrderBubblePressed ? 0.85 : 1.0,
+                  duration: const Duration(milliseconds: 100),
+                  child: _buildSymbolBubbleWidget(),
                 ),
               ),
             ),
@@ -803,7 +892,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่องรายงานการเปิดออเดอร์แบบตรึงตำแหน่ง (Fixed) และปรับความสูงให้เห็นข้อความประมาณ 2 ข้อความ
+  Widget _buildSymbolBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/images/ppp.jpg',
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // กล่องรายงานสถานะบอทแบบถาวร (ถูกล็อคตำแหน่งแทนที่กล่อง Log เดิม และขยายความสูงให้แสดงผลได้ 2 บรรทัดขึ้นไป)
   Widget _buildFixedOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -894,45 +1037,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            height: 65, // ปรับความสูงให้พอดีกับการแสดงผลประมาณ 2 บรรทัด
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            constraints: const BoxConstraints(minHeight: 65), // ขยายความสูงให้แสดงข้อความได้อย่างน้อย 2 บรรทัด
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _displayedTypewriterText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _displayedTypewriterText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-              Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-              Text(
-                'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
-            ],
+                const Divider(color: Colors.white24, height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
