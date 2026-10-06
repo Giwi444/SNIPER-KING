@@ -859,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ไอคอนบอลลูนลอย (Line-style Bubble) ที่มุมหน้าจอ
+          // ไอคอนบอลลูนลอย (Line-style Bubble) ที่มุมหน้าจอ พร้อมฟังก์ชันย่อแอป
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -875,9 +875,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 });
               },
               child: GestureDetector(
-                onTap: () {
-                  // ทำหน้าที่ย่อแอพฯ หรือกลับไปหน้า Home ของโทรศัพท์
-                  SystemNavigator.pop();
+                onTap: () async {
+                  // แก้ไขให้ย่อแอปพลิเคชัน (Minimize ไปหน้า Home) แทนการปิดแอพ
+                  await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
                 },
                 child: _buildRobotBubbleWidget(),
               ),
@@ -2278,7 +2278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 3.0),
                               child: SizedBox(
-                                height: 45,
+                                height: 40,
                                 child: ElevatedButton(
                                   onPressed: () {
                                     setState(() {
@@ -2293,17 +2293,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                     side: BorderSide(
                                       color: modeColor,
-                                      width: isSelected ? 2.5 : 1,
+                                      width: isSelected ? 2 : 1,
                                     ),
-                                    elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
+                                      color: isSelected ? Colors.black : Colors.white70,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 11,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ),
@@ -2311,56 +2310,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           );
                         }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: selectedTf,
+                        dropdownColor: const Color(0xFF161619),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF0B0B0E),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                        items: timeframes.map((tf) {
+                          return DropdownMenuItem(value: tf, child: Text(tf));
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              selectedTf = val;
+                            });
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
-
                       Row(
-                        children: lotModeOptions.map((mode) {
-                          bool isSelected = lotMode == mode;
-                          Color modeColor;
-                          if (mode == 'Fixed') {
-                            modeColor = const Color(0xFF00E5FF);
-                          } else if (mode == 'Step') {
-                            modeColor = const Color(0xFF9C27B0);
-                          } else {
-                            modeColor = const Color(0xFFFF9100);
-                          }
-
+                        children: lotModeOptions.map((lm) {
+                          bool isSelected = lotMode == lm;
                           return Expanded(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4.0),
                               child: SizedBox(
-                                height: 45,
+                                height: 40,
                                 child: ElevatedButton(
                                   onPressed: () {
                                     setState(() {
-                                      lotMode = mode;
+                                      lotMode = lm;
                                     });
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    side: BorderSide(
-                                      color: modeColor,
-                                      width: isSelected ? 2.5 : 1,
-                                    ),
-                                    elevation: isSelected ? 6 : 0,
-                                    padding: EdgeInsets.zero,
+                                    backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    side: BorderSide(color: const Color(0xFFFFB300), width: isSelected ? 2 : 1),
                                   ),
-                                  child: Text(
-                                    mode,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
+                                  child: Text(lm, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
                                 ),
                               ),
                             ),
@@ -2371,194 +2372,135 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
+                          Expanded(child: _buildTextField('Initial Lot', initialLotController)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
+                          Expanded(child: _buildTextField('Max Recovery', maxRecoveryController)),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
+                          Expanded(child: _buildTextField('Max Orders', maxOrdersController)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                          Expanded(child: _buildTextField('Swing Bars', swingBarsController)),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                          Expanded(child: _buildTextField('SL Points', slPointsController)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                          Expanded(child: _buildTextField('Risk Reward (RR)', riskRewardController)),
                         ],
                       ),
-                      const SizedBox(height: 12),
-
-                      Row(
-                        children: [
-                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  height: 46,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0B0B0E),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12, width: 1),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: selectedTf,
-                                      isExpanded: true,
-                                      dropdownColor: const Color(0xFF161619),
-                                      items: timeframes.map((String tf) {
-                                        return DropdownMenuItem<String>(
-                                          value: tf,
-                                          child: Center(
-                                            child: Text(tf, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (String? newValue) {
-                                        setState(() {
-                                          selectedTf = newValue!;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  height: 46,
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0B0B0E),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12, width: 1),
-                                  ),
-                                  child: Text(
-                                    '${calculatedTP.toStringAsFixed(1)} Pts',
-                                    style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
-
-                      const Text(
-                        'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'Calculated Take Profit (TP): ${calculatedTP.toStringAsFixed(0)} Points',
+                          style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: enableDailyTarget,
-                                        activeColor: const Color(0xFF00C853),
-                                        onChanged: (val) => setState(() => enableDailyTarget = val),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: enableDailyLoss,
-                                        activeColor: Colors.redAccent,
-                                        onChanged: (val) => setState(() => enableDailyLoss = val),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
+                const Text(
+                  'TRADING TIME CONFIGURATION (TH)',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildTextField('Start Time (HH:mm)', startTimeController)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildTextField('End Time (HH:mm)', endTimeController)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'RISK MANAGEMENT TARGETS',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Enable Daily Target (\$)', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          Switch(
+                            value: enableDailyTarget,
+                            activeColor: const Color(0xFF00C853),
+                            onChanged: (val) {
+                              setState(() {
+                                enableDailyTarget = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (enableDailyTarget) ...[
+                        const SizedBox(height: 6),
+                        _buildTextField('Daily Target Amount (\$)', dailyTargetController),
+                      ],
+                      const Divider(color: Colors.white12, height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Enable Daily Loss Limit (\$)', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          Switch(
+                            value: enableDailyLoss,
+                            activeColor: Colors.redAccent,
+                            onChanged: (val) {
+                              setState(() {
+                                enableDailyLoss = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (enableDailyLoss) ...[
+                        const SizedBox(height: 6),
+                        _buildTextField('Daily Loss Amount (\$)', dailyLossController),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  height: 52,
+                  child: ElevatedButton(
                     onPressed: _saveSettingsToFirebase,
-                    icon: const Icon(Icons.save, color: Colors.white),
-                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFB300),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: const Color(0xFFD50000),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 6,
+                    ),
+                    child: const Text(
+                      'SAVE & SYNC TO BOT (EA)',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
                     ),
                   ),
                 ),
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -2567,30 +2509,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
+  Widget _buildTextField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {}),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-            ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF0B0B0E),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
         ),
       ],
