@@ -438,11 +438,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   if (_currentIndex == 0)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withOpacity(0.8),
+                            blurRadius: 6,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -457,11 +464,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   if (_currentIndex == 1)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withOpacity(0.8),
+                            blurRadius: 6,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -476,11 +490,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   if (_currentIndex == 2)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withOpacity(0.8),
+                            blurRadius: 6,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -495,11 +516,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   if (_currentIndex == 3)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withOpacity(0.8),
+                            blurRadius: 6,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -543,11 +571,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   if (_currentIndex == 4)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withOpacity(0.8),
+                            blurRadius: 6,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -848,12 +883,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 2.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 40.0, bottom: 8.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     Center(
                       child: Container(
                         width: 120,
@@ -941,8 +976,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
-                              ? const [Color(0xFFD50000), Color(0xFF7A0000)]
-                              : const [Color(0xFF00C853), Color(0xFF006425)],
+                              ? const [Color(0xFFE53935), Color(0xFFB71C1C)] // แดงไล่เฉดเข้มข้น
+                              : const [Color(0xFF43A047), Color(0xFF1B5E20)], // เขียวสดไล่เฉดเงางาม
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
@@ -1048,7 +1083,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       child: GestureDetector(
         onTap: () {
-          // ฟังก์ชันแสดงกล่อง Dialog หรือเปิดเมนูด้านข้างเมื่อกดไอคอนหุ่นยนต์มุมบนซ้าย
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
