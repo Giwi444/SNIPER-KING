@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -474,7 +475,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1  HOME SCREEN
+// #1 HOME SCREEN (ปรับปรุงใหม่ตามรูปอ้างอิง)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -495,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String timeframe = "M1";
 
   bool _isOrdersBoxVisible = true;
-  bool _isMinimizedToBubble = false; // สถานะสำหรับซ่อนหน้าต่างทั้งหมดเหลือแค่บอลลูนหุ่นยนต์
+  bool _isDashboardVisible = true;
   int? _selectedOrderIndex;
 
   List<String> _botLogs = [];
@@ -740,7 +741,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isRobotIconOffsetInitialized) {
-      _robotIconOffset = Offset(16, screenSize.height * 0.12);
+      _robotIconOffset = Offset(16, screenSize.height * 0.08);
       _isRobotIconOffsetInitialized = true;
     }
 
@@ -756,136 +757,142 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.5),
           ),
-          
-          // หากไม่ได้กด Minimze ให้แสดงหน้าต่างหลักปกติ
-          if (!_isMinimizedToBubble)
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  children: [
-                    const Spacer(),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(8.0),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Column(
+                children: [
+                  // 1. วงกลมรูปหุ่นผู้หญิงตรงกลาง (ขนาดใหญ่พร้อมกรอบเรืองแสงสีแดง)
+                  Center(
+                    child: Container(
+                      width: 130,
+                      height: 130,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFB300).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: const Color(0xFFFFB300), width: 1),
-                                ),
-                                child: const Text(
-                                  'Home • Orders • Settings • History • Alert',
-                                  style: TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              // ปุ่มขีดลบ (-) ที่มุมซ้ายบนสำหรับซ่อนหน้าต่างหลักและแสดงแค่ไอคอนบอลลูน
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _isMinimizedToBubble = true;
-                                  });
-                                },
-                                child: Container(
-                                  width: 16,
-                                  height: 4,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFD50000), width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.7),
+                            blurRadius: 15,
+                            spreadRadius: 2,
                           ),
-                          const SizedBox(height: 6),
-                          if (_isOrdersBoxVisible) ...[
-                            SizedBox(
-                              width: double.infinity,
-                              child: _buildChartDetailPopupBox(constraintsWidth: double.infinity),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                          Center(
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: _buildLogsBoxContent(),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  height: 48,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _closeAllOrders,
-                                    icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                                    label: const Text('CLOSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFB300),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 48,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () => _toggleBotStatus(true),
-                                    icon: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                                    label: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF00C853),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 48,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () => _toggleBotStatus(false),
-                                    icon: const Icon(Icons.stop, color: Colors.white, size: 18),
-                                    label: const Text('STOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFD50000),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
                         ],
                       ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/p.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(color: Colors.black);
+                          },
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 2. ข้อความหัวข้อ SNIPER KING BOT SCALPER X
+                  const Text(
+                    'SNIPER KING BOT',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFD50000),
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                  ),
+                  const Text(
+                    'SCALPER X',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFD50000),
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // สถานะ Live Marquee
+                  SizedBox(
+                    height: 20,
+                    child: Center(
+                      child: Text(
+                        '★ CONNECTED • LIVE • CONNECTED ★',
+                        style: TextStyle(
+                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 3. กล่อง BOT Status & System Log
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildLogsBoxContent(),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 4. ปุ่มควบคุม CLOSE, START, STOP แบบวงกลมสไตล์เดียวกัน
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildCircularButton(
+                        label: 'CLOSE',
+                        icon: Icons.delete_sweep,
+                        color: const Color(0xFFFFB300),
+                        onPressed: _closeAllOrders,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildCircularButton(
+                        label: 'START',
+                        icon: Icons.play_arrow,
+                        color: const Color(0xFF00C853),
+                        onPressed: () => _toggleBotStatus(true),
+                        isLarge: true,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildCircularButton(
+                        label: 'STOP',
+                        icon: Icons.stop,
+                        color: const Color(0xFFD50000),
+                        onPressed: () => _toggleBotStatus(false),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Powered by AlgoHost
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5)),
+                      color: Colors.black45,
+                    ),
+                    child: const Text(
+                      'Powered by Algohost',
+                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
           
-          // ปุ่มบอลลูนหุ่นยนต์ลอยได้ สามารถลากไปมาได้ และกดเพื่อสลับเปิด-ปิดหน้าต่างหลัก
+          // ไอคอนหุ่นยนต์ภาพเล็กมุมซ้ายบน (เพิ่มสีวงกลมสไตล์เดียวกัน)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -908,6 +915,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // Widget สำหรับสร้างปุ่มทรงวงกลม (CLOSE, START, STOP) สไตล์เดียวกัน
+  Widget _buildCircularButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    bool isLarge = false,
+  }) {
+    double size = isLarge ? 85 : 70;
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [color, color.withOpacity(0.6)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.6),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: isLarge ? 36 : 28),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRobotButtonContent() {
     return AnimatedBuilder(
       animation: _floatAnimation,
@@ -918,21 +975,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       },
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           setState(() {
-            _isMinimizedToBubble = !_isMinimizedToBubble;
+            _isDashboardVisible = !_isDashboardVisible;
+            _isOrdersBoxVisible = _isDashboardVisible;
           });
+          
+          if (!_isDashboardVisible) {
+            if (await FlutterOverlayWindow.isActive()) {
+              await FlutterOverlayWindow.closeOverlay();
+            }
+          } else {
+            if (await FlutterOverlayWindow.isPermissionGranted()) {
+              if (!await FlutterOverlayWindow.isActive()) {
+                await FlutterOverlayWindow.showOverlay(
+                  height: 80,
+                  width: 80,
+                  alignment: OverlayAlignment.centerRight,
+                  visibility: NotificationVisibility.visibilityPublic,
+                  flag: OverlayFlag.defaultFlag,
+                  positionGravity: PositionGravity.auto,
+                );
+              }
+            }
+          }
         },
         child: Container(
-          width: 56,
-          height: 56,
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFD50000), width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.7),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
+                color: Colors.red.withOpacity(0.7),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -940,36 +1018,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             clipBehavior: Clip.none,
             children: [
               ClipOval(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      'assets/images/p.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(color: Colors.black);
-                      },
-                    ),
-                  ],
+                child: Image.asset(
+                  'assets/images/p.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: Colors.black);
+                  },
                 ),
               ),
               Positioned(
-                top: 2,
-                right: 2,
+                top: 0,
+                right: 0,
                 child: Container(
-                  width: 14,
-                  height: 14,
+                  width: 12,
+                  height: 12,
                   decoration: BoxDecoration(
                     color: isConnected ? const Color(0xFF00C853) : Colors.red,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
               ),
@@ -981,441 +1047,97 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildLogsBoxContent() {
-    final Color botStatusColor = isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000);
-    final Color statusColor = isConnected ? const Color(0xFF00C853) : Colors.red;
-    final String statusText = isConnected ? 'CONNECTED' : 'DISCONNECTED';
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF161619).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFFFB300),
-          width: 2.5,
+          color: const Color(0xFFD50000),
+          width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 14,
+            color: Colors.red.withOpacity(0.3),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(width: 24),
-              SizedBox(
-                height: 24,
-                child: Center(
-                  child: Text(
-                    '★ SNIPER KING BOT ★',
-                    textAlign: TextAlign.center,
+              const Row(
+                children: [
+                  Text('🤖 ', style: TextStyle(fontSize: 13)),
+                  Text(
+                    'BOT Status & System Log',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: botStatusColor,
-                      letterSpacing: 1.2,
-                      shadows: [
-                        Shadow(
-                          color: botStatusColor.withOpacity(0.8),
-                          blurRadius: 8,
-                          offset: const Offset(0, 0),
-                        ),
-                        const Shadow(
-                          color: Colors.black,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
+                      color: Color(0xFF00C853), // สีเขียวเรืองแสงตามเดิม
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
                   ),
-                ),
+                ],
               ),
               GestureDetector(
                 onTap: _clearLogs,
                 child: const Icon(
                   Icons.delete_sweep,
                   color: Colors.redAccent,
-                  size: 20,
+                  size: 18,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          SizedBox(
-            width: 140,
-            height: 18,
-            child: ClipRect(
-              child: AnimatedBuilder(
-                animation: _marqueeController,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        left: 140 - (_marqueeController.value * 220),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isConnected ? Icons.bolt : Icons.wifi_off,
-                              color: statusColor,
-                              size: 10,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$statusText • LIVE • $statusText • LIVE • ',
-                              style: TextStyle(
-                                color: statusColor,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            height: 110,
+            height: 90,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF00C853), width: 1),
+              border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text('🤖 ', style: TextStyle(fontSize: 13)),
-                    Text(
-                      'BOT Status & System Log',
-                      style: TextStyle(
-                        color: Color(0xFF00C853),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+            child: _botLogs.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No system logs available',
+                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11), // สีเขียวเรืองแสง
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Expanded(
-                  child: _botLogs.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No system logs available',
-                            style: TextStyle(color: Colors.white70, fontSize: 11),
-                          ),
-                        )
-                      : AnimatedBuilder(
-                          animation: _logMarqueeController,
-                          builder: (context, child) {
-                            return ListView.builder(
-                              controller: _logScrollController,
-                              itemCount: _botLogs.length,
-                              itemBuilder: (context, index) {
-                                final logItem = _botLogs[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 4.0),
-                                  child: Text(
-                                    logItem,
-                                    textAlign: TextAlign.left,
-                                    style: const TextStyle(
-                                      color: Color(0xFF00C853),
-                                      fontSize: 11,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChartDetailPopupBox({required double constraintsWidth}) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-
-    String displayType = "รวมทั้งหมด";
-    double displayLot = activeOrders.fold(0.0, (sum, item) => sum + (double.tryParse(item['lot']?.toString() ?? '0.01') ?? 0.01));
-    double displayProfit = totalOrdersProfit;
-
-    if (_selectedOrderIndex != null && _selectedOrderIndex! < activeOrders.length) {
-      final selectedOrder = activeOrders[_selectedOrderIndex!];
-      displayType = selectedOrder['type']?.toString() ?? 'BUY';
-      displayLot = double.tryParse(selectedOrder['lot']?.toString() ?? '0.01') ?? 0.01;
-      displayProfit = double.tryParse(selectedOrder['profit']?.toString() ?? '0.0') ?? 0.0;
-    }
-
-    bool isDisplayProfit = displayProfit >= 0;
-    double normalizedProfit = (displayProfit / 50.0).clamp(-1.0, 1.0); 
-    
-    Color gaugeColor;
-    double opacity = (displayProfit.abs() / 50.0).clamp(0.2, 1.0);
-
-    if (displayProfit > 0) {
-      gaugeColor = const Color(0xFF00C853).withOpacity(opacity);
-    } else if (displayProfit < 0) {
-      gaugeColor = const Color(0xFFD50000).withOpacity(opacity);
-    } else {
-      gaugeColor = const Color(0xFFFFB300);
-    }
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 260),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFB300), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.8),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 15),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$symbol ($timeframe) - Order Detail View',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ],
-              ),
-              if (_selectedOrderIndex != null)
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedOrderIndex = null;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFB300).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFFFB300), width: 1),
-                    ),
-                    child: const Text('ดูภาพรวมทั้งหมด', style: TextStyle(color: Color(0xFFFFB300), fontSize: 9, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-            ],
-          ),
-          const Divider(color: Colors.white24, height: 6),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildMetricCell('P&L สุทธิ', '${isDisplayProfit ? "+" : ""}\$${displayProfit.toStringAsFixed(2)}', isDisplayProfit ? const Color(0xFF00C853) : Colors.redAccent),
-              _buildMetricCell('ทิศทาง', displayType, Colors.amberAccent),
-              _buildMetricCell('จำนวนล็อต', displayLot.toStringAsFixed(2), Colors.white),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          Container(
-            width: double.infinity,
-            height: 38,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0B0B0E),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white38, width: 1.5),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.shade900,
-                        Colors.red.shade400.withOpacity(0.4),
-                        const Color(0xFFFFB300),
-                        const Color(0xFF00C853).withOpacity(0.4),
-                        const Color(0xFF00C853),
-                      ],
-                      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
-                    ),
-                  ),
-                ),
-                Text(
-                  displayProfit == 0 
-                      ? "P/L: \$0.00 (NEUTRAL)" 
-                      : "${isDisplayProfit ? "PROFIT: +" : "LOSS: "}\$${displayProfit.toStringAsFixed(2)}",
-                  style: TextStyle(
-                    color: displayProfit == 0 ? Colors.black : Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 2, offset: const Offset(0, 1)),
-                    ],
-                  ),
-                ),
-                Align(
-                  alignment: Alignment(normalizedProfit, 0),
-                  child: Container(
-                    width: 14,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(7),
-                      border: Border.all(color: gaugeColor, width: 2.5),
-                      boxShadow: [
-                        BoxShadow(color: gaugeColor.withOpacity(0.8), blurRadius: 6, spreadRadius: 1),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-
-          activeOrders.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4.0),
-                  child: Center(
-                    child: Text('No open positions', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                  ),
-                )
-              : Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = activeOrders[index];
-                      final String type = order['type']?.toString() ?? 'BUY';
-                      final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                      final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                      final String ordSymbol = order['symbol']?.toString() ?? symbol;
-                      bool isBuy = type.toUpperCase().contains('BUY');
-                      bool orderProfit = profit >= 0;
-                      bool isSelected = _selectedOrderIndex == index;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedOrderIndex = isSelected ? null : index;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 3),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFFFB300).withOpacity(0.2) : const Color(0xFF0B0B0E),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: isSelected 
-                                  ? const Color(0xFFFFB300) 
-                                  : (isBuy ? const Color(0xFF00C853).withOpacity(0.4) : Colors.redAccent.withOpacity(0.4)),
-                              width: isSelected ? 1.5 : 1,
+                  )
+                : AnimatedBuilder(
+                    animation: _logMarqueeController,
+                    builder: (context, child) {
+                      return ListView.builder(
+                        controller: _logScrollController,
+                        itemCount: _botLogs.length,
+                        itemBuilder: (context, index) {
+                          final logItem = _botLogs[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              logItem,
+                              textAlign: TextAlign.left,
+                              style: const TextStyle(
+                                color: Color(0xFF00C853), // สีเขียวเรืองแสงตามเดิม
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      type,
-                                      style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 9),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('$ordSymbol #${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
-                                      Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 8)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                                    color: isSelected ? const Color(0xFFFFB300) : Colors.grey,
-                                    size: 14,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
-                ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMetricCell(String label, String value, Color valueColor) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 9)),
-        const SizedBox(height: 2),
-        Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 11)),
-      ],
     );
   }
 }
@@ -1585,13 +1307,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       color: const Color(0xFFFFB300),
                       width: 2.5,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.5),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1726,103 +1441,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           final String type = order['type']?.toString() ?? 'BUY';
                           final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                           final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                          bool isBuy = type.toUpperCase().contains('BUY');
-                          bool orderProfit = profit >= 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF161619).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        type,
-                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        const SizedBox(height: 2),
-                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.grey, size: 15),
-              const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 19,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
+                          final String symbol = order['symbol']?.toString
 
 // ==========================================
 //#3  TRADE HISTORY SCREEN
@@ -2878,4 +2497,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
-}
+}                            
