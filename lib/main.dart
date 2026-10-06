@@ -526,6 +526,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
+  // เพิ่มสถานะเปิด-ปิด สำหรับกล่อง Log ตัวที่ 2 ควบคุมด้วยปุ่ม "LOGS"
+  bool _isLogsBoxVisible = false;
+
   String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
   String _displayedTypewriterText = "";
   Timer? _typewriterTimer;
@@ -866,11 +869,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
+                        // 1. เปลี่ยนชื่อจาก xauusd เป็น LOGS ที่ปุ่มตำแหน่งวงรีสีฟ้าตามภาพที่ 3
                         _buildCircularButton(
-                          label: symbol, 
+                          label: 'LOGS', 
                           icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {},
+                          onPressed: () {
+                            // 2. ใช้ปุ่มนี้เป็นตัวเปิด-ปิด (Toggle) กล่อง Log เพิ่มเติม
+                            setState(() {
+                              _isLogsBoxVisible = !_isLogsBoxVisible;
+                            });
+                          },
                         ),
                       ],
                     ),
@@ -878,6 +887,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     
                     if (_isReportBoxVisible)
                       _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+
+                    // 3. กล่อง Log เพิ่มเติม (สร้างขนาดตามภาพที่ 3 และใส่รูปพื้นหลัง ppp.jpg)
+                    if (_isLogsBoxVisible) ...[
+                      const SizedBox(height: 16),
+                      _buildAdditionalLogsBox(),
+                    ],
 
                     const SizedBox(height: 120),
                   ],
@@ -1018,7 +1033,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        // ไล่แถบขอบกล่องด้วยเฉดสีแดงพรีเมียม
         gradient: const LinearGradient(
           colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
           begin: Alignment.topLeft,
@@ -1094,6 +1108,107 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 3. กล่อง Log เพิ่มเติม ขนาดตามภาพที่ 3 พร้อมพื้นหลัง ppp.jpg
+  Widget _buildAdditionalLogsBox() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD50000), width: 3.0),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5A0000), Color(0xFF161619), Color(0xFF3A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.6),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // พื้นหลังรูป ppp.jpg ความโปร่งแสงเล็กน้อยตามแบบต้นฉบับ
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/ppp.jpg',
+                fit: BoxFit.cover,
+                opacity: const AlwaysStoppedAnimation(0.2),
+                errorBuilder: (context, error, stackTrace) => Container(color: Colors.transparent),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.terminal, color: Color(0xFFFFB300), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'BOT ACTIVITY LOGS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLogsBoxVisible = false;
+                      });
+                    },
+                    child: const Icon(Icons.close, color: Colors.grey, size: 18),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white24, height: 16),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(minHeight: 120),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFD50000).withOpacity(0.5), width: 1),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 4. ตัวหนังสือพิมพ์ดีด ฟอนต์ขนาดใหญ่ 16
+                      Text(
+                        _displayedTypewriterText,
+                        style: const TextStyle(
+                          color: Color(0xFF00C853),
+                          fontSize: 16, // ขนาดใหญ่ 16 ตามต้องการ
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
