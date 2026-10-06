@@ -475,7 +475,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN (ปรับปรุงใหม่ตามรูปอ้างอิง)
+// #1 HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -764,7 +764,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  // 1. วงกลมรูปหุ่นผู้หญิงตรงกลาง (ขนาดใหญ่พร้อมกรอบเรืองแสงสีแดง)
                   Center(
                     child: Container(
                       width: 130,
@@ -792,8 +791,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  // 2. ข้อความหัวข้อ SNIPER KING BOT SCALPER X
                   const Text(
                     'SNIPER KING BOT',
                     textAlign: TextAlign.center,
@@ -821,8 +818,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 6),
-
-                  // สถานะ Live Marquee
                   SizedBox(
                     height: 20,
                     child: Center(
@@ -837,15 +832,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // 3. กล่อง BOT Status & System Log
                   SizedBox(
                     width: double.infinity,
                     child: _buildLogsBoxContent(),
                   ),
                   const SizedBox(height: 10),
-
-                  // 4. ปุ่มควบคุม CLOSE, START, STOP แบบวงกลมสไตล์เดียวกัน
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -873,8 +864,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   const SizedBox(height: 10),
-
-                  // Powered by AlgoHost
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
@@ -891,8 +880,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
-          // ไอคอนหุ่นยนต์ภาพเล็กมุมซ้ายบน (เพิ่มสีวงกลมสไตล์เดียวกัน)
           Positioned(
             left: _robotIconOffset.dx,
             top: _robotIconOffset.dy,
@@ -915,7 +902,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // Widget สำหรับสร้างปุ่มทรงวงกลม (CLOSE, START, STOP) สไตล์เดียวกัน
   Widget _buildCircularButton({
     required String label,
     required IconData icon,
@@ -1077,7 +1063,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Text(
                     'BOT Status & System Log',
                     style: TextStyle(
-                      color: Color(0xFF00C853), // สีเขียวเรืองแสงตามเดิม
+                      color: Color(0xFF00C853),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -1108,7 +1094,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? const Center(
                     child: Text(
                       'No system logs available',
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11), // สีเขียวเรืองแสง
+                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
                     ),
                   )
                 : AnimatedBuilder(
@@ -1125,7 +1111,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               logItem,
                               textAlign: TextAlign.left,
                               style: const TextStyle(
-                                color: Color(0xFF00C853), // สีเขียวเรืองแสงตามเดิม
+                                color: Color(0xFF00C853),
                                 fontSize: 11,
                                 fontFamily: 'monospace',
                               ),
@@ -1441,10 +1427,100 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           final String type = order['type']?.toString() ?? 'BUY';
                           final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                           final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                          final String symbol = order['symbol']?.toString
+                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
+                          final double priceOpen = double.tryParse(order['price_open']?.toString() ?? '0.0') ?? 0.0;
+                          final double priceCurrent = double.tryParse(order['price_current']?.toString() ?? '0.0') ?? 0.0;
+
+                          bool isBuy = type.toUpperCase().contains('BUY');
+                          bool isProfit = profit >= 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '${priceOpen.toStringAsFixed(2)} -> ${priceCurrent.toStringAsFixed(2)}',
+                                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFFFFB300), size: 20),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // ==========================================
-//#3  TRADE HISTORY SCREEN
+// #3 TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2497,4 +2573,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
-}                            
+}
