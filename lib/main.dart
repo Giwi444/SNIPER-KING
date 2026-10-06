@@ -499,27 +499,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  List<String> _botLogs = [];
-  DatabaseReference? _logsRef;
-  final ScrollController _logScrollController = ScrollController();
-
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ควบคุมสถานะกล่อง Log และกล่องรายงานเปิดออเดอร์
-  bool _isLogBoxVisible = true;
-  bool _isLogBoxExpanded = false; 
-  bool _isOrderDetailsVisible = false; // ปิดเริ่มต้น ควบคุมด้วยบอลลูน Symbol ด้านซ้าย
-
-  // ตำแหน่งลากกล่องรายงานเปิดออเดอร์ และบอลลูน
-  Offset _orderBubbleOffset = const Offset(20, 100);
-  Offset _robotBubbleOffset = const Offset(20, 200);
-  bool _isBubblePressed = false;
-  bool _isOrderBubblePressed = false;
-
-  late AnimationController _logMarqueeController;
-  late AnimationController _bubbleBounceController;
-  late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
 
   // ตัวแปรสำหรับข้อความสัญญาณเทรดพิมพ์ดีด
@@ -532,31 +514,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
-    _listenToLogs();
     _listenToConnectionStatus();
-
-    _logMarqueeController = AnimationController(
-      duration: const Duration(seconds: 15),
-      vsync: this,
-    )..repeat();
-
-    _bubbleBounceController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _bubbleBounceAnimation = Tween<double>(begin: 0, end: 10).animate(
-      CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
-    );
 
     _startTypewriterEffect(latestSignalText);
   }
 
   @override
   void dispose() {
-    _logMarqueeController.dispose();
-    _bubbleBounceController.dispose();
-    _logScrollController.dispose();
     _typewriterTimer?.cancel();
     super.dispose();
   }
@@ -621,61 +585,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("Database listen error: $e");
-    }
-  }
-
-  void _scrollToBottom() {
-    if (_logScrollController.hasClients) {
-      _logScrollController.animateTo(
-        _logScrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  void _listenToLogs() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _logsRef = database.ref('logs');
-      _logsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          setState(() {
-            List<String> tempLogs = [];
-            if (data is Map) {
-              var sortedEntries = data.entries.toList()
-                ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
-              for (var entry in sortedEntries) {
-                if (entry.value != null) {
-                  tempLogs.add(entry.value.toString());
-                }
-              }
-            } else if (data is List) {
-              for (var e in data) {
-                if (e != null) {
-                  tempLogs.add(e.toString());
-                }
-              }
-            }
-            _botLogs = tempLogs;
-            
-            if (_botLogs.isNotEmpty) {
-              String lastLog = _botLogs.last;
-              latestSignalText = "> $lastLog";
-              _startTypewriterEffect(latestSignalText);
-            }
-          });
-          Future.delayed(const Duration(milliseconds: 100), () {
-            _scrollToBottom();
-          });
-        }
-      });
-    } catch (e) {
-      print("Logs listen error: $e");
     }
   }
 
@@ -870,27 +779,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
-                        // ปุ่มลูกศรขวา ควบคุมเปิด/ปิดกล่อง Log และขยายขนาด
                         _buildCircularButton(
                           label: symbol, 
                           icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {
-                            setState(() {
-                              _isLogBoxVisible = true;
-                              _isLogBoxExpanded = !_isLogBoxExpanded;
-                            });
-                          },
+                          onPressed: () {},
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     
-                    // กล่อง Log ระบบ (ควบคุมด้วยบอลลูนหรือปุ่มกราฟ)
-                    if (_isLogBoxVisible) ...[
-                      _buildCyberpunkLogBox(),
-                      const SizedBox(height: 14),
-                    ],
+                    // นำกล่องรายงานออเดอร์ (จากกรอบเขียว) มาวางแทนที่ตำแหน่งกล่อง Log เดิม และล็อคตำแหน่งไว้
+                    _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
                     const SizedBox(height: 120),
                   ],
@@ -898,299 +798,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
-          // ข้อ 2: บอลลูน Symbol ด้านซ้าย (ควบคุมเปิด-ปิดกล่อง Order)
-          Positioned(
-            left: _orderBubbleOffset.dx,
-            top: _orderBubbleOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildSymbolBubbleWidget(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _orderBubbleOffset = details.offset;
-                });
-              },
-              child: GestureDetector(
-                onTapDown: (_) {
-                  setState(() {
-                    _isOrderBubblePressed = true;
-                  });
-                },
-                onTapUp: (_) {
-                  setState(() {
-                    _isOrderBubblePressed = false;
-                    _isOrderDetailsVisible = !_isOrderDetailsVisible;
-                  });
-                },
-                onTapCancel: () {
-                  setState(() {
-                    _isOrderBubblePressed = false;
-                  });
-                },
-                child: AnimatedScale(
-                  scale: _isOrderBubblePressed ? 0.85 : 1.0,
-                  duration: const Duration(milliseconds: 100),
-                  child: _buildSymbolBubbleWidget(),
-                ),
-              ),
-            ),
-          ),
-
-          // กล่องรายงาน Order เมื่อเปิดใช้งาน
-          if (_isOrderDetailsVisible)
-            Positioned(
-              left: 20,
-              top: _orderBubbleOffset.dy + 70,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-              ),
-            ),
-
-          // ข้อ 1: บอลลูนลอยทางขวา ควบคุมเปิดปิด/ขยายกล่อง Log
-          AnimatedBuilder(
-            animation: _bubbleBounceAnimation,
-            builder: (context, child) {
-              return Positioned(
-                left: _robotBubbleOffset.dx,
-                top: _robotBubbleOffset.dy + _bubbleBounceAnimation.value,
-                child: Draggable(
-                  feedback: Material(
-                    color: Colors.transparent,
-                    child: _buildRobotBubbleWidget(),
-                  ),
-                  childWhenDragging: Container(),
-                  onDragEnd: (details) {
-                    setState(() {
-                      _robotBubbleOffset = details.offset;
-                    });
-                  },
-                  child: GestureDetector(
-                    onTapDown: (_) {
-                      setState(() {
-                        _isBubblePressed = true;
-                      });
-                    },
-                    onTapUp: (_) {
-                      setState(() {
-                        _isBubblePressed = false;
-                        _isLogBoxVisible = true;
-                        _isLogBoxExpanded = !_isLogBoxExpanded;
-                      });
-                    },
-                    onTapCancel: () {
-                      setState(() {
-                        _isBubblePressed = false;
-                      });
-                    },
-                    child: AnimatedScale(
-                      scale: _isBubblePressed ? 0.85 : 1.0,
-                      duration: const Duration(milliseconds: 100),
-                      child: _buildRobotBubbleWidget(),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildSymbolBubbleWidget() {
+  // กล่องรายงานการเปิดออเดอร์แบบตรึงตำแหน่ง (Fixed) และปรับความสูงให้เห็นข้อความประมาณ 2 ข้อความ
+  Widget _buildFixedOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
+
     return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF222222), Color(0xFF8A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
-        boxShadow: [
-          BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/images/ppp.jpg',
-              fit: BoxFit.cover,
-              width: 54,
-              height: 54,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.black);
-              },
-            ),
-          ),
-          Positioned(
-            right: -2,
-            top: -2,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRobotBubbleWidget() {
-    return _buildSymbolBubbleWidget();
-  }
-
-  // กล่อง Log ระบบหลัก ปรับดีไซน์ตามภาพที่ 2[span_3](start_span)[span_3](end_span)
-  Widget _buildCyberpunkLogBox() {
-    double boxHeight = _isLogBoxExpanded ? 320 : 180;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.98),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 3.0,
-        ),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.6),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/ppp.jpg',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'BOT Status & System Log',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isLogBoxExpanded = !_isLogBoxExpanded;
-                      });
-                    },
-                    child: Icon(
-                      _isLogBoxExpanded ? Icons.fullscreen_exit : Icons.fullscreen,
-                      color: Colors.amberAccent,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isLogBoxVisible = false;
-                      });
-                    },
-                    child: const Icon(Icons.close, color: Colors.white70, size: 20),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            height: boxHeight,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
-            ),
-            child: SingleChildScrollView(
-              controller: _logScrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ..._botLogs.map((log) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          log,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      )),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // กล่องรายงานการเปิดออเดอร์ (มีเอฟเฟกต์พิมพ์ดีดข้อความ)
-  Widget _buildOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    bool isServerActive = isConnected && isRunning;
-
-    return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.98),
@@ -1248,14 +866,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isOrderDetailsVisible = false;
-                  });
-                },
-                child: const Icon(Icons.close, color: Colors.white70, size: 20),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1284,43 +894,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
+            height: 65, // ปรับความสูงให้พอดีกับการแสดงผลประมาณ 2 บรรทัด
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // แสดงข้อความสไตล์พิมพ์ดีด
-                Text(
-                  _displayedTypewriterText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Divider(color: Colors.white24, height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _displayedTypewriterText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+              Text(
+                'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -2170,7 +1782,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
               data.forEach((key, value) {
                 if (value != null) {
                   String msg = value.toString();
-                  // กรองเฉพาะแจ้งเตือนที่มีคำว่ามีออเดอร์เข้าหรือเกี่ยวข้องกับ order เพื่อไม่ให้ซ้ำซ้อนกับระบบอื่น
                   if (msg.toUpperCase().contains('ORDER') || msg.toUpperCase().contains('BUY') || msg.toUpperCase().contains('SELL') || msg.toUpperCase().contains('POSITION')) {
                     alertItems.add({
                       'key': key.toString(),
