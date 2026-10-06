@@ -718,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Container(color: const Color(0xFF0B0B0E)),
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/pp.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.3),
             errorBuilder: (context, error, stackTrace) {
@@ -758,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/images/p.jpg',
+                            'assets/images/pp.jpg',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(color: Colors.black);
