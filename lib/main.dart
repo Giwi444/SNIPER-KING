@@ -617,10 +617,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  bool _isOrdersBoxVisible = true;
-  bool _isDashboardVisible = true;
-  int? _selectedOrderIndex;
-
   List<String> _botLogs = [];
   DatabaseReference? _logsRef;
   final ScrollController _logScrollController = ScrollController();
@@ -631,10 +627,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Offset _robotIconOffset = const Offset(0, 0);
   bool _isRobotIconOffsetInitialized = false;
 
+  // สำหรับกล่อง Orders Detail View ที่ลากได้
+  Offset _ordersDetailOffset = const Offset(16, 80);
+
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
-  late AnimationController _marqueeController;
   late AnimationController _logMarqueeController;
 
   bool isConnected = false;
@@ -656,11 +654,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
 
-    _marqueeController = AnimationController(
-      duration: const Duration(seconds: 7),
-      vsync: this,
-    )..repeat();
-
     _logMarqueeController = AnimationController(
       duration: const Duration(seconds: 15),
       vsync: this,
@@ -670,7 +663,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _floatController.dispose();
-    _marqueeController.dispose();
     _logMarqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
@@ -814,19 +806,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
 
           setState(() {
-            if (newOrders.length > activeOrders.length && !_isOrdersBoxVisible) {
-              _isOrdersBoxVisible = true;
-            }
-            
-            if (newOrders.isEmpty && activeOrders.isNotEmpty) {
-              _isOrdersBoxVisible = false;
-              _selectedOrderIndex = null;
-            }
-
-            if (_selectedOrderIndex != null && _selectedOrderIndex! >= newOrders.length) {
-              _selectedOrderIndex = null;
-            }
-
             activeOrders = newOrders;
           });
         }
@@ -867,6 +846,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _isRobotIconOffsetInitialized = true;
     }
 
+    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    double totalLots = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['lot']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isTotalProfit = totalOrdersProfit >= 0;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -883,7 +870,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 40.0, bottom: 8.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 10.0, bottom: 8.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -891,8 +878,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 10),
                     Center(
                       child: Container(
-                        width: 120,
-                        height: 120,
+                        width: 110,
+                        height: 110,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFD50000), width: 3),
@@ -915,12 +902,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     const Text(
                       'SNIPER KING BOT',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFFD50000),
                         letterSpacing: 1.5,
@@ -933,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SCALPER X',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFFD50000),
                         letterSpacing: 1.5,
@@ -944,7 +931,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 4),
                     SizedBox(
-                      height: 18,
+                      height: 16,
                       child: Center(
                         child: Text(
                           '★ CONNECTED • LIVE • CONNECTED ★',
@@ -970,14 +957,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           icon: Icons.delete_sweep,
                           colors: const [Color(0xFFFFB300), Color(0xFFB27B00)],
                           onPressed: _closeAllOrders,
+                          isLarge: true,
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 24),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
-                              ? const [Color(0xFFE53935), Color(0xFFB71C1C)] // แดงไล่เฉดเข้มข้น
-                              : const [Color(0xFF43A047), Color(0xFF1B5E20)], // เขียวสดไล่เฉดเงางาม
+                              ? const [Color(0xFFE53935), Color(0xFFB71C1C)] 
+                              : const [Color(0xFF43A047), Color(0xFF1B5E20)], 
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
@@ -998,6 +986,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          // กล่อง Orders Detail View ที่สามารถลากไปบนหน้าจอได้ (ข้อ 2)
+          Positioned(
+            left: _ordersDetailOffset.dx,
+            top: _ordersDetailOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: SizedBox(
+                  width: screenSize.width - 32,
+                  child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                ),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _ordersDetailOffset = details.offset;
+                });
+              },
+              child: SizedBox(
+                width: screenSize.width - 32,
+                child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
               ),
             ),
           ),
@@ -1023,6 +1035,96 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // กล่อง Orders Detail View แบบปรับขอบใหญ่ไล่ระดับแดงดำตามข้อ 2 และ 3
+  Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD50000), // เส้นขอบสีแดง
+          width: 3.5, // ขอบใหญ่
+        ),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.6),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '📈 $symbol ($tf) - Order Detail View',
+                style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              const Icon(Icons.open_with, color: Colors.white54, size: 16),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('P&L สุทธิ', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  Text(
+                    '${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                    style: TextStyle(color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text('ทิศทาง', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  const Text('รวมทั้งหมด', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('จำนวนล็อต', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  Text(totalLots.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 16,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFD50000), Color(0xFFFFB300), Color(0xFF00C853)],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Center(
+            child: Text(
+              orderCount > 0 ? '$orderCount active orders running' : 'No open positions',
+              style: const TextStyle(color: Colors.white70, fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCircularButton({
     required String label,
     required IconData icon,
@@ -1030,7 +1132,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
-    double size = isLarge ? 80 : 68;
+    // ปรับขนาดปุ่ม CLOSE และ START ให้มีขนาดใหญ่เท่ากันตามข้อ 1 (ใช้ขนาด 84 ทั้งคู่เมื่อ isLarge เป็น true)
+    double size = isLarge ? 84 : 72;
     return GestureDetector(
       onTap: onPressed,
       child: Column(
@@ -1046,24 +1149,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: colors.first.withOpacity(0.6),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: colors.first.withOpacity(0.7),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 26),
+            child: Icon(icon, color: Colors.white, size: 36),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 0.5,
             ),
           ),
@@ -1161,20 +1264,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // กล่อง Log แบบรูปที่ 4 และขอบใหญ่ไล่ระดับแดงดำตามข้อ 3 และ 4
   Widget _buildLogsBoxContent() {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.9),
+        color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 2,
+          width: 3.5, // ขอบใหญ่
+        ),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.3),
-            blurRadius: 10,
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1413,14 +1522,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFFFB300),
-                      width: 2.5,
+                      color: const Color(0xFFD50000),
+                      width: 3.5,
                     ),
                   ),
                   child: Column(
@@ -1507,17 +1616,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isTotalProfit
-                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                      width: 1.5,
+                      color: const Color(0xFFD50000),
+                      width: 3.5,
                     ),
                   ),
                   child: Row(
@@ -1569,7 +1676,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF161619).withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12, width: 1),
+                              border: Border.all(color: const Color(0xFFD50000), width: 2),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1628,7 +1735,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12, width: 1),
+        border: Border.all(color: const Color(0xFFD50000), width: 2),
       ),
       child: Row(
         children: [
@@ -1882,14 +1989,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                    colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: const Color(0xFFFFB300),
-                    width: 2.5,
+                    color: const Color(0xFFD50000),
+                    width: 3.5,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1943,7 +2050,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF161619).withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12, width: 1),
+                              border: Border.all(color: const Color(0xFFD50000), width: 2),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2124,10 +2231,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
                     final alert = alertItems[index];
-                    return Card(
-                      color: const Color(0xFF161619).withOpacity(0.9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    return Container(
                       margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFD50000), width: 2),
+                      ),
                       child: ListTile(
                         leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
                         title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
@@ -2301,9 +2411,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
+                    color: const Color(0xFF161619).withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
+                    border: Border.all(color: const Color(0xFFD50000), width: 3),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
