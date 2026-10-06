@@ -510,12 +510,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isOrderBubblePressed = false;
   bool isConnected = false;
 
+  // Controller สำหรับแอนิเมชันบอลลูนเด้งขึ้นเด้งลง (Bounce Animation)
+  late final AnimationController _bounceController = AnimationController(
+    duration: const Duration(seconds: 1),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
+    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+  );
+
   // ควบคุมการเปิด-ปิดกล่องข้อความรายงานสถานะบอทด้วยบอลลูน
   bool _isReportBoxVisible = true;
 
   // ตัวแปรสำหรับการแสดงผลกล่อง Bid / Ask เมื่อกดที่บอลลูน Symbol
   bool _isBidAskBoxVisible = false;
-  Offset _bidAskBoxOffset = const Offset(80, 160); // ตำแหน่งเริ่มต้นใกล้กับ Sniper King
+  Offset _bidAskBoxOffset = const Offset(80, 160);
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
@@ -539,6 +549,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _bounceController.dispose();
     _typewriterTimer?.cancel();
     super.dispose();
   }
@@ -586,7 +597,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      // ตัวอย่าง Path ราคาตลาดใน Firebase (สามารถปรับเปลี่ยนตามโครงสร้างจริงของคุณได้)
       _marketRef = database.ref('market/$symbol');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -871,7 +881,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     
-                    // แสดงหรือซ่อนกล่องรายงานสถานะบอทตามการควบคุมของบอลลูน
                     if (_isReportBoxVisible)
                       _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
@@ -882,82 +891,86 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // 1. บอลลูนควบคุม (เปิด/ปิดกล่องข้อความ และกดเพื่อเปิด/ปิดกล่อง Bid/Ask ของ Symbol)
+          // บอลลูนควบคุมที่มีแอนิเมชันเด้งขึ้นเด้งลง
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildSymbolBubbleWidget(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _orderBubbleOffset = details.offset;
-                });
+            child: AnimatedBuilder(
+              animation: _bounceAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _bounceAnimation.value),
+                  child: child,
+                );
               },
-              child: GestureDetector(
-                onTapDown: (_) {
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildSymbolBubbleWidget(),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
                   setState(() {
-                    _isOrderBubblePressed = true;
+                    _orderBubbleOffset = details.offset;
                   });
                 },
-                onTapUp: (_) {
-                  setState(() {
-                    _isOrderBubblePressed = false;
-                    // เมื่อแตะที่บอลลูน สลับเปิด/ปิดกล่อง Bid/Ask และสามารถเปิดกล่องข้อความได้ด้วย
+                child: GestureDetector(
+                  onTapDown: (_) {
                     setState(() {
+                      _isOrderBubblePressed = true;
+                    });
+                  },
+                  onTapUp: (_) {
+                    setState(() {
+                      _isOrderBubblePressed = false;
                       _isBidAskBoxVisible = !_isBidAskBoxVisible;
                       _isReportBoxVisible = true; 
                     });
-                  });
-                },
-                onTapCancel: () {
-                  setState(() {
-                    _isOrderBubblePressed = false;
-                  });
-                },
-                child: AnimatedScale(
-                  scale: _isOrderBubblePressed ? 0.85 : 1.0,
-                  duration: const Duration(milliseconds: 100),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      _buildSymbolBubbleWidget(),
-                      // ปุ่มย่อยบนบอลลูนเพื่อเปิด/ปิดกล่องข้อความโดยเฉพาะ (หรือแตะที่บอลลูนหลักก็ได้)
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isReportBoxVisible = !_isReportBoxVisible;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: _isReportBoxVisible ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            child: Icon(
-                              _isReportBoxVisible ? Icons.visibility : Icons.visibility_off,
-                              size: 12,
-                              color: Colors.white,
+                  },
+                  onTapCancel: () {
+                    setState(() {
+                      _isOrderBubblePressed = false;
+                    });
+                  },
+                  child: AnimatedScale(
+                    scale: _isOrderBubblePressed ? 0.85 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildSymbolBubbleWidget(),
+                        Positioned(
+                          right: -4,
+                          bottom: -4,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isReportBoxVisible = !_isReportBoxVisible;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: _isReportBoxVisible ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: Icon(
+                                _isReportBoxVisible ? Icons.visibility : Icons.visibility_off,
+                                size: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
 
-          // 2. กล่องราคา Bid/Ask ของ Symbol ที่เด้งขึ้นมา และสามารถลากเลื่อนได้อิสระ
           if (_isBidAskBoxVisible)
             Positioned(
               left: _bidAskBoxOffset.dx,
@@ -1035,7 +1048,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // Widget กล่องราคา Bid/Ask แบบเรียลไทม์ที่ลากเลื่อนได้
   Widget _buildBidAskBoxContent() {
     return Container(
       width: 220,
@@ -1118,8 +1130,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่องรายงานสถานะบอทแบบถาวร (ถูกล็อคตำแหน่งแทนที่กล่อง Log เดิม และขยายความสูงให้แสดงผลได้ 2 บรรทัดขึ้นไป)
-  Widget _buildFixedOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
+  Widget _buildFixedOrderReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
     return Container(
@@ -1209,7 +1220,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 65), // ขยายความสูงให้แสดงข้อความได้อย่างน้อย 2 บรรทัด
+            constraints: const BoxConstraints(minHeight: 65),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
@@ -2056,7 +2067,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// #4 ALERTS SCREEN (กรองเฉพาะออเดอร์เข้า)
+// #4 ALERTS SCREEN
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -2854,7 +2865,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderSide: const BorderSide(color: Colors.white24),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.other(Radius.zero),
         borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
       ),
     );
