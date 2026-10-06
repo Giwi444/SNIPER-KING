@@ -509,7 +509,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isOrderDetailsVisible = true;
 
   Offset _robotBubbleOffset = const Offset(20, 100);
-
   bool _isBubblePressed = false;
 
   late AnimationController _logMarqueeController;
@@ -838,7 +837,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 18),
                         _buildCircularButton(
-                          label: 'LOG',
+                          // ข้อ 3: เปลี่ยนจาก "LOG" เป็น Symbol ตัวหนังสือสีขาวตรงกลาง
+                          label: symbol, 
                           icon: Icons.terminal,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: () {
@@ -850,6 +850,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 14),
+                    // ข้อ 4: บอลลูน / กล่อง log เชื่อมโยงกันอย่างลงตัว
                     if (_isLogBoxVisible) _buildLogsBoxContent(),
                     const SizedBox(height: 14),
                     if (_isOrderDetailsVisible)
@@ -1069,7 +1070,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.white, // ข้อ 3: ตัวหนังสือสีขาวกลางวงกลม
               fontWeight: FontWeight.bold,
               fontSize: 11,
               letterSpacing: 0.5,
@@ -2078,6 +2079,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  // ข้อ 1: กำหนดรายการ Trading Mode แบบปุ่มเลือก
   final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
@@ -2102,7 +2104,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    // ฟังการเปลี่ยนแปลงค่าใน TextField เพื่อให้ฟังก์ชันคำนวณ TP อัปเดต Real-time (ข้อ 2)
+    slPointsController.addListener(_onCalculatedTpChanged);
+    riskRewardController.addListener(_onCalculatedTpChanged);
     _loadSettingsFromFirebase();
+  }
+
+  @override
+  void dispose() {
+    slPointsController.removeListener(_onCalculatedTpChanged);
+    riskRewardController.removeListener(_onCalculatedTpChanged);
+    super.dispose();
+  }
+
+  void _onCalculatedTpChanged() {
+    setState(() {});
   }
 
   void _loadSettingsFromFirebase() {
@@ -2119,7 +2135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (data != null && mounted) {
           setState(() {
             selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
-            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
+            tradingMode = data['trading_mode']?.toString() ?? 'All Mode';
             lotMode = data['lot_mode']?.toString() ?? 'Double';
             selectedTf = data['timeframe']?.toString() ?? 'M1';
             startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
@@ -2179,8 +2195,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ข้อ 2: คำนวน TP อัตโนมัติแบบ Real-time ตามรูปที่ 3
     double sl = double.tryParse(slPointsController.text) ?? 500;
     double rr = double.tryParse(riskRewardController.text) ?? 2.0;
+    double calculatedTp = sl * rr;
 
     return Scaffold(
       appBar: AppBar(
@@ -2279,35 +2297,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      DropdownButtonFormField<String>(
-                        value: tradingModeOptions.contains(tradingMode) ? tradingMode : 'Sniper',
-                        dropdownColor: const Color(0xFF161619),
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF0B0B0E),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white24),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white24),
-                          ),
-                        ),
-                        items: tradingModeOptions.map((mode) {
-                          return DropdownMenuItem(
-                            value: mode,
-                            child: Text(mode),
+                      // ข้อ 1: แก้ไขกรอบสีขาว Trading Mode ให้เป็นปุ่มเลือกเหมือน Trading Symbol
+                      Row(
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = tradingMode == mode;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: SizedBox(
+                                height: 42,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      tradingMode = mode;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    side: BorderSide(
+                                      color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    elevation: isSelected ? 4 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.black : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           );
                         }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              tradingMode = val;
-                            });
-                          }
-                        },
                       ),
 
                       const SizedBox(height: 16),
@@ -2374,9 +2404,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       const SizedBox(height: 20),
 
-                      // ==========================================
-                      // พารามิเตอร์แบบ 2 คอลัมน์ (ซ้าย-ขวา) ตามรูปที่ 2 และ 3
-                      // ==========================================
                       Row(
                         children: [
                           Expanded(
@@ -2493,8 +2520,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      // ข้อ 2: แสดงผล TP อัตโนมัติที่คำนวนแบบ Real-time
                       Text(
-                        'คำนวณ TP อัตโนมัติ: ${(sl * rr).toStringAsFixed(1)} Points',
+                        'คำนวณ TP อัตโนมัติ: ${calculatedTp.toStringAsFixed(1)} Points',
                         style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
