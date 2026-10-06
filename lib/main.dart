@@ -510,6 +510,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Offset _robotBubbleOffset = const Offset(20, 100);
 
+  // ควบคุมแอนิเมชันยุบตัว (Shrink/Scale) ของบอลลูน
+  bool _isBubblePressed = false;
+
   late AnimationController _logMarqueeController;
   bool isConnected = false;
 
@@ -534,7 +537,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // เชื่อมต่อระบบจริงกับ Firebase เพื่อเช็คสถานะการเชื่อมต่อ
   void _listenToConnectionStatus() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -743,8 +745,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 15),
                     Center(
                       child: Container(
-                        width: 155,
-                        height: 155,
+                        width: 200,  // ปรับขนาดวงกลมโปรไฟล์หลักใหญ่ขึ้นเป็น 200 ตามต้องการ
+                        height: 200, // ปรับขนาดวงกลมโปรไฟล์หลักใหญ่ขึ้นเป็น 200 ตามต้องการ
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFD50000), width: 5.5),
@@ -859,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชัน Minimize แอปพลิเคชันไปเบื้องหลังตามต้องการ
+          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชันยุบตัวเมื่อกด และพับแอปไปเบื้องหลัง
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -875,10 +877,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 });
               },
               child: GestureDetector(
-                onTap: () async {
+                onTapDown: (_) {
+                  setState(() {
+                    _isBubblePressed = true; // เมื่อกดลงไป บอลลูนจะยุบตัวเล็กลง
+                  });
+                },
+                onTapUp: (_) async {
+                  setState(() {
+                    _isBubblePressed = false;
+                  });
                   await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
                 },
-                child: _buildRobotBubbleWidget(),
+                onTapCancel: () {
+                  setState(() {
+                    _isBubblePressed = false;
+                  });
+                },
+                child: AnimatedScale(
+                  scale: _isBubblePressed ? 0.85 : 1.0, // เอฟเฟกต์ยุบตัวเมื่อกด
+                  duration: const Duration(milliseconds: 100),
+                  child: _buildRobotBubbleWidget(),
+                ),
               ),
             ),
           ),
@@ -887,7 +906,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะที่เชื่อมโยงกับเซิร์ฟเวอร์จริง (.info/connected และสถานะการทำงาน)
+  // วิดเจ็ตบอลลูนลอย เปลี่ยนสีขอบและพื้นหลังเป็นการไล่เฉดสีจากสีดำ (Black) ไปยังสีแดง (Red)
   Widget _buildRobotBubbleWidget() {
     bool isServerActive = isConnected && isRunning;
     return Container(
@@ -895,7 +914,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       height: 58,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
+        // เปลี่ยนสีวงกลมบอลลูนเป็นสีดำไล่สีแดง
+        gradient: const LinearGradient(
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
         boxShadow: [
           BoxShadow(
             color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
@@ -919,7 +944,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
             ),
           ),
-          // จุดสถานะ: สีเขียว (#00C853) เมื่อเชื่อมต่อและทำงานอยู่ หรือสีแดง (#D50000) เมื่อหลุด/หยุดทำงาน
           Positioned(
             right: -2,
             top: -2,
