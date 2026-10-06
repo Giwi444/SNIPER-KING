@@ -504,6 +504,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Offset _ordersDetailOffset = const Offset(16, 520);
   bool _isOrdersDetailOffsetInitialized = false;
+  
+  // สถานะเปิด-ปิดกล่อง Log จากปุ่ม SYMBOLS (เปลี่ยนเป็น LOG)
+  bool _isLogBoxVisible = true;
+
+  // สถานะเปิด-ปิดกล่อง Order Detail (ทำงานออโต้ตามออเดอร์)
   bool _isOrderDetailsVisible = true;
 
   Offset _robotBubbleOffset = const Offset(20, 100);
@@ -661,8 +666,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }
             }
           }
+          
           setState(() {
             activeOrders = newOrders;
+            // ข้อ 2: เปิดออโต้เมื่อมีการเปิดออเดอร์ และปิดออโตเมื่อออเดอร์ปิดลง
+            if (newOrders.isNotEmpty) {
+              _isOrderDetailsVisible = true;
+            } else {
+              _isOrderDetailsVisible = false;
+            }
           });
         }
       });
@@ -738,16 +750,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    const SizedBox(height: 5),
-                    const Text(
-                      'dandy_jpy',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 15),
+                    // ข้อ 3: ลบข้อความ dandy_jpy ทิ้ง และขยายวงกลมโรบอทโปรไฟล์ขึ้นอีกเล็กน้อย
                     Center(
                       child: Container(
-                        width: 130,
-                        height: 130,
+                        width: 145,
+                        height: 145,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFD50000), width: 3.5),
@@ -770,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     const Text(
                       'Your Trading With',
                       style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 0.5),
@@ -839,16 +847,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
+                        // ข้อ 1: เปลี่ยนปุ่ม SYMBOLS เป็น LOG ควบคุมกล่อง log เปิดปิดได้
                         _buildCircularButton(
-                          label: 'SYMBOLS',
-                          icon: Icons.show_chart,
+                          label: 'LOG',
+                          icon: Icons.terminal,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() {
+                              _isLogBoxVisible = !_isLogBoxVisible;
+                            });
+                          },
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _buildLogsBoxContent(),
+                    // แสดงหรือซ่อนกล่อง Log ตามค่า _isLogBoxVisible
+                    if (_isLogBoxVisible) _buildLogsBoxContent(),
                     const SizedBox(height: 120),
                   ],
                 ),
@@ -1118,9 +1132,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   fontSize: 11,
                 ),
               ),
-              GestureDetector(
-                onTap: _clearLogs,
-                child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: _clearLogs,
+                    child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLogBoxVisible = false;
+                      });
+                    },
+                    child: const Icon(Icons.close, color: Colors.white54, size: 16),
+                  ),
+                ],
               ),
             ],
           ),
