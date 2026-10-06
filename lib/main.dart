@@ -166,7 +166,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
@@ -281,7 +281,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             children: [
               ClipOval(
                 child: Image.asset(
-                  'assets/images/p.jpg',
+                  'assets/images/ppp.jpg',
                   fit: BoxFit.cover,
                   opacity: const AlwaysStoppedAnimation(0.25),
                   errorBuilder: (context, error, stackTrace) {
@@ -718,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Container(color: const Color(0xFF0B0B0E)),
           Image.asset(
-            'assets/images/pp.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.3),
             errorBuilder: (context, error, stackTrace) {
@@ -758,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/images/pp.jpg',
+                            'assets/images/ppp.jpg',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(color: Colors.black);
@@ -910,7 +910,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           ClipOval(
             child: Image.asset(
-              'assets/images/p.jpg',
+              'assets/images/ppp.jpg',
               fit: BoxFit.cover,
               width: 54,
               height: 54,
@@ -1276,7 +1276,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
@@ -1728,7 +1728,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
@@ -2002,7 +2002,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
@@ -2172,7 +2172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/p.jpg',
+            'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
