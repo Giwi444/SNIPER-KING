@@ -2373,69 +2373,124 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 20),
-                      const Text('Initial Lot', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: initialLotController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 0.01'),
+
+                      // ==========================================
+                      // พารามิเตอร์แบบ 2 คอลัมน์ (ซ้าย-ขวา) ตามรูปที่ 2 และ 3
+                      // ==========================================
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Initial Lot', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: initialLotController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 0.01'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Max Recovery', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: maxRecoveryController,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 10'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 16),
-                      const Text('Max Recovery Steps', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: maxRecoveryController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 10'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Max Orders', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: maxOrdersController,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 10'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Swing Bars', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: swingBarsController,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 30'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 16),
-                      const Text('Max Orders', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: maxOrdersController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 10'),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Text('Swing Bars', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: swingBarsController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 30'),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Text('SL Points', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: slPointsController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 500'),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Text('Risk Reward (RR)', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: riskRewardController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: _inputDecoration('e.g. 2.0'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('SL Points', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: slPointsController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 500'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Risk Reward (RR)', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: riskRewardController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  decoration: _inputDecoration('e.g. 2.0'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -2469,7 +2524,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(height: 6),
                             TextField(
                               controller: startTimeController,
-                              textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                              textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               decoration: _inputDecoration('08:00'),
                             ),
@@ -2485,7 +2540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(height: 6),
                             TextField(
                               controller: endTimeController,
-                              textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                              textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               decoration: _inputDecoration('22:00'),
                             ),
@@ -2526,7 +2581,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: dailyTargetController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                          textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           decoration: _inputDecoration('Target Profit in USD'),
                         ),
@@ -2547,7 +2602,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: dailyLossController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                          textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           decoration: _inputDecoration('Max Daily Loss in USD'),
                         ),
