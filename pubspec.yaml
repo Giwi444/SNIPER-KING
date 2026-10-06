@@ -27,6 +27,7 @@ flutter:
   assets:
     - assets/images/p.jpg
     - assets/images/pp.jpg
+    - assets/images/ppp.jpg
     - assets/images/IMG_20260922_194127.jpg
     - assets/images/IMG_20260922_200506.jpg
 
