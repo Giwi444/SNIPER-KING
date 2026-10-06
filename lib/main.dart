@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -399,7 +400,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: pages,
       ),
-      // ข้อ 2: ปรับกรอบแถบเมนูด้านล่างให้ไล่เฉดสีแดง-ดำ
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -506,9 +506,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  Offset _ordersDetailOffset = const Offset(16, 520);
-  bool _isOrdersDetailOffsetInitialized = false;
-  
   bool _isLogBoxVisible = true;
   bool _isOrderDetailsVisible = true;
 
@@ -707,13 +704,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-
-    if (!_isOrdersDetailOffsetInitialized) {
-      _ordersDetailOffset = Offset(16, screenSize.height * 0.52);
-      _isOrdersDetailOffsetInitialized = true;
-    }
-
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
@@ -859,37 +849,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 14),
+                    // ข้อ 1: ย้ายกล่อง Log ลงมาสลับตำแหน่งกับกล่อง Orders Detail อยู่ที่นี่
                     if (_isLogBoxVisible) _buildLogsBoxContent(),
+                    const SizedBox(height: 14),
+                    // ข้อ 1 & 2: กล่อง Orders Detail ถูกย้ายมาวางตรงนี้แบบถาวร ไม่ต้องลากขยับเลื่อน ล็อคไว้
+                    if (_isOrderDetailsVisible)
+                      _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                     const SizedBox(height: 120),
                   ],
                 ),
               ),
             ),
           ),
-          if (_isOrderDetailsVisible)
-            Positioned(
-              left: _ordersDetailOffset.dx,
-              top: _ordersDetailOffset.dy,
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: SizedBox(
-                    width: screenSize.width - 32,
-                    child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                  ),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _ordersDetailOffset = details.offset;
-                  });
-                },
-                child: SizedBox(
-                  width: screenSize.width - 32,
-                  child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                ),
-              ),
-            ),
+          // ข้อ 3: เปลี่ยนไอคอนหุ่นยนต์ให้เป็นบอลลูนลอย (Line-style Bubble) ควบคุมการเปิด-ปิด/ย่อแอพฯ (ปุ่ม Home)
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -906,9 +878,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               child: GestureDetector(
                 onTap: () {
-                  setState(() {
-                    _isOrderDetailsVisible = !_isOrderDetailsVisible;
-                  });
+                  // ทำหน้าที่เสมือนปุ่ม Home ของโทรศัพท์ (ย่อแอพ / ปิดแอพชั่วคราว)
+                  SystemNavigator.pop();
                 },
                 child: _buildRobotBubbleWidget(),
               ),
@@ -919,41 +890,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 3: ปรับจุดสีเขียวแสดงสถานะออนไลน์ให้อยู่กึ่งกลางวงกลมพอดี
+  // ข้อ 3: ไอคอนบอลลูนลอย พร้อมปรับจุดสีเขียวแสดงสถานะออนไลน์ให้อยู่กึ่งกลางวงกลมพอดี
   Widget _buildRobotBubbleWidget() {
-    return SizedBox(
-      width: 62,
-      height: 62,
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.6),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/p.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(color: Colors.black);
-                },
-              ),
+          ClipOval(
+            child: Image.asset(
+              'assets/images/p.jpg',
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
             ),
           ),
           Positioned(
-            right: 2,
-            top: 2,
+            right: 0,
+            top: 0,
             child: Container(
               width: 14,
               height: 14,
@@ -969,9 +939,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 1 & 4: ลบกากบาทออก, เปลี่ยนหัวข้อ Order Details View เป็นสีเหลือง
   Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
@@ -1004,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 '📈 $symbol ($tf) - Order Detail View',
                 style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
               ),
-              const Icon(Icons.open_with, color: Colors.white54, size: 16),
+              const Icon(Icons.lock, color: Colors.white54, size: 16),
             ],
           ),
           const SizedBox(height: 8),
@@ -1091,7 +1061,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 1 & 4: ลบกากบาทออก, เปลี่ยนหัวข้อ BOT Status & System Log เป็นสีเหลือง, ข้อความ log เป็นสีขาว
   Widget _buildLogsBoxContent() {
     return Container(
       padding: const EdgeInsets.all(10),
