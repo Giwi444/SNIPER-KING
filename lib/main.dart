@@ -510,7 +510,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Offset _robotBubbleOffset = const Offset(20, 100);
 
-  // ควบคุมแอนิเมชันยุบตัว (Shrink/Scale) ของบอลลูน
   bool _isBubblePressed = false;
 
   late AnimationController _logMarqueeController;
@@ -745,8 +744,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 15),
                     Center(
                       child: Container(
-                        width: 200,  // ปรับขนาดวงกลมโปรไฟล์หลักใหญ่ขึ้นเป็น 200 ตามต้องการ
-                        height: 200, // ปรับขนาดวงกลมโปรไฟล์หลักใหญ่ขึ้นเป็น 200 ตามต้องการ
+                        width: 200,
+                        height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFD50000), width: 5.5),
@@ -861,7 +860,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชันยุบตัวเมื่อกด และพับแอปไปเบื้องหลัง
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -879,7 +877,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: GestureDetector(
                 onTapDown: (_) {
                   setState(() {
-                    _isBubblePressed = true; // เมื่อกดลงไป บอลลูนจะยุบตัวเล็กลง
+                    _isBubblePressed = true;
                   });
                 },
                 onTapUp: (_) async {
@@ -894,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   });
                 },
                 child: AnimatedScale(
-                  scale: _isBubblePressed ? 0.85 : 1.0, // เอฟเฟกต์ยุบตัวเมื่อกด
+                  scale: _isBubblePressed ? 0.85 : 1.0,
                   duration: const Duration(milliseconds: 100),
                   child: _buildRobotBubbleWidget(),
                 ),
@@ -906,7 +904,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // วิดเจ็ตบอลลูนลอย เปลี่ยนสีขอบและพื้นหลังเป็นการไล่เฉดสีจากสีดำ (Black) ไปยังสีแดง (Red)
   Widget _buildRobotBubbleWidget() {
     bool isServerActive = isConnected && isRunning;
     return Container(
@@ -914,7 +911,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       height: 58,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        // เปลี่ยนสีวงกลมบอลลูนเป็นสีดำไล่สีแดง
         gradient: const LinearGradient(
           colors: [Color(0xFF222222), Color(0xFF8A0000)],
           begin: Alignment.topLeft,
@@ -2382,7 +2378,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: initialLotController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 0.01'),
                       ),
 
@@ -2392,7 +2389,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: maxRecoveryController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 10'),
                       ),
 
@@ -2402,7 +2400,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: maxOrdersController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 10'),
                       ),
 
@@ -2412,7 +2411,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: swingBarsController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 30'),
                       ),
 
@@ -2422,7 +2422,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: slPointsController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 500'),
                       ),
 
@@ -2432,7 +2433,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: riskRewardController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: _inputDecoration('e.g. 2.0'),
                       ),
                       const SizedBox(height: 8),
@@ -2463,11 +2465,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Start Time', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const Text('Start Time (เวลาไทย)', style: TextStyle(color: Colors.grey, fontSize: 11)),
                             const SizedBox(height: 6),
                             TextField(
                               controller: startTimeController,
-                              style: const TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               decoration: _inputDecoration('08:00'),
                             ),
                           ],
@@ -2478,11 +2481,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('End Time', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const Text('End Time (เวลาไทย)', style: TextStyle(color: Colors.grey, fontSize: 11)),
                             const SizedBox(height: 6),
                             TextField(
                               controller: endTimeController,
-                              style: const TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               decoration: _inputDecoration('22:00'),
                             ),
                           ],
@@ -2522,7 +2526,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: dailyTargetController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           decoration: _inputDecoration('Target Profit in USD'),
                         ),
                       ],
@@ -2542,7 +2547,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: dailyLossController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center, // จัดวางข้อความกึ่งกลางกล่อง
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           decoration: _inputDecoration('Max Daily Loss in USD'),
                         ),
                       ],
