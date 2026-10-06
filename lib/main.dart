@@ -505,6 +505,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
+  // ข้อ 1: ตัวแปรควบคุมการเปิด-ปิดกล่อง Log เชื่อมกับปุ่มบอลลูน
   bool _isLogBoxVisible = true;
   bool _isOrderDetailsVisible = true;
 
@@ -529,7 +530,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    // เพิ่มแอนิเมชันบอลลูนเด้งขึ้นเด้งลง (ข้อ 3)
     _bubbleBounceController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -850,20 +850,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 18),
                         _buildCircularButton(
-                          // ข้อ 2: แสดง Symbol ปัจจุบันเป็นตัวหนังสือสีขาวตรงกลางวงกลม และแยกการทำงานกับ Log
                           label: symbol, 
                           icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {
-                            // กดแล้วไม่ไปเปิด/ปิดกล่อง log แล้ว ตามข้อ 2
-                          },
+                          onPressed: () {},
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // ข้อ 3: บอลลูนลอยและกล่อง log เชื่อมโยงสัมพันธ์กัน
-                    _buildLogsBoxContent(),
-                    const SizedBox(height: 14),
+                    // ข้อ 1: แสดง/ซ่อนกล่อง Log ตามสถานะ _isLogBoxVisible ที่ควบคุมจากปุ่มบอลลูน
+                    if (_isLogBoxVisible) ...[
+                      _buildLogsBoxContent(),
+                      const SizedBox(height: 14),
+                    ],
                     if (_isOrderDetailsVisible)
                       _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                     const SizedBox(height: 120),
@@ -872,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ข้อ 3: บอลลูนลอยตัวเชื่อมโยงกับกล่อง Log และมีการเด้งขึ้นเด้งลง
+          // ข้อ 1: บอลลูนลอยเมื่อกดแล้วสลับเปิด/ปิดกล่อง Log ทิ้งการยุบตัวแอปเดิม
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -896,12 +895,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         _isBubblePressed = true;
                       });
                     },
-                    onTapUp: (_) async {
+                    onTapUp: (_) {
                       setState(() {
                         _isBubblePressed = false;
+                        _isLogBoxVisible = !_isLogBoxVisible; // สลับเปิด-ปิดกล่อง Log ตามคำสั่งข้อ 1
                       });
-                      // กดแล้วยุบตัวได้ และพับแอป/ออกได้ตามการทำงานเดิม
-                      await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
                     },
                     onTapCancel: () {
                       setState(() {
@@ -1088,7 +1086,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white, // ข้อ 2: ตัวหนังสือสีขาวแสดงอยู่ตรงกลางวงกลมด้านล่างปุ่ม
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 11,
               letterSpacing: 0.5,
@@ -2098,7 +2096,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
   
-  // ข้อ 1: กำหนดรายการและสีสันของปุ่ม Trading Mode แยกแต่ละกล่องอย่างชัดเจน
   final List<Map<String, dynamic>> tradingModeOptions = [
     {'name': 'All Mode', 'color': const Color(0xFFFFB300)},
     {'name': 'Liquidity', 'color': const Color(0xFFE91E63)},
@@ -2106,7 +2103,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     {'name': 'Enqulfing', 'color': const Color(0xFFFF5722)},
   ];
 
-  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
+  // ข้อ 2: กำหนดรายการและสีสันของปุ่ม Lot Mode ตามรูปที่ 2 อย่างชัดเจน
+  final List<Map<String, dynamic>> lotModeOptions = [
+    {'name': 'Fixed', 'color': const Color(0xFF00BCD4)},   // สีฟ้า
+    {'name': 'Step', 'color': const Color(0xFF9C27B0)},    // สีม่วง
+    {'name': 'Double', 'color': const Color(0xFFFFB300)},  // สีส้ม/เหลือง
+  ];
   
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
@@ -2320,7 +2322,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      // ข้อ 1: ทำรูปแบบปุ่มเลือก Trading Mode พร้อมสีที่แตกต่างกันในแต่ละปุ่มตามตัวอย่างรูปที่ 2
                       Row(
                         children: tradingModeOptions.map((modeMap) {
                           String mode = modeMap['name'];
@@ -2370,35 +2371,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Lot Size Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      DropdownButtonFormField<String>(
-                        value: lotModeOptions.contains(lotMode) ? lotMode : 'Double',
-                        dropdownColor: const Color(0xFF161619),
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF0B0B0E),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white24),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.white24),
-                          ),
-                        ),
-                        items: lotModeOptions.map((mode) {
-                          return DropdownMenuItem(
-                            value: mode,
-                            child: Text(mode),
+                      // ข้อ 2: สร้างกล่องปุ่มเลือก Lot Mode (Fixed, Step, Double) แบบในรูปที่ 2 พร้อมแถบสีรอบปุ่มเมื่อเลือก
+                      Row(
+                        children: lotModeOptions.map((lotMap) {
+                          String mode = lotMap['name'];
+                          Color modeColor = lotMap['color'];
+                          bool isSelected = lotMode == mode;
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: SizedBox(
+                                height: 42,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      lotMode = mode;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    side: BorderSide(
+                                      color: modeColor,
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                    elevation: isSelected ? 4 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           );
                         }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              lotMode = val;
-                            });
-                          }
-                        },
                       ),
 
                       const SizedBox(height: 16),
