@@ -430,159 +430,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.white70,
           items: [
+            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
+            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
             BottomNavigationBarItem(
-              icon: Column(
-                mainAxisSize: MainAxisSize.min,
+              icon: Stack(
                 children: [
-                  const Icon(Icons.tune),
-                  if (_currentIndex == 0)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300).withOpacity(0.8),
-                            blurRadius: 6,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              label: 'Settings',
-            ),
-            BottomNavigationBarItem(
-              icon: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.list_alt),
-                  if (_currentIndex == 1)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300).withOpacity(0.8),
-                            blurRadius: 6,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              label: 'Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.home_filled),
-                  if (_currentIndex == 2)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300).withOpacity(0.8),
-                            blurRadius: 6,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.history),
-                  if (_currentIndex == 3)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300).withOpacity(0.8),
-                            blurRadius: 6,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    children: [
-                      const Icon(Icons.notifications_active),
-                      if (unreadAlertsCount > 0)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              '$unreadAlertsCount',
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                  const Icon(Icons.notifications_active),
+                  if (unreadAlertsCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                    ],
-                  ),
-                  if (_currentIndex == 4)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300).withOpacity(0.8),
-                            blurRadius: 6,
-                            spreadRadius: 2,
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$unreadAlertsCount',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                 ],
@@ -597,7 +475,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (RED-BLACK STYLE)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -624,12 +502,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ตำแหน่งเริ่มต้นของกล่อง Orders Detail View ให้อยู่ในตำแหน่งแถบล่างสีขาวตามที่ต้องการ
   Offset _ordersDetailOffset = const Offset(16, 620);
   bool _isOrdersDetailOffsetInitialized = false;
 
   late AnimationController _logMarqueeController;
-
   bool isConnected = false;
 
   @override
@@ -680,10 +556,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
 
       _dbRef = database.ref('status');
-
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
-
         if (data != null && mounted) {
           setState(() {
             isRunning = data['is_running'] ?? false;
@@ -725,7 +599,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (data is Map) {
               var sortedEntries = data.entries.toList()
                 ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
-              
               for (var entry in sortedEntries) {
                 if (entry.value != null) {
                   tempLogs.add(entry.value.toString());
@@ -740,7 +613,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
             _botLogs = tempLogs;
           });
-
           Future.delayed(const Duration(milliseconds: 100), () {
             _scrollToBottom();
           });
@@ -757,9 +629,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       setState(() {
         _botLogs.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cleared all logs successfully'), duration: Duration(seconds: 1)),
-      );
     } catch (e) {
       print("Clear logs error: $e");
     }
@@ -789,7 +658,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }
             }
           }
-
           setState(() {
             activeOrders = newOrders;
           });
@@ -815,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFFFB300)),
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
       );
     } catch (e) {
       print("Close all error: $e");
@@ -827,7 +695,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isOrdersDetailOffsetInitialized) {
-      _ordersDetailOffset = Offset(16, screenSize.height * 0.65);
+      _ordersDetailOffset = Offset(16, screenSize.height * 0.58);
       _isOrdersDetailOffsetInitialized = true;
     }
 
@@ -843,24 +711,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // พื้นหลังโทนดำ-แดง
+          Container(color: const Color(0xFF0B0B0E)),
           Image.asset(
             'assets/images/p.jpg',
             fit: BoxFit.cover,
+            opacity: const AlwaysStoppedAnimation(0.3),
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.5),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 10.0, bottom: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               child: SingleChildScrollView(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const SizedBox(height: 10),
+                    // Username ด้านบนสุดตามเรฟ
+                    const Text(
+                      'dandy_jpy',
+                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 12),
+                    // รูปโปรไฟล์วงกลมขอบเรืองแสงสีแดง
                     Center(
                       child: Container(
                         width: 110,
@@ -870,8 +753,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           border: Border.all(color: const Color(0xFFD50000), width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.7),
-                              blurRadius: 15,
+                              color: Colors.red.withOpacity(0.6),
+                              blurRadius: 16,
                               spreadRadius: 2,
                             ),
                           ],
@@ -887,17 +770,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
                     const Text(
-                      'SNIPER KING BOT',
+                      'Your Trading With',
+                      style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 4),
+                    // ชื่อบอทสไตล์ตัวหนาเรืองแสงแดง
+                    const Text(
+                      'SNIPER KING',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFFD50000),
                         letterSpacing: 1.5,
                         shadows: [
-                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
+                          Shadow(color: Colors.red, blurRadius: 8, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
@@ -905,76 +794,74 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SCALPER X',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFFD50000),
                         letterSpacing: 1.5,
                         shadows: [
-                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
+                          Shadow(color: Colors.red, blurRadius: 8, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 16,
-                      child: Center(
-                        child: Text(
-                          '★ CONNECTED • LIVE • CONNECTED ★',
-                          style: TextStyle(
-                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    const SizedBox(height: 8),
+                    // Powered by Algohost แถบป้ายเรืองแสงสีแดง
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                        color: Colors.black.withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                        ],
+                      ),
+                      child: const Text(
+                        'Powered By Algohost',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: _buildLogsBoxContent(),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 14),
+                    // 3 ปุ่มวงกลมหลักตามเรฟ: DELETE, START, SYMBOLS (ขอบแดงดำ)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _buildCircularButton(
-                          label: 'CLOSE',
-                          icon: Icons.delete_sweep,
-                          colors: const [Color(0xFFFFB300), Color(0xFFB27B00)],
+                          label: 'DELETE',
+                          icon: Icons.delete_outline,
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: _closeAllOrders,
-                          isLarge: true,
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: 18),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
-                              ? const [Color(0xFFE53935), Color(0xFFB71C1C)] 
-                              : const [Color(0xFF43A047), Color(0xFF1B5E20)], 
+                              ? const [Color(0xFFD50000), Color(0xFF5A0000)] 
+                              : const [Color(0xFFB71C1C), Color(0xFF7A0000)], 
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
+                        const SizedBox(width: 18),
+                        _buildCircularButton(
+                          label: 'SYMBOLS',
+                          icon: Icons.show_chart,
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          onPressed: () {
+                            // กดเพื่อดูสถานะหรือสลับหน้า
+                          },
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5)),
-                        color: Colors.black45,
-                      ),
-                      child: const Text(
-                        'Powered by Algohost',
-                        style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    const SizedBox(height: 14),
+                    // กล่องแสดง Log สถานะบอท
+                    _buildLogsBoxContent(),
+                    const SizedBox(height: 100), // เว้นพื้นที่ให้กล่อง Order Details ด้านล่าง
                   ],
                 ),
               ),
             ),
           ),
-          // กล่อง Orders Detail View ที่สามารถลากได้ และจัดให้อยู่บริเวณแถบสีขาวด้านล่างตามข้อ 1, 2, 3
+          // กล่อง Orders Detail View แบบลากได้ (Theme แดงดำ)
           Positioned(
             left: _ordersDetailOffset.dx,
             top: _ordersDetailOffset.dy,
@@ -1003,7 +890,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ปรับแต่งขอบใหญ่สีแดงดำตามข้อ 4
   Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1011,18 +897,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFD50000), // ขอบสีแดงดำ
-          width: 4.0, // ขอบใหญ่ชัดเจนตามข้อ 4
+          color: const Color(0xFFD50000),
+          width: 3.0,
         ),
         gradient: const LinearGradient(
-          colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.7),
-            blurRadius: 14,
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1058,8 +944,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text('ทิศทาง', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  const Text('รวมทั้งหมด', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                  const Text('สถานะ', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                  Text(orderCount > 0 ? '$orderCount Orders' : 'No Order', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
                 ],
               ),
               Column(
@@ -1070,23 +956,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 16,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFD50000), Color(0xFFFFB300), Color(0xFF00C853)],
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Text(
-              orderCount > 0 ? '$orderCount active orders running' : 'No open positions',
-              style: const TextStyle(color: Colors.white70, fontSize: 10),
-            ),
           ),
         ],
       ),
@@ -1100,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
-    double size = isLarge ? 84 : 72;
+    double size = isLarge ? 82 : 70;
     return GestureDetector(
       onTap: onPressed,
       child: Column(
@@ -1116,16 +985,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              border: Border.all(color: Colors.white, width: 2.5),
+              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: colors.first.withOpacity(0.7),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
+                  color: Colors.red.withOpacity(0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 36),
+            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1133,7 +1002,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: 11,
               letterSpacing: 0.5,
             ),
           ),
@@ -1142,29 +1011,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ปรับแต่งขอบใหญ่ไล่ระดับแดงดำตามข้อ 4
   Widget _buildLogsBoxContent() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 4.0, // ขอบใหญ่ชัดเจนตามข้อ 4
+          width: 3.0,
         ),
         gradient: const LinearGradient(
           colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1173,38 +1034,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Text('🤖 ', style: TextStyle(fontSize: 12)),
-                  Text(
-                    'BOT Status & System Log',
-                    style: TextStyle(
-                      color: Color(0xFF00C853),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              const Text(
+                '🤖 BOT Status & System Log',
+                style: TextStyle(
+                  color: Color(0xFF00C853),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
               GestureDetector(
                 onTap: _clearLogs,
-                child: const Icon(
-                  Icons.delete_sweep,
-                  color: Colors.redAccent,
-                  size: 16,
-                ),
+                child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            height: 75,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            height: 70,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
             ),
             child: _botLogs.isEmpty
                 ? const Center(
@@ -1213,27 +1065,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       style: TextStyle(color: Color(0xFF00C853), fontSize: 10),
                     ),
                   )
-                : AnimatedBuilder(
-                    animation: _logMarqueeController,
-                    builder: (context, child) {
-                      return ListView.builder(
-                        controller: _logScrollController,
-                        itemCount: _botLogs.length,
-                        itemBuilder: (context, index) {
-                          final logItem = _botLogs[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 3.0),
-                            child: Text(
-                              logItem,
-                              textAlign: TextAlign.left,
-                              style: const TextStyle(
-                                color: Color(0xFF00C853),
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          );
-                        },
+                : ListView.builder(
+                    controller: _logScrollController,
+                    itemCount: _botLogs.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: Text(
+                          _botLogs[index],
+                          style: const TextStyle(
+                            color: Color(0xFF00C853),
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -1400,15 +1245,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFD50000),
-                      width: 3.5,
+                      color: const Color(0xFFFFB300),
+                      width: 2.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1494,15 +1346,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+                    gradient: LinearGradient(
+                      colors: isTotalProfit
+                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFD50000),
-                      width: 3.5,
+                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                      width: 1.5,
                     ),
                   ),
                   child: Row(
@@ -1542,11 +1396,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                           final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
                           final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                          final double priceOpen = double.tryParse(order['price_open']?.toString() ?? '0.0') ?? 0.0;
-                          final double priceCurrent = double.tryParse(order['price_current']?.toString() ?? '0.0') ?? 0.0;
-
                           bool isBuy = type.toUpperCase().contains('BUY');
-                          bool isProfit = profit >= 0;
+                          bool orderProfit = profit >= 0;
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 10),
@@ -1554,7 +1405,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF161619).withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFD50000), width: 2),
+                              border: Border.all(
+                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1576,20 +1430,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '${priceOpen.toStringAsFixed(2)} -> ${priceCurrent.toStringAsFixed(2)}',
-                                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
-                                        ),
+                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        const SizedBox(height: 2),
+                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                                       ],
                                     ),
                                   ],
                                 ),
                                 Text(
-                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -1607,25 +1458,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, IconData icon) {
+  Widget _buildMetricCard(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD50000), width: 2),
+        border: Border.all(color: Colors.white12, width: 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: const Color(0xFFFFB300), size: 20),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              Icon(icon, color: Colors.grey, size: 15),
+              const SizedBox(width: 6),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
             ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 19,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -1634,7 +1494,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// #3 TRADE HISTORY SCREEN
+//#3  TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1867,14 +1727,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
+                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: const Color(0xFFD50000),
-                    width: 3.5,
+                    color: const Color(0xFFFFB300),
+                    width: 2.5,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1928,7 +1788,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF161619).withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFD50000), width: 2),
+                              border: Border.all(color: Colors.white12, width: 1),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2109,13 +1969,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
                     final alert = alertItems[index];
-                    return Container(
+                    return Card(
+                      color: const Color(0xFF161619).withOpacity(0.9),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFD50000), width: 2),
-                      ),
                       child: ListTile(
                         leading: const Icon(Icons.notifications_active, color: Color(0xFFFFB300)),
                         title: Text(alert['message'], style: const TextStyle(color: Colors.white, fontSize: 13)),
@@ -2289,14 +2146,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.95),
+                    color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFD50000), width: 3),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    border: Border.all(color: Colors.white12, width: 1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
