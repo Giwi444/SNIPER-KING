@@ -592,7 +592,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _marketRef = database.ref('market/$symbol');
+      // แก้ไขให้ชี้ไปที่ 'status' ตามโครงสร้าง Firebase จริง เพื่อดึง bid และ ask
+      _marketRef = database.ref('status');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -917,7 +918,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onTapUp: (_) {
                     setState(() {
                       _isOrderBubblePressed = false;
-                      // กดที่บอลลูนเพื่อเปิด-ปิดกล่องราคา Bid/Ask เท่านั้น
                       _isBidAskBoxVisible = !_isBidAskBoxVisible;
                     });
                   },
@@ -1020,7 +1020,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
-        // แก้ไขขอบกล่องราคา Bid/Ask เป็นสีแดงดำไล่แถบสี (Gradient Border)
         gradient: const LinearGradient(
           colors: [Color(0xFFD50000), Color(0xFF3A0000), Color(0xFF000000)],
           begin: Alignment.topLeft,
