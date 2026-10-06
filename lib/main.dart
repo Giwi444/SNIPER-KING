@@ -624,14 +624,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  Offset _robotIconOffset = const Offset(0, 0);
-  bool _isRobotIconOffsetInitialized = false;
-
-  // สำหรับกล่อง Orders Detail View ที่ลากได้
-  Offset _ordersDetailOffset = const Offset(16, 80);
-
-  late AnimationController _floatController;
-  late Animation<double> _floatAnimation;
+  // ตำแหน่งเริ่มต้นของกล่อง Orders Detail View ให้อยู่ในตำแหน่งแถบล่างสีขาวตามที่ต้องการ
+  Offset _ordersDetailOffset = const Offset(16, 620);
+  bool _isOrdersDetailOffsetInitialized = false;
 
   late AnimationController _logMarqueeController;
 
@@ -645,15 +640,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToLogs();
     _listenToConnectionStatus();
 
-    _floatController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
-    );
-
     _logMarqueeController = AnimationController(
       duration: const Duration(seconds: 15),
       vsync: this,
@@ -662,7 +648,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _floatController.dispose();
     _logMarqueeController.dispose();
     _logScrollController.dispose();
     super.dispose();
@@ -841,9 +826,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
-    if (!_isRobotIconOffsetInitialized) {
-      _robotIconOffset = Offset(16, screenSize.height * 0.08);
-      _isRobotIconOffsetInitialized = true;
+    if (!_isOrdersDetailOffsetInitialized) {
+      _ordersDetailOffset = Offset(16, screenSize.height * 0.65);
+      _isOrdersDetailOffsetInitialized = true;
     }
 
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
@@ -989,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // กล่อง Orders Detail View ที่สามารถลากไปบนหน้าจอได้ (ข้อ 2)
+          // กล่อง Orders Detail View ที่สามารถลากได้ และจัดให้อยู่บริเวณแถบสีขาวด้านล่างตามข้อ 1, 2, 3
           Positioned(
             left: _ordersDetailOffset.dx,
             top: _ordersDetailOffset.dy,
@@ -1013,29 +998,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Positioned(
-            left: _robotIconOffset.dx,
-            top: _robotIconOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildRobotButtonContent(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _robotIconOffset = details.offset;
-                });
-              },
-              child: _buildRobotButtonContent(),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  // กล่อง Orders Detail View แบบปรับขอบใหญ่ไล่ระดับแดงดำตามข้อ 2 และ 3
+  // ปรับแต่งขอบใหญ่สีแดงดำตามข้อ 4
   Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1043,8 +1011,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFD50000), // เส้นขอบสีแดง
-          width: 3.5, // ขอบใหญ่
+          color: const Color(0xFFD50000), // ขอบสีแดงดำ
+          width: 4.0, // ขอบใหญ่ชัดเจนตามข้อ 4
         ),
         gradient: const LinearGradient(
           colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
@@ -1053,8 +1021,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.6),
-            blurRadius: 12,
+            color: Colors.red.withOpacity(0.7),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1132,7 +1100,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
-    // ปรับขนาดปุ่ม CLOSE และ START ให้มีขนาดใหญ่เท่ากันตามข้อ 1 (ใช้ขนาด 84 ทั้งคู่เมื่อ isLarge เป็น true)
     double size = isLarge ? 84 : 72;
     return GestureDetector(
       onTap: onPressed,
@@ -1175,96 +1142,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRobotButtonContent() {
-    return AnimatedBuilder(
-      animation: _floatAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _floatAnimation.value),
-          child: child,
-        );
-      },
-      child: GestureDetector(
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: const Color(0xFF161619),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Row(
-                children: [
-                  Icon(Icons.smart_toy, color: Color(0xFFFFB300)),
-                  SizedBox(width: 8),
-                  Text('Sniper King Status', style: TextStyle(color: Colors.white, fontSize: 16)),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Account: ${widget.accountLogin}', style: const TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 6),
-                  Text('Bot Running: ${isRunning ? "Active" : "Stopped"}', style: TextStyle(color: isRunning ? Colors.green : Colors.red)),
-                  const SizedBox(height: 6),
-                  Text('Symbol: $symbol ($timeframe)', style: const TextStyle(color: Colors.amberAccent)),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close', style: TextStyle(color: Color(0xFFFFB300))),
-                ),
-              ],
-            ),
-          );
-        },
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFD50000), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.withOpacity(0.7),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/images/p.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: Colors.black);
-                  },
-                ),
-              ),
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // กล่อง Log แบบรูปที่ 4 และขอบใหญ่ไล่ระดับแดงดำตามข้อ 3 และ 4
+  // ปรับแต่งขอบใหญ่ไล่ระดับแดงดำตามข้อ 4
   Widget _buildLogsBoxContent() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1273,7 +1151,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 3.5, // ขอบใหญ่
+          width: 4.0, // ขอบใหญ่ชัดเจนตามข้อ 4
         ),
         gradient: const LinearGradient(
           colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
