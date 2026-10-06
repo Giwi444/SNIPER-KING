@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -505,23 +506,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ควบคุมสถานะกล่อง Log และกล่องรายงานเปิดออเดอร์ (แยกอิสระ)
+  // ควบคุมสถานะกล่อง Log และกล่องรายงานเปิดออเดอร์
   bool _isLogBoxVisible = true;
   bool _isLogBoxExpanded = false; 
-  bool _isOrderDetailsVisible = true;
+  bool _isOrderDetailsVisible = false; // ปิดเริ่มต้น ควบคุมด้วยบอลลูน Symbol ด้านซ้าย
 
   // ตำแหน่งลากกล่องรายงานเปิดออเดอร์ และบอลลูน
   Offset _orderBubbleOffset = const Offset(20, 100);
   Offset _robotBubbleOffset = const Offset(20, 200);
   bool _isBubblePressed = false;
+  bool _isOrderBubblePressed = false;
 
   late AnimationController _logMarqueeController;
   late AnimationController _bubbleBounceController;
   late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
 
-  // ตัวแปรสำหรับข้อความสัญญาณเทรดจริงจากฐานข้อมูล
+  // ตัวแปรสำหรับข้อความสัญญาณเทรดพิมพ์ดีด
   String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
+  String _displayedTypewriterText = "";
+  Timer? _typewriterTimer;
 
   @override
   void initState() {
@@ -544,6 +548,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _bubbleBounceAnimation = Tween<double>(begin: 0, end: 10).animate(
       CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
     );
+
+    _startTypewriterEffect(latestSignalText);
   }
 
   @override
@@ -551,7 +557,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _logMarqueeController.dispose();
     _bubbleBounceController.dispose();
     _logScrollController.dispose();
+    _typewriterTimer?.cancel();
     super.dispose();
+  }
+
+  void _startTypewriterEffect(String fullText) {
+    _typewriterTimer?.cancel();
+    int charIndex = 0;
+    _displayedTypewriterText = "";
+    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 35), (timer) {
+      if (charIndex < fullText.length) {
+        if (mounted) {
+          setState(() {
+            _displayedTypewriterText += fullText[charIndex];
+          });
+        }
+        charIndex++;
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   void _listenToConnectionStatus() {
@@ -638,10 +663,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
             _botLogs = tempLogs;
             
-            // ดึงข้อความล่าสุดจาก Log มาทำเป็นสัญญาณเทรดจริง
             if (_botLogs.isNotEmpty) {
               String lastLog = _botLogs.last;
               latestSignalText = "> $lastLog";
+              _startTypewriterEffect(latestSignalText);
             }
           });
           Future.delayed(const Duration(milliseconds: 100), () {
@@ -681,12 +706,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           setState(() {
             activeOrders = newOrders;
-            // เงื่อนไข: เด้งขึ้นอัตโนมัติเมื่อมีออเดอร์ และซ่อนลงเมื่อไม่มีออเดอร์
-            if (newOrders.isNotEmpty) {
-              _isOrderDetailsVisible = true;
-            } else {
-              _isOrderDetailsVisible = false;
-            }
           });
         }
       });
@@ -756,7 +775,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
-                    // แก้ไขข้อ 1: ขยายกล่องและรูปภาพด้านบนให้ใหญ่เหมือนภาพแรก
                     Center(
                       child: Container(
                         width: 250,
@@ -852,17 +870,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
+                        // ปุ่มลูกศรขวา ควบคุมเปิด/ปิดกล่อง Log และขยายขนาด
                         _buildCircularButton(
                           label: symbol, 
                           icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() {
+                              _isLogBoxVisible = true;
+                              _isLogBoxExpanded = !_isLogBoxExpanded;
+                            });
+                          },
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     
-                    // กล่อง Log ระบบ (แยกอิสระ)
+                    // กล่อง Log ระบบ (ควบคุมด้วยบอลลูนหรือปุ่มกราฟ)
                     if (_isLogBoxVisible) ...[
                       _buildCyberpunkLogBox(),
                       const SizedBox(height: 14),
@@ -875,33 +899,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // แก้ไขข้อ 2: กล่องรายงานการเปิดออเดอร์เชื่อมสัญญาณเทรดจริง แสดงจำนวนออเดอร์และ Lot ทั้งหมด
-          if (_isOrderDetailsVisible)
-            Positioned(
-              left: _orderBubbleOffset.dx,
-              top: _orderBubbleOffset.dy,
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                  ),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
+          // ข้อ 2: บอลลูน Symbol ด้านซ้าย (ควบคุมเปิด-ปิดกล่อง Order)
+          Positioned(
+            left: _orderBubbleOffset.dx,
+            top: _orderBubbleOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildSymbolBubbleWidget(),
+              ),
+              childWhenDragging: Container(),
+              onDragEnd: (details) {
+                setState(() {
+                  _orderBubbleOffset = details.offset;
+                });
+              },
+              child: GestureDetector(
+                onTapDown: (_) {
                   setState(() {
-                    _orderBubbleOffset = details.offset;
+                    _isOrderBubblePressed = true;
                   });
                 },
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                onTapUp: (_) {
+                  setState(() {
+                    _isOrderBubblePressed = false;
+                    _isOrderDetailsVisible = !_isOrderDetailsVisible;
+                  });
+                },
+                onTapCancel: () {
+                  setState(() {
+                    _isOrderBubblePressed = false;
+                  });
+                },
+                child: AnimatedScale(
+                  scale: _isOrderBubblePressed ? 0.85 : 1.0,
+                  duration: const Duration(milliseconds: 100),
+                  child: _buildSymbolBubbleWidget(),
                 ),
               ),
             ),
+          ),
 
-          // แก้ไขข้อ 3: บอลลูนเชื่อมต่ออิสระ (ไม่ไปยุ่งกับกล่อง Log Bot status)
+          // กล่องรายงาน Order เมื่อเปิดใช้งาน
+          if (_isOrderDetailsVisible)
+            Positioned(
+              left: 20,
+              top: _orderBubbleOffset.dy + 70,
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.9,
+                child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+              ),
+            ),
+
+          // ข้อ 1: บอลลูนลอยทางขวา ควบคุมเปิดปิด/ขยายกล่อง Log
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -952,7 +1002,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRobotBubbleWidget() {
+  Widget _buildSymbolBubbleWidget() {
     bool isServerActive = isConnected && isRunning;
     return Container(
       width: 58,
@@ -1006,31 +1056,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่อง Log ระบบหลัก
+  Widget _buildRobotBubbleWidget() {
+    return _buildSymbolBubbleWidget();
+  }
+
+  // กล่อง Log ระบบหลัก ปรับดีไซน์ตามภาพที่ 2[span_3](start_span)[span_3](end_span)
   Widget _buildCyberpunkLogBox() {
-    double boxHeight = _isLogBoxExpanded ? 280 : 160;
+    double boxHeight = _isLogBoxExpanded ? 320 : 180;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: double.infinity,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF121216).withOpacity(0.95),
+        color: const Color(0xFF161619).withOpacity(0.98),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 2.5,
+          width: 3.0,
         ),
         gradient: const LinearGradient(
-          colors: [Color(0xFF2A0000), Color(0xFF121216), Color(0xFF4A0000)],
+          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.red.withOpacity(0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -1044,8 +1098,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Row(
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFD50000), width: 1.5),
@@ -1064,7 +1118,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
-                      fontSize: 12,
+                      fontSize: 13,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -1081,27 +1135,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Icon(
                       _isLogBoxExpanded ? Icons.fullscreen_exit : Icons.fullscreen,
                       color: Colors.amberAccent,
-                      size: 18,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () {
                       setState(() {
                         _isLogBoxVisible = false;
                       });
                     },
-                    child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                    child: const Icon(Icons.close, color: Colors.white70, size: 20),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
             height: boxHeight,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
               borderRadius: BorderRadius.circular(8),
@@ -1113,12 +1167,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ..._botLogs.map((log) => Padding(
-                        padding: const EdgeInsets.only(bottom: 2.0),
+                        padding: const EdgeInsets.only(bottom: 4.0),
                         child: Text(
                           log,
                           style: const TextStyle(
                             color: Colors.white70,
-                            fontSize: 10,
+                            fontSize: 11,
                             fontFamily: 'monospace',
                           ),
                         ),
@@ -1132,7 +1186,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่องรายงานการเปิดออเดอร์ (เชื่อมกับสัญญาณเทรดจริงและจำนวนออเดอร์จริง)
+  // กล่องรายงานการเปิดออเดอร์ (มีเอฟเฟกต์พิมพ์ดีดข้อความ)
   Widget _buildOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1239,8 +1293,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // แสดงข้อความสไตล์พิมพ์ดีด
                 Text(
-                  latestSignalText,
+                  _displayedTypewriterText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -2076,7 +2131,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 // ==========================================
-// #4 ALERTS SCREEN
+// #4 ALERTS SCREEN (กรองเฉพาะออเดอร์เข้า)
 // ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
@@ -2114,19 +2169,26 @@ class _AlertsScreenState extends State<AlertsScreen> {
             if (data is Map) {
               data.forEach((key, value) {
                 if (value != null) {
-                  alertItems.add({
-                    'key': key.toString(),
-                    'message': value.toString(),
-                  });
+                  String msg = value.toString();
+                  // กรองเฉพาะแจ้งเตือนที่มีคำว่ามีออเดอร์เข้าหรือเกี่ยวข้องกับ order เพื่อไม่ให้ซ้ำซ้อนกับระบบอื่น
+                  if (msg.toUpperCase().contains('ORDER') || msg.toUpperCase().contains('BUY') || msg.toUpperCase().contains('SELL') || msg.toUpperCase().contains('POSITION')) {
+                    alertItems.add({
+                      'key': key.toString(),
+                      'message': msg,
+                    });
+                  }
                 }
               });
             } else if (data is List) {
               for (int i = 0; i < data.length; i++) {
                 if (data[i] != null) {
-                  alertItems.add({
-                    'key': i.toString(),
-                    'message': data[i].toString(),
-                  });
+                  String msg = data[i].toString();
+                  if (msg.toUpperCase().contains('ORDER') || msg.toUpperCase().contains('BUY') || msg.toUpperCase().contains('SELL') || msg.toUpperCase().contains('POSITION')) {
+                    alertItems.add({
+                      'key': i.toString(),
+                      'message': msg,
+                    });
+                  }
                 }
               }
             }
@@ -2169,7 +2231,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mobile Push Alerts'),
+        title: const Text('Order Push Alerts'),
         backgroundColor: const Color(0xFF0B0B0E),
         actions: [
           if (alertItems.isNotEmpty)
@@ -2194,7 +2256,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             color: Colors.black.withOpacity(0.8),
           ),
           alertItems.isEmpty
-              ? const Center(child: Text('No active alerts...', style: TextStyle(color: Colors.grey)))
+              ? const Center(child: Text('No new order alerts...', style: TextStyle(color: Colors.grey)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
