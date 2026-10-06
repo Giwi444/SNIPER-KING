@@ -917,8 +917,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onTapUp: (_) {
                     setState(() {
                       _isOrderBubblePressed = false;
+                      // กดที่บอลลูนเพื่อเปิด-ปิดกล่องราคา Bid/Ask เท่านั้น
                       _isBidAskBoxVisible = !_isBidAskBoxVisible;
-                      _isReportBoxVisible = true; 
                     });
                   },
                   onTapCancel: () {
@@ -929,36 +929,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: AnimatedScale(
                     scale: _isOrderBubblePressed ? 0.85 : 1.0,
                     duration: const Duration(milliseconds: 100),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        _buildSymbolBubbleWidget(),
-                        Positioned(
-                          right: -4,
-                          bottom: -4,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isReportBoxVisible = !_isReportBoxVisible;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: _isReportBoxVisible ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 1.5),
-                              ),
-                              child: Icon(
-                                _isReportBoxVisible ? Icons.visibility : Icons.visibility_off,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildSymbolBubbleWidget(),
                   ),
                 ),
               ),
@@ -1049,77 +1020,90 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFB300), width: 2.0),
+        // แก้ไขขอบกล่องราคา Bid/Ask เป็นสีแดงดำไล่แถบสี (Gradient Border)
+        gradient: const LinearGradient(
+          colors: [Color(0xFFD50000), Color(0xFF3A0000), Color(0xFF000000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.red.withOpacity(0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    symbol,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isBidAskBoxVisible = false;
-                  });
-                },
-                child: const Icon(Icons.close, color: Colors.grey, size: 16),
-              ),
-            ],
-          ),
-          const Divider(color: Colors.white24, height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                    realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              Container(height: 25, width: 1, color: Colors.white24),
-              Column(
-                children: [
-                  const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                    realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Center(
-            child: Text(
-              '*(ลากเพื่อย้ายตำแหน่ง)',
-              style: TextStyle(color: Colors.grey, fontSize: 9),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161619),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      symbol,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isBidAskBoxVisible = false;
+                    });
+                  },
+                  child: const Icon(Icons.close, color: Colors.grey, size: 16),
+                ),
+              ],
             ),
-          ),
-        ],
+            const Divider(color: Colors.white24, height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  children: [
+                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(
+                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Container(height: 25, width: 1, color: Colors.white24),
+                Column(
+                  children: [
+                    const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(
+                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Center(
+              child: Text(
+                '*(ลากเพื่อย้ายตำแหน่ง)',
+                style: TextStyle(color: Colors.grey, fontSize: 9),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2859,7 +2843,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderSide: const BorderSide(color: Colors.white24),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12), // แก้ไขจุดที่ผิดพลาดตรงนี้
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
       ),
     );
