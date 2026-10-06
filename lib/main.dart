@@ -526,7 +526,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
-  // ควบคุมการเปิด-ปิด กล่อง Log แบบ Pop-up ขนาดใหญ่เกือบเต็มหน้าจอ
   bool _isLargeLogsModalOpen = false;
 
   String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
@@ -801,29 +800,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Your Trading With',
-                      style: TextStyle(color: Colors.grey, fontSize: 12, letterSpacing: 0.5),
-                    ),
-                    const SizedBox(height: 4),
+                    // ปรับดีไซน์ตามรูปแบบอ้างอิงรูปที่ 2 และ 3
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: 32,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 1.5,
+                        letterSpacing: 2.0,
                         shadows: [
-                          Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                          Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
                     const Text(
-                      'SCALPER X',
+                      'EA v6+',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 27,
+                        fontSize: 26,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -832,23 +827,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                        color: Colors.black.withOpacity(0.6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                        ],
-                      ),
-                      child: const Text(
-                        'Powered By Algohost',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                      ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: isConnected && isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isConnected && isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                                blurRadius: 6,
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isConnected && isRunning ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
+                          style: TextStyle(
+                            color: isConnected && isRunning ? const Color(0xFF00C853) : Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -869,7 +878,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
-                        // ปุ่ม LOGS สำหรับกดเปิด Pop-up กล่องใหญ่เกือบเต็มจอ
                         _buildCircularButton(
                           label: 'LOGS', 
                           icon: Icons.show_chart,
@@ -894,7 +902,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // บับเบิ้ลลอยด้านซ้าย
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -963,7 +970,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // 🌟 Pop-up กล่อง Log ขนาดใหญ่เกือบเต็มหน้าจอ (เหมือนรูปที่ 4 และเงื่อนไขที่ต้องการ)
           if (_isLargeLogsModalOpen)
             Container(
               color: Colors.black54,
@@ -995,7 +1001,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header ของ Pop-up
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
@@ -1028,8 +1033,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const Divider(color: Color(0xFFD50000), height: 1),
-
-                        // ส่วนแสดงข้อความ Log แบบพิมพ์ดีด ตัวหนังสือสีขาว เลื่อนดูได้
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
@@ -1040,13 +1043,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   Text(
                                     _displayedTypewriterText,
                                     style: const TextStyle(
-                                      color: Colors.white, // ตัวหนังสือสีขาวตามต้องการ
+                                      color: Colors.white,
                                       fontFamily: 'monospace',
                                       fontSize: 14,
                                       height: 1.5,
                                     ),
                                   ),
-                                  // แสดงประวัติ log ทั้งหมดเรียงต่อกันด้านล่างถ้ามี
                                   ..._botLogs.map((log) => Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
@@ -1266,7 +1268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'SNIPER KING SCALPER X',
+                    'SNIPER KING EA v6+',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
