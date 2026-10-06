@@ -505,12 +505,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ควบคุมสถานะเปิด/ปิดกล่อง Log และ ขยาย/ย่อขนาดกล่อง Log (ข้อ 3)
+  // ควบคุมสถานะกล่อง Log และกล่องรายงานเปิดออเดอร์ (แยกอิสระ)
   bool _isLogBoxVisible = true;
   bool _isLogBoxExpanded = false; 
   bool _isOrderDetailsVisible = true;
 
-  Offset _robotBubbleOffset = const Offset(20, 100);
+  // ตำแหน่งลากกล่องรายงานเปิดออเดอร์ (ตามรูปที่ 2) และบอลลูน
+  Offset _orderBubbleOffset = const Offset(20, 100);
+  Offset _robotBubbleOffset = const Offset(20, 200);
   bool _isBubblePressed = false;
 
   late AnimationController _logMarqueeController;
@@ -518,9 +520,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
 
-  // สำหรับเอฟเฟกต์ตัวหนังสือพิมพ์ทีละตัวอักษร (ข้อ 2)
+  // สำหรับเอฟเฟกต์ตัวหนังสือพิมพ์ทีละตัวอักษรสำหรับกล่องรายงานเปิดออเดอร์
   String _typedText = "";
-  int _charIndex = 0;
   final String _targetText = "> NEW SIGNAL: XAUUSD SELL\n> OPENING POSITION...";
   late AnimationController _typingController;
 
@@ -546,7 +547,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
     );
 
-    // กำหนดการทำงานของเอฟเฟกต์พิมพ์ตัวหนังสือทีละตัว (ข้อ 2)
     _typingController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -662,17 +662,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _clearLogs() {
-    try {
-      _logsRef?.remove();
-      setState(() {
-        _botLogs.clear();
-      });
-    } catch (e) {
-      print("Clear logs error: $e");
-    }
-  }
-
   void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -700,6 +689,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           setState(() {
             activeOrders = newOrders;
+            // เงื่อนไขข้อ 2: เด้งขึ้นอัตโนมัติเมื่อมีออเดอร์ และปิดลงเมื่อไม่มีออเดอร์
             if (newOrders.isNotEmpty) {
               _isOrderDetailsVisible = true;
             } else {
@@ -879,14 +869,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 14),
                     
-                    // ข้อ 1 & 3: แสดงกล่อง Log ดีไซน์ตามภาพ พร้อมรองรับการขยายขนาดเมื่อกดที่ไอคอน
+                    // กล่อง Log ระบบ (แยกอิสระ)
                     if (_isLogBoxVisible) ...[
                       _buildCyberpunkLogBox(),
                       const SizedBox(height: 14),
                     ],
 
-                    if (_isOrderDetailsVisible)
-                      _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                     const SizedBox(height: 120),
                   ],
                 ),
@@ -894,7 +882,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // ข้อ 3: บอลลูนลอยเมื่อกดแล้วสลับขยายกล่อง Log ใหญ่ขึ้น หรือ ยุบขนาด
+          // ข้อ 2 & 3 & 4: กล่องรายงานการเปิดออเดอร์ (ตามรูปแบบรูปที่ 2) แยกจาก Log, เด้งอัตโนมัติเมื่อมีออเดอร์, ลากไปมาได้
+          if (_isOrderDetailsVisible)
+            Positioned(
+              left: _orderBubbleOffset.dx,
+              top: _orderBubbleOffset.dy,
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                  ),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _orderBubbleOffset = details.offset;
+                  });
+                },
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  child: _buildOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                ),
+              ),
+            ),
+
+          // บอลลูนลอยทางลัด (สามารถใช้แตะเพื่อย่อ/ขยาย หรือกดดูสถานะได้)
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -921,7 +935,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     onTapUp: (_) {
                       setState(() {
                         _isBubblePressed = false;
-                        // กดไอคอนเพื่อสลับขยายกล่อง Log (ข้อ 3)
                         _isLogBoxVisible = true;
                         _isLogBoxExpanded = !_isLogBoxExpanded;
                       });
@@ -1000,10 +1013,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 1 & 2 & 3: ดีไซน์กล่อง Log สอดคล้องตามภาพตัวอย่าง ppp.jpg มีรูปอนิเมะ หัวข้อชื่อ ตัวหนังสือพิมพ์ทีละตัว และปุ่มขยาย/ปิด
+  // กล่อง Log ระบบหลัก
   Widget _buildCyberpunkLogBox() {
     bool isServerActive = isConnected && isRunning;
-    // ปรับขนาดความสูงกล่องตามสถานะขยาย (ข้อ 3)
     double boxHeight = _isLogBoxExpanded ? 280 : 160;
 
     return AnimatedContainer(
@@ -1034,7 +1046,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ส่วนหัวของกล่อง Log (มีรูปตัวละคร ppp.jpg และปุ่มปิด/ขยาย X)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1057,7 +1068,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'BLACK NOVA SCALPER',
+                    'BOT Status & System Log',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
@@ -1072,7 +1083,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        _isLogBoxExpanded = !_isLogBoxExpanded; // ขยาย/ยุบกล่อง
+                        _isLogBoxExpanded = !_isLogBoxExpanded;
                       });
                     },
                     child: Icon(
@@ -1085,7 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        _isLogBoxVisible = false; // ปิดกล่อง Log
+                        _isLogBoxVisible = false;
                       });
                     },
                     child: const Icon(Icons.close, color: Colors.white70, size: 18),
@@ -1094,9 +1105,115 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: boxHeight,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
+            ),
+            child: SingleChildScrollView(
+              controller: _logScrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ..._botLogs.map((log) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: Text(
+                          log,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // สถานะ Server Connected พร้อมไฟสถานะเขียว/แดง
+  // ข้อ 2, 4, 5: กล่องรายงานการเปิดออเดอร์ (ตามรูปแบบรูปที่ 2 ต้นแบบ) พร้อมใช้ชื่อบอทของคุณเองและพิมพ์ดีด
+  Widget _buildOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.98),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD50000),
+          width: 3.0,
+        ),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/ppp.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // ข้อ 5: ใช้ชื่อบอทของคุณเอง SNIPER KING SCALPER X
+                  const Text(
+                    'SNIPER KING SCALPER X',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isOrderDetailsVisible = false; // ปิดกล่องรายงาน
+                  });
+                },
+                child: const Icon(Icons.close, color: Colors.white70, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Container(
@@ -1119,123 +1236,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // ส่วนแสดงผลข้อความ Log แบบพิมพ์ตัวหนังสือทีละตัว (ข้อ 2)
+          const SizedBox(height: 10),
+          // ส่วนแสดงข้อความแบบพิมพ์ดีด (Typewriter) ตามข้อ 2
           Container(
             width: double.infinity,
-            height: boxHeight,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
             ),
-            child: SingleChildScrollView(
-              controller: _logScrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ข้อ 2: ตัวหนังสือวิ่ง/กระพริบพิมพ์ทีละตัวอักษรเหมือนในภาพ
-                  Text(
-                    _typedText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _typedText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Divider(color: Colors.white24, height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Divider(color: Colors.white24, height: 10),
-                  // แสดงรายการ Logs จริงจาก Firebase เพิ่มเติม
-                  ..._botLogs.map((log) => Padding(
-                        padding: const EdgeInsets.only(bottom: 2.0),
-                        child: Text(
-                          log,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      )),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 3.0,
-        ),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '📈 $symbol ($tf) - Order Detail View',
-                style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const Icon(Icons.lock, color: Colors.white54, size: 16),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('P&L สุทธิ', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  Text(
-                    '${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                    style: TextStyle(color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text('สถานะ', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  Text(orderCount > 0 ? '$orderCount Orders' : 'No Order', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text('จำนวนล็อต', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  Text(totalLots.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                ],
-              ),
-            ],
           ),
         ],
       ),
@@ -1859,9 +1899,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return '$day.$month.$year$timePart';
         }
       }
-    } catch (e) {
-      // Return raw if fails
-    }
+    } catch (e) {}
     return rawDate;
   }
 
