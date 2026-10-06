@@ -502,8 +502,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  Offset _ordersDetailOffset = const Offset(16, 620);
+  Offset _ordersDetailOffset = const Offset(16, 520);
   bool _isOrdersDetailOffsetInitialized = false;
+  bool _isOrderDetailsVisible = true;
+
+  Offset _robotBubbleOffset = const Offset(20, 100);
 
   late AnimationController _logMarqueeController;
   bool isConnected = false;
@@ -695,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final screenSize = MediaQuery.of(context).size;
 
     if (!_isOrdersDetailOffsetInitialized) {
-      _ordersDetailOffset = Offset(16, screenSize.height * 0.58);
+      _ordersDetailOffset = Offset(16, screenSize.height * 0.52);
       _isOrdersDetailOffsetInitialized = true;
     }
 
@@ -711,7 +714,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // พื้นหลังโทนดำ-แดง
           Container(color: const Color(0xFF0B0B0E)),
           Image.asset(
             'assets/images/p.jpg',
@@ -736,26 +738,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
-                    // Username ด้านบนสุดตามเรฟ
+                    const SizedBox(height: 5),
                     const Text(
                       'dandy_jpy',
                       style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 12),
-                    // รูปโปรไฟล์วงกลมขอบเรืองแสงสีแดง
+                    const SizedBox(height: 10),
                     Center(
                       child: Container(
-                        width: 110,
-                        height: 110,
+                        width: 130,
+                        height: 130,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD50000), width: 3),
+                          border: Border.all(color: const Color(0xFFD50000), width: 3.5),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.red.withOpacity(0.6),
-                              blurRadius: 16,
-                              spreadRadius: 2,
+                              blurRadius: 18,
+                              spreadRadius: 3,
                             ),
                           ],
                         ),
@@ -770,23 +770,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     const Text(
                       'Your Trading With',
                       style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 4),
-                    // ชื่อบอทสไตล์ตัวหนาเรืองแสงแดง
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFFD50000),
+                        color: Colors.white,
                         letterSpacing: 1.5,
                         shadows: [
-                          Shadow(color: Colors.red, blurRadius: 8, offset: Offset(0, 0)),
+                          Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
@@ -794,19 +793,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SCALPER X',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFFD50000),
+                        color: Colors.white,
                         letterSpacing: 1.5,
                         shadows: [
-                          Shadow(color: Colors.red, blurRadius: 8, offset: Offset(0, 0)),
+                          Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // Powered by Algohost แถบป้ายเรืองแสงสีแดง
+                    const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: const Color(0xFFD50000), width: 1.5),
@@ -820,8 +818,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    // 3 ปุ่มวงกลมหลักตามเรฟ: DELETE, START, SYMBOLS (ขอบแดงดำ)
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -846,47 +843,113 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: 'SYMBOLS',
                           icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {
-                            // กดเพื่อดูสถานะหรือสลับหน้า
-                          },
+                          onPressed: () {},
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // กล่องแสดง Log สถานะบอท
                     _buildLogsBoxContent(),
-                    const SizedBox(height: 100), // เว้นพื้นที่ให้กล่อง Order Details ด้านล่าง
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
             ),
           ),
-          // กล่อง Orders Detail View แบบลากได้ (Theme แดงดำ)
-          Positioned(
-            left: _ordersDetailOffset.dx,
-            top: _ordersDetailOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
+          if (_isOrderDetailsVisible)
+            Positioned(
+              left: _ordersDetailOffset.dx,
+              top: _ordersDetailOffset.dy,
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: screenSize.width - 32,
+                    child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                  ),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _ordersDetailOffset = details.offset;
+                  });
+                },
                 child: SizedBox(
                   width: screenSize.width - 32,
                   child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                 ),
               ),
+            ),
+          Positioned(
+            left: _robotBubbleOffset.dx,
+            top: _robotBubbleOffset.dy,
+            child: Draggable(
+              feedback: Material(
+                color: Colors.transparent,
+                child: _buildRobotBubbleWidget(),
+              ),
               childWhenDragging: Container(),
               onDragEnd: (details) {
                 setState(() {
-                  _ordersDetailOffset = details.offset;
+                  _robotBubbleOffset = details.offset;
                 });
               },
-              child: SizedBox(
-                width: screenSize.width - 32,
-                child: _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isOrderDetailsVisible = !_isOrderDetailsVisible;
+                  });
+                },
+                child: _buildRobotBubbleWidget(),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRobotBubbleWidget() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.6),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/p.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+        ),
+        Positioned(
+          right: 2,
+          top: 2,
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: const Color(0xFF00C853),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black, width: 2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -924,7 +987,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 '📈 $symbol ($tf) - Order Detail View',
                 style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
               ),
-              const Icon(Icons.open_with, color: Colors.white54, size: 16),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isOrderDetailsVisible = false;
+                      });
+                    },
+                    child: const Icon(Icons.close, color: Colors.white54, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.open_with, color: Colors.white54, size: 16),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1051,7 +1127,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            height: 70,
+            height: 130,
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
@@ -1494,7 +1570,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-//#3  TRADE HISTORY SCREEN
+// #3 TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
