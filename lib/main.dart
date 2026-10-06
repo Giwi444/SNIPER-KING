@@ -743,14 +743,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 15),
                     Center(
                       child: Container(
-                        width: 145,
-                        height: 145,
+                        width: 155,
+                        height: 155,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD50000), width: 3.5),
+                          border: Border.all(color: const Color(0xFFD50000), width: 5.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.6),
+                              color: Colors.red.withOpacity(0.8),
                               blurRadius: 18,
                               spreadRadius: 3,
                             ),
@@ -777,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SNIPER KING',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 28,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -790,7 +790,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SCALPER X',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 25,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -820,12 +820,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _buildCircularButton(
-                          label: 'DELETE',
+                          label: 'CLOSE',
                           icon: Icons.delete_outline,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: _closeAllOrders,
                         ),
-                        const SizedBox(width: 18),
+                        const SizedBox(width: 20),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
