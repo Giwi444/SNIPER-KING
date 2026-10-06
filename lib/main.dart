@@ -849,10 +849,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // ข้อ 1: ย้ายกล่อง Log ลงมาสลับตำแหน่งกับกล่อง Orders Detail อยู่ที่นี่
                     if (_isLogBoxVisible) _buildLogsBoxContent(),
                     const SizedBox(height: 14),
-                    // ข้อ 1 & 2: กล่อง Orders Detail ถูกย้ายมาวางตรงนี้แบบถาวร ไม่ต้องลากขยับเลื่อน ล็อคไว้
                     if (_isOrderDetailsVisible)
                       _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                     const SizedBox(height: 120),
@@ -861,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ข้อ 3: เปลี่ยนไอคอนหุ่นยนต์ให้เป็นบอลลูนลอย (Line-style Bubble) ควบคุมการเปิด-ปิด/ย่อแอพฯ (ปุ่ม Home)
+          // ไอคอนบอลลูนลอย (Line-style Bubble) ที่มุมหน้าจอ
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -878,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               child: GestureDetector(
                 onTap: () {
-                  // ทำหน้าที่เสมือนปุ่ม Home ของโทรศัพท์ (ย่อแอพ / ปิดแอพชั่วคราว)
+                  // ทำหน้าที่ย่อแอพฯ หรือกลับไปหน้า Home ของโทรศัพท์
                   SystemNavigator.pop();
                 },
                 child: _buildRobotBubbleWidget(),
@@ -890,7 +888,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 3: ไอคอนบอลลูนลอย พร้อมปรับจุดสีเขียวแสดงสถานะออนไลน์ให้อยู่กึ่งกลางวงกลมพอดี
+  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะสีเขียวอยู่กึ่งกลางวงกลมพอดี
   Widget _buildRobotBubbleWidget() {
     return Container(
       width: 58,
@@ -921,9 +919,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
             ),
           ),
+          // ปรับตำแหน่งจุดสีเขียวให้อยู่ตรงมุมขวาบนกึ่งกลางพอดี
           Positioned(
-            right: 0,
-            top: 0,
+            right: -2,
+            top: -2,
             child: Container(
               width: 14,
               height: 14,
