@@ -510,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLogBoxExpanded = false; 
   bool _isOrderDetailsVisible = true;
 
-  // ตำแหน่งลากกล่องรายงานเปิดออเดอร์ (ตามรูปที่ 2) และบอลลูน
+  // ตำแหน่งลากกล่องรายงานเปิดออเดอร์ และบอลลูน
   Offset _orderBubbleOffset = const Offset(20, 100);
   Offset _robotBubbleOffset = const Offset(20, 200);
   bool _isBubblePressed = false;
@@ -520,10 +520,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
 
-  // สำหรับเอฟเฟกต์ตัวหนังสือพิมพ์ทีละตัวอักษรสำหรับกล่องรายงานเปิดออเดอร์
-  String _typedText = "";
-  final String _targetText = "> NEW SIGNAL: XAUUSD SELL\n> OPENING POSITION...";
-  late AnimationController _typingController;
+  // ตัวแปรสำหรับข้อความสัญญาณเทรดจริงจากฐานข้อมูล
+  String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
 
   @override
   void initState() {
@@ -546,24 +544,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _bubbleBounceAnimation = Tween<double>(begin: 0, end: 10).animate(
       CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
     );
-
-    _typingController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..addListener(() {
-        setState(() {
-          int length = (_targetText.length * _typingController.value).round();
-          _typedText = _targetText.substring(0, length);
-        });
-      });
-    _typingController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _logMarqueeController.dispose();
     _bubbleBounceController.dispose();
-    _typingController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -651,6 +637,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }
             }
             _botLogs = tempLogs;
+            
+            // ดึงข้อความล่าสุดจาก Log มาทำเป็นสัญญาณเทรดจริง
+            if (_botLogs.isNotEmpty) {
+              String lastLog = _botLogs.last;
+              latestSignalText = "> $lastLog";
+            }
           });
           Future.delayed(const Duration(milliseconds: 100), () {
             _scrollToBottom();
@@ -689,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           setState(() {
             activeOrders = newOrders;
-            // เงื่อนไขข้อ 2: เด้งขึ้นอัตโนมัติเมื่อมีออเดอร์ และปิดลงเมื่อไม่มีออเดอร์
+            // เงื่อนไข: เด้งขึ้นอัตโนมัติเมื่อมีออเดอร์ และซ่อนลงเมื่อไม่มีออเดอร์
             if (newOrders.isNotEmpty) {
               _isOrderDetailsVisible = true;
             } else {
@@ -764,18 +756,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
+                    // แก้ไขข้อ 1: ขยายกล่องและรูปภาพด้านบนให้ใหญ่เหมือนภาพแรก
                     Center(
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: 250,
+                        height: 250,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD50000), width: 5.5),
+                          border: Border.all(color: const Color(0xFFD50000), width: 6.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.8),
-                              blurRadius: 18,
-                              spreadRadius: 3,
+                              color: Colors.red.withOpacity(0.9),
+                              blurRadius: 22,
+                              spreadRadius: 4,
                             ),
                           ],
                         ),
@@ -790,17 +783,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     const Text(
                       'Your Trading With',
-                      style: TextStyle(color: Colors.grey, fontSize: 11, letterSpacing: 0.5),
+                      style: TextStyle(color: Colors.grey, fontSize: 12, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 30,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -813,7 +806,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'SCALPER X',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 25,
+                        fontSize: 27,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -838,7 +831,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -867,7 +860,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     
                     // กล่อง Log ระบบ (แยกอิสระ)
                     if (_isLogBoxVisible) ...[
@@ -882,7 +875,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // ข้อ 2 & 3 & 4: กล่องรายงานการเปิดออเดอร์ (ตามรูปแบบรูปที่ 2) แยกจาก Log, เด้งอัตโนมัติเมื่อมีออเดอร์, ลากไปมาได้
+          // แก้ไขข้อ 2: กล่องรายงานการเปิดออเดอร์เชื่อมสัญญาณเทรดจริง แสดงจำนวนออเดอร์และ Lot ทั้งหมด
           if (_isOrderDetailsVisible)
             Positioned(
               left: _orderBubbleOffset.dx,
@@ -908,7 +901,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // บอลลูนลอยทางลัด (สามารถใช้แตะเพื่อย่อ/ขยาย หรือกดดูสถานะได้)
+          // แก้ไขข้อ 3: บอลลูนเชื่อมต่ออิสระ (ไม่ไปยุ่งกับกล่อง Log Bot status)
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -1015,7 +1008,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // กล่อง Log ระบบหลัก
   Widget _buildCyberpunkLogBox() {
-    bool isServerActive = isConnected && isRunning;
     double boxHeight = _isLogBoxExpanded ? 280 : 160;
 
     return AnimatedContainer(
@@ -1140,7 +1132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ข้อ 2, 4, 5: กล่องรายงานการเปิดออเดอร์ (ตามรูปแบบรูปที่ 2 ต้นแบบ) พร้อมใช้ชื่อบอทของคุณเองและพิมพ์ดีด
+  // กล่องรายงานการเปิดออเดอร์ (เชื่อมกับสัญญาณเทรดจริงและจำนวนออเดอร์จริง)
   Widget _buildOrderReportBox(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1191,7 +1183,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // ข้อ 5: ใช้ชื่อบอทของคุณเอง SNIPER KING SCALPER X
                   const Text(
                     'SNIPER KING SCALPER X',
                     style: TextStyle(
@@ -1206,7 +1197,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _isOrderDetailsVisible = false; // ปิดกล่องรายงาน
+                    _isOrderDetailsVisible = false;
                   });
                 },
                 child: const Icon(Icons.close, color: Colors.white70, size: 20),
@@ -1237,7 +1228,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 10),
-          // ส่วนแสดงข้อความแบบพิมพ์ดีด (Typewriter) ตามข้อ 2
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
@@ -1250,7 +1240,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _typedText,
+                  latestSignalText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
