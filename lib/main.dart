@@ -430,37 +430,124 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           selectedItemColor: const Color(0xFFFFB300),
           unselectedItemColor: Colors.white70,
           items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
             BottomNavigationBarItem(
-              icon: Stack(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.notifications_active),
-                  if (unreadAlertsCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$unreadAlertsCount',
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                  const Icon(Icons.tune),
+                  if (_currentIndex == 0)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Settings',
+            ),
+            BottomNavigationBarItem(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.list_alt),
+                  if (_currentIndex == 1)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.home_filled),
+                  if (_currentIndex == 2)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.history),
+                  if (_currentIndex == 3)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    children: [
+                      const Icon(Icons.notifications_active),
+                      if (unreadAlertsCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '$unreadAlertsCount',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
+                    ],
+                  ),
+                  if (_currentIndex == 4)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
                       ),
                     ),
                 ],
@@ -760,123 +847,122 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             color: Colors.black.withOpacity(0.5),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFD50000), width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.7),
-                            blurRadius: 15,
-                            spreadRadius: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 2.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFD50000), width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.7),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/p.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(color: Colors.black);
+                            },
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'SNIPER KING BOT',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFD50000),
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
                         ],
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/p.jpg',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(color: Colors.black);
-                          },
+                    ),
+                    const Text(
+                      'SCALPER X',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFD50000),
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      height: 18,
+                      child: Center(
+                        child: Text(
+                          '★ CONNECTED • LIVE • CONNECTED ★',
+                          style: TextStyle(
+                            color: isConnected ? const Color(0xFF00C853) : Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'SNIPER KING BOT',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFD50000),
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildLogsBoxContent(),
                     ),
-                  ),
-                  const Text(
-                    'SCALPER X',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFD50000),
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    height: 20,
-                    child: Center(
-                      child: Text(
-                        '★ CONNECTED • LIVE • CONNECTED ★',
-                        style: TextStyle(
-                          color: isConnected ? const Color(0xFF00C853) : Colors.red,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCircularButton(
+                          label: 'CLOSE',
+                          icon: Icons.delete_sweep,
+                          colors: const [Color(0xFFFFB300), Color(0xFFB27B00)],
+                          onPressed: _closeAllOrders,
                         ),
+                        const SizedBox(width: 16),
+                        _buildCircularButton(
+                          label: isRunning ? 'STOP' : 'START',
+                          icon: isRunning ? Icons.stop : Icons.play_arrow,
+                          colors: isRunning 
+                              ? const [Color(0xFFD50000), Color(0xFF7A0000)]
+                              : const [Color(0xFF00C853), Color(0xFF006425)],
+                          onPressed: () => _toggleBotStatus(!isRunning),
+                          isLarge: true,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5)),
+                        color: Colors.black45,
+                      ),
+                      child: const Text(
+                        'Powered by Algohost',
+                        style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: _buildLogsBoxContent(),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildCircularButton(
-                        label: 'CLOSE',
-                        icon: Icons.delete_sweep,
-                        color: const Color(0xFFFFB300),
-                        onPressed: _closeAllOrders,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildCircularButton(
-                        label: 'START',
-                        icon: Icons.play_arrow,
-                        color: const Color(0xFF00C853),
-                        onPressed: () => _toggleBotStatus(true),
-                        isLarge: true,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildCircularButton(
-                        label: 'STOP',
-                        icon: Icons.stop,
-                        color: const Color(0xFFD50000),
-                        onPressed: () => _toggleBotStatus(false),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5)),
-                      color: Colors.black45,
-                    ),
-                    child: const Text(
-                      'Powered by Algohost',
-                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -905,11 +991,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildCircularButton({
     required String label,
     required IconData icon,
-    required Color color,
+    required List<Color> colors,
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
-    double size = isLarge ? 85 : 70;
+    double size = isLarge ? 80 : 68;
     return GestureDetector(
       onTap: onPressed,
       child: Column(
@@ -921,28 +1007,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.6)],
+                colors: colors,
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.6),
+                  color: colors.first.withOpacity(0.6),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 36 : 28),
+            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 26),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: 11,
               letterSpacing: 0.5,
             ),
           ),
@@ -961,34 +1047,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       },
       child: GestureDetector(
-        onTap: () async {
-          setState(() {
-            _isDashboardVisible = !_isDashboardVisible;
-            _isOrdersBoxVisible = _isDashboardVisible;
-          });
-          
-          if (!_isDashboardVisible) {
-            if (await FlutterOverlayWindow.isActive()) {
-              await FlutterOverlayWindow.closeOverlay();
-            }
-          } else {
-            if (await FlutterOverlayWindow.isPermissionGranted()) {
-              if (!await FlutterOverlayWindow.isActive()) {
-                await FlutterOverlayWindow.showOverlay(
-                  height: 80,
-                  width: 80,
-                  alignment: OverlayAlignment.centerRight,
-                  visibility: NotificationVisibility.visibilityPublic,
-                  flag: OverlayFlag.defaultFlag,
-                  positionGravity: PositionGravity.auto,
-                );
-              }
-            }
-          }
+        onTap: () {
+          // ฟังก์ชันแสดงกล่อง Dialog หรือเปิดเมนูด้านข้างเมื่อกดไอคอนหุ่นยนต์มุมบนซ้าย
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF161619),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.smart_toy, color: Color(0xFFFFB300)),
+                  SizedBox(width: 8),
+                  Text('Sniper King Status', style: TextStyle(color: Colors.white, fontSize: 16)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Account: ${widget.accountLogin}', style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 6),
+                  Text('Bot Running: ${isRunning ? "Active" : "Stopped"}', style: TextStyle(color: isRunning ? Colors.green : Colors.red)),
+                  const SizedBox(height: 6),
+                  Text('Symbol: $symbol ($timeframe)', style: const TextStyle(color: Colors.amberAccent)),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close', style: TextStyle(color: Color(0xFFFFB300))),
+                ),
+              ],
+            ),
+          );
         },
         child: Container(
-          width: 50,
-          height: 50,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFD50000), width: 2),
@@ -1016,8 +1111,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 top: 0,
                 right: 0,
                 child: Container(
-                  width: 12,
-                  height: 12,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     color: isConnected ? const Color(0xFF00C853) : Colors.red,
                     shape: BoxShape.circle,
@@ -1034,7 +1129,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildLogsBoxContent() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619).withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
@@ -1059,13 +1154,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               const Row(
                 children: [
-                  Text('🤖 ', style: TextStyle(fontSize: 13)),
+                  Text('🤖 ', style: TextStyle(fontSize: 12)),
                   Text(
                     'BOT Status & System Log',
                     style: TextStyle(
                       color: Color(0xFF00C853),
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -1075,16 +1170,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: const Icon(
                   Icons.delete_sweep,
                   color: Colors.redAccent,
-                  size: 18,
+                  size: 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            height: 90,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            height: 75,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.85),
               borderRadius: BorderRadius.circular(10),
@@ -1094,7 +1189,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? const Center(
                     child: Text(
                       'No system logs available',
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 11),
+                      style: TextStyle(color: Color(0xFF00C853), fontSize: 10),
                     ),
                   )
                 : AnimatedBuilder(
@@ -1106,13 +1201,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         itemBuilder: (context, index) {
                           final logItem = _botLogs[index];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
+                            padding: const EdgeInsets.only(bottom: 3.0),
                             child: Text(
                               logItem,
                               textAlign: TextAlign.left,
                               style: const TextStyle(
                                 color: Color(0xFF00C853),
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontFamily: 'monospace',
                               ),
                             ),
