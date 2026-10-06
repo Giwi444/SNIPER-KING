@@ -399,16 +399,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: pages,
       ),
+      // ข้อ 2: ปรับกรอบแถบเมนูด้านล่างให้ไล่เฉดสีแดง-ดำ
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFD50000), Color(0xFF7A0000), Color(0xFF101014)],
+            colors: [Color(0xFFD50000), Color(0xFF3A0000), Color(0xFF0B0B0E)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
+          border: Border(
+            top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withOpacity(0.8),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -505,10 +509,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Offset _ordersDetailOffset = const Offset(16, 520);
   bool _isOrdersDetailOffsetInitialized = false;
   
-  // สถานะเปิด-ปิดกล่อง Log จากปุ่ม SYMBOLS (เปลี่ยนเป็น LOG)
   bool _isLogBoxVisible = true;
-
-  // สถานะเปิด-ปิดกล่อง Order Detail (ทำงานออโต้ตามออเดอร์)
   bool _isOrderDetailsVisible = true;
 
   Offset _robotBubbleOffset = const Offset(20, 100);
@@ -669,7 +670,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           setState(() {
             activeOrders = newOrders;
-            // ข้อ 2: เปิดออโต้เมื่อมีการเปิดออเดอร์ และปิดออโตเมื่อออเดอร์ปิดลง
             if (newOrders.isNotEmpty) {
               _isOrderDetailsVisible = true;
             } else {
@@ -751,7 +751,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
-                    // ข้อ 3: ลบข้อความ dandy_jpy ทิ้ง และขยายวงกลมโรบอทโปรไฟล์ขึ้นอีกเล็กน้อย
                     Center(
                       child: Container(
                         width: 145,
@@ -847,7 +846,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
-                        // ข้อ 1: เปลี่ยนปุ่ม SYMBOLS เป็น LOG ควบคุมกล่อง log เปิดปิดได้
                         _buildCircularButton(
                           label: 'LOG',
                           icon: Icons.terminal,
@@ -861,7 +859,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // แสดงหรือซ่อนกล่อง Log ตามค่า _isLogBoxVisible
                     if (_isLogBoxVisible) _buildLogsBoxContent(),
                     const SizedBox(height: 120),
                   ],
@@ -922,51 +919,57 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ข้อ 3: ปรับจุดสีเขียวแสดงสถานะออนไลน์ให้อยู่กึ่งกลางวงกลมพอดี
   Widget _buildRobotBubbleWidget() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFD50000), width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.withOpacity(0.6),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/images/p.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.black);
-              },
-            ),
-          ),
-        ),
-        Positioned(
-          right: 2,
-          top: 2,
-          child: Container(
-            width: 14,
-            height: 14,
+    return SizedBox(
+      width: 62,
+      height: 62,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFF00C853),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.black, width: 2),
+              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.6),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/p.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(color: Colors.black);
+                },
+              ),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            right: 2,
+            top: 2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C853),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
+  // ข้อ 1 & 4: ลบกากบาทออก, เปลี่ยนหัวข้อ Order Details View เป็นสีเหลือง
   Widget _buildOrdersDetailCard(String symbol, String tf, double totalProfit, int orderCount, double totalLots, bool isTotalProfit) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1001,20 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 '📈 $symbol ($tf) - Order Detail View',
                 style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12),
               ),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isOrderDetailsVisible = false;
-                      });
-                    },
-                    child: const Icon(Icons.close, color: Colors.white54, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.open_with, color: Colors.white54, size: 16),
-                ],
-              ),
+              const Icon(Icons.open_with, color: Colors.white54, size: 16),
             ],
           ),
           const SizedBox(height: 8),
@@ -1101,6 +1091,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ข้อ 1 & 4: ลบกากบาทออก, เปลี่ยนหัวข้อ BOT Status & System Log เป็นสีเหลือง, ข้อความ log เป็นสีขาว
   Widget _buildLogsBoxContent() {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -1127,27 +1118,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const Text(
                 '🤖 BOT Status & System Log',
                 style: TextStyle(
-                  color: Color(0xFF00C853),
+                  color: Color(0xFFFFB300),
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
                 ),
               ),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: _clearLogs,
-                    child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isLogBoxVisible = false;
-                      });
-                    },
-                    child: const Icon(Icons.close, color: Colors.white54, size: 16),
-                  ),
-                ],
+              GestureDetector(
+                onTap: _clearLogs,
+                child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
               ),
             ],
           ),
@@ -1165,7 +1143,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? const Center(
                     child: Text(
                       'No system logs available',
-                      style: TextStyle(color: Color(0xFF00C853), fontSize: 10),
+                      style: TextStyle(color: Colors.white70, fontSize: 10),
                     ),
                   )
                 : ListView.builder(
@@ -1177,7 +1155,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Text(
                           _botLogs[index],
                           style: const TextStyle(
-                            color: Color(0xFF00C853),
+                            color: Colors.white,
                             fontSize: 10,
                             fontFamily: 'monospace',
                           ),
