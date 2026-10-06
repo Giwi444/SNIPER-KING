@@ -859,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชัน Minimize แอปพลิเคชัน (true)
+          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชัน Minimize แอปพลิเคชันไปเบื้องหลังตามต้องการ
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -876,7 +876,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               child: GestureDetector(
                 onTap: () async {
-                  // แก้ไขพารามิเตอร์เป็น true เพื่อย่อแอปไปเบื้องหลัง (Minimize) แทนที่จะปิดถาวร
                   await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
                 },
                 child: _buildRobotBubbleWidget(),
@@ -888,7 +887,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะที่เชื่อมโยงกับเซิร์ฟเวอร์จริง (เขียวเมื่อต่อ / แดงเมื่อตัดการเชื่อมต่อ)
+  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะที่เชื่อมโยงกับเซิร์ฟเวอร์จริง (.info/connected และสถานะการทำงาน)
   Widget _buildRobotBubbleWidget() {
     bool isServerActive = isConnected && isRunning;
     return Container(
@@ -899,7 +898,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: (isServerActive ? Colors.green : Colors.red).withOpacity(0.6),
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -920,7 +919,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
             ),
           ),
-          // จุดสถานะทำงานจริง: สีเขียวเมื่อเชื่อมต่อ/บอททำงาน, สีแดงเมื่อหลุดหรือหยุดทำงาน
+          // จุดสถานะ: สีเขียว (#00C853) เมื่อเชื่อมต่อและทำงานอยู่ หรือสีแดง (#D50000) เมื่อหลุด/หยุดทำงาน
           Positioned(
             right: -2,
             top: -2,
@@ -2260,57 +2259,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: tradingModeOptions.map((mode) {
-                          bool isSelected = tradingMode == mode;
-                          return ChoiceChip(
-                            label: Text(mode),
-                            selected: isSelected,
-                            selectedColor: const Color(0xFFD50000),
-                            backgroundColor: const Color(0xFF0B0B0E),
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            onSelected: (selected) {
-                              setState(() {
-                                tradingMode = mode;
-                              });
-                            },
+                      DropdownButtonFormField<String>(
+                        value: tradingModeOptions.contains(tradingMode) ? tradingMode : 'Sniper',
+                        dropdownColor: const Color(0xFF161619),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF0B0B0E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white24),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white24),
+                          ),
+                        ),
+                        items: tradingModeOptions.map((mode) {
+                          return DropdownMenuItem(
+                            value: mode,
+                            child: Text(mode),
                           );
                         }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              tradingMode = val;
+                            });
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 16),
                       const Text('Lot Size Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      Row(
-                        children: lotModeOptions.map((lMode) {
-                          bool isSelected = lotMode == lMode;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: ChoiceChip(
-                                label: Center(child: Text(lMode)),
-                                selected: isSelected,
-                                selectedColor: const Color(0xFFFFB300),
-                                backgroundColor: const Color(0xFF0B0B0E),
-                                labelStyle: TextStyle(
-                                  color: isSelected ? Colors.black : Colors.white70,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                onSelected: (selected) {
-                                  setState(() {
-                                    lotMode = lMode;
-                                  });
-                                },
-                              ),
-                            ),
+                      DropdownButtonFormField<String>(
+                        value: lotModeOptions.contains(lotMode) ? lotMode : 'Double',
+                        dropdownColor: const Color(0xFF161619),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF0B0B0E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white24),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white24),
+                          ),
+                        ),
+                        items: lotModeOptions.map((mode) {
+                          return DropdownMenuItem(
+                            value: mode,
+                            child: Text(mode),
                           );
                         }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              lotMode = val;
+                            });
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 16),
@@ -2318,8 +2330,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: timeframes.map((tf) {
                           bool isSelected = selectedTf == tf;
                           return ChoiceChip(
@@ -2341,69 +2353,196 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 20),
+                      const Text('Initial Lot', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: initialLotController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Initial Lot Size',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
-                        ),
+                        decoration: _inputDecoration('e.g. 0.01'),
                       ),
-                      const SizedBox(height: 14),
+
+                      const SizedBox(height: 16),
+                      const Text('Max Recovery Steps', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: maxRecoveryController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration('e.g. 10'),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Max Orders', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: maxOrdersController,
                         keyboardType: TextInputType.number,
                         style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Max Orders',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
-                        ),
+                        decoration: _inputDecoration('e.g. 10'),
                       ),
-                      const SizedBox(height: 14),
+
+                      const SizedBox(height: 16),
+                      const Text('Swing Bars', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: swingBarsController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration('e.g. 30'),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('SL Points', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: slPointsController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Stop Loss Points (SL)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
-                        ),
+                        decoration: _inputDecoration('e.g. 500'),
                       ),
-                      const SizedBox(height: 14),
+
+                      const SizedBox(height: 16),
+                      const Text('Risk Reward (RR)', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: riskRewardController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Risk Reward Ratio (TP = SL x ${riskRewardController.text})',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                          focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        decoration: _inputDecoration('e.g. 2.0'),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'คำนวณ TP อัตโนมัติ: ${(sl * rr).toStringAsFixed(1)} Points',
+                        style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  'TRADING TIME CONFIG (THAILAND TIME)',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Start Time', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: startTimeController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _inputDecoration('08:00'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('End Time', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: endTimeController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _inputDecoration('22:00'),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  'RISK & TARGET MANAGEMENT',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text('Enable Daily Target (\$)', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        value: enableDailyTarget,
+                        activeColor: const Color(0xFF00C853),
+                        onChanged: (val) {
+                          setState(() {
+                            enableDailyTarget = val;
+                          });
+                        },
+                      ),
+                      if (enableDailyTarget) ...[
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: dailyTargetController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: _inputDecoration('Target Profit in USD'),
+                        ),
+                      ],
+                      const Divider(color: Colors.white24, height: 24),
+                      SwitchListTile(
+                        title: const Text('Enable Daily Loss Limit (\$)', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        value: enableDailyLoss,
+                        activeColor: const Color(0xFFD50000),
+                        onChanged: (val) {
+                          setState(() {
+                            enableDailyLoss = val;
+                          });
+                        },
+                      ),
+                      if (enableDailyLoss) ...[
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: dailyLossController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: _inputDecoration('Max Daily Loss in USD'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
+
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 52,
                   child: ElevatedButton(
                     onPressed: _saveSettingsToFirebase,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD50000),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 6,
                     ),
                     child: const Text(
                       'SAVE & SYNC TO EA',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
                     ),
                   ),
                 ),
@@ -2412,6 +2551,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white38),
+      filled: true,
+      fillColor: const Color(0xFF0B0B0E),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
       ),
     );
   }
