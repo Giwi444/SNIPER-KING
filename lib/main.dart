@@ -512,6 +512,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isBubblePressed = false;
 
   late AnimationController _logMarqueeController;
+  late AnimationController _bubbleBounceController;
+  late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
 
   @override
@@ -526,11 +528,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
+
+    // เพิ่มแอนิเมชันบอลลูนเด้งขึ้นเด้งลง (ข้อ 3)
+    _bubbleBounceController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _bubbleBounceAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
     _logMarqueeController.dispose();
+    _bubbleBounceController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -837,21 +850,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 18),
                         _buildCircularButton(
-                          // ข้อ 3: เปลี่ยนจาก "LOG" เป็น Symbol ตัวหนังสือสีขาวตรงกลาง
+                          // ข้อ 2: แสดง Symbol ปัจจุบันเป็นตัวหนังสือสีขาวตรงกลางวงกลม และแยกการทำงานกับ Log
                           label: symbol, 
-                          icon: Icons.terminal,
+                          icon: Icons.show_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: () {
-                            setState(() {
-                              _isLogBoxVisible = !_isLogBoxVisible;
-                            });
+                            // กดแล้วไม่ไปเปิด/ปิดกล่อง log แล้ว ตามข้อ 2
                           },
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // ข้อ 4: บอลลูน / กล่อง log เชื่อมโยงกันอย่างลงตัว
-                    if (_isLogBoxVisible) _buildLogsBoxContent(),
+                    // ข้อ 3: บอลลูนลอยและกล่อง log เชื่อมโยงสัมพันธ์กัน
+                    _buildLogsBoxContent(),
                     const SizedBox(height: 14),
                     if (_isOrderDetailsVisible)
                       _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
@@ -861,44 +872,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Positioned(
-            left: _robotBubbleOffset.dx,
-            top: _robotBubbleOffset.dy,
-            child: Draggable(
-              feedback: Material(
-                color: Colors.transparent,
-                child: _buildRobotBubbleWidget(),
-              ),
-              childWhenDragging: Container(),
-              onDragEnd: (details) {
-                setState(() {
-                  _robotBubbleOffset = details.offset;
-                });
-              },
-              child: GestureDetector(
-                onTapDown: (_) {
-                  setState(() {
-                    _isBubblePressed = true;
-                  });
-                },
-                onTapUp: (_) async {
-                  setState(() {
-                    _isBubblePressed = false;
-                  });
-                  await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
-                },
-                onTapCancel: () {
-                  setState(() {
-                    _isBubblePressed = false;
-                  });
-                },
-                child: AnimatedScale(
-                  scale: _isBubblePressed ? 0.85 : 1.0,
-                  duration: const Duration(milliseconds: 100),
-                  child: _buildRobotBubbleWidget(),
+          // ข้อ 3: บอลลูนลอยตัวเชื่อมโยงกับกล่อง Log และมีการเด้งขึ้นเด้งลง
+          AnimatedBuilder(
+            animation: _bubbleBounceAnimation,
+            builder: (context, child) {
+              return Positioned(
+                left: _robotBubbleOffset.dx,
+                top: _robotBubbleOffset.dy + _bubbleBounceAnimation.value,
+                child: Draggable(
+                  feedback: Material(
+                    color: Colors.transparent,
+                    child: _buildRobotBubbleWidget(),
+                  ),
+                  childWhenDragging: Container(),
+                  onDragEnd: (details) {
+                    setState(() {
+                      _robotBubbleOffset = details.offset;
+                    });
+                  },
+                  child: GestureDetector(
+                    onTapDown: (_) {
+                      setState(() {
+                        _isBubblePressed = true;
+                      });
+                    },
+                    onTapUp: (_) async {
+                      setState(() {
+                        _isBubblePressed = false;
+                      });
+                      // กดแล้วยุบตัวได้ และพับแอป/ออกได้ตามการทำงานเดิม
+                      await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
+                    },
+                    onTapCancel: () {
+                      setState(() {
+                        _isBubblePressed = false;
+                      });
+                    },
+                    child: AnimatedScale(
+                      scale: _isBubblePressed ? 0.85 : 1.0,
+                      duration: const Duration(milliseconds: 100),
+                      child: _buildRobotBubbleWidget(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -1070,7 +1088,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white, // ข้อ 3: ตัวหนังสือสีขาวกลางวงกลม
+              color: Colors.white, // ข้อ 2: ตัวหนังสือสีขาวแสดงอยู่ตรงกลางวงกลมด้านล่างปุ่ม
               fontWeight: FontWeight.bold,
               fontSize: 11,
               letterSpacing: 0.5,
@@ -2072,15 +2090,22 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String selectedSymbol = 'XAUUSD';
-  String tradingMode = 'Sniper';
+  String tradingMode = 'All Mode';
   String lotMode = 'Fixed';
   
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  // ข้อ 1: กำหนดรายการ Trading Mode แบบปุ่มเลือก
-  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
+  
+  // ข้อ 1: กำหนดรายการและสีสันของปุ่ม Trading Mode แยกแต่ละกล่องอย่างชัดเจน
+  final List<Map<String, dynamic>> tradingModeOptions = [
+    {'name': 'All Mode', 'color': const Color(0xFFFFB300)},
+    {'name': 'Liquidity', 'color': const Color(0xFFE91E63)},
+    {'name': 'Breakout', 'color': const Color(0xFF00BCD4)},
+    {'name': 'Enqulfing', 'color': const Color(0xFFFF5722)},
+  ];
+
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -2104,7 +2129,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // ฟังการเปลี่ยนแปลงค่าใน TextField เพื่อให้ฟังก์ชันคำนวณ TP อัปเดต Real-time (ข้อ 2)
     slPointsController.addListener(_onCalculatedTpChanged);
     riskRewardController.addListener(_onCalculatedTpChanged);
     _loadSettingsFromFirebase();
@@ -2195,7 +2219,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ข้อ 2: คำนวน TP อัตโนมัติแบบ Real-time ตามรูปที่ 3
     double sl = double.tryParse(slPointsController.text) ?? 500;
     double rr = double.tryParse(riskRewardController.text) ?? 2.0;
     double calculatedTp = sl * rr;
@@ -2297,10 +2320,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      // ข้อ 1: แก้ไขกรอบสีขาว Trading Mode ให้เป็นปุ่มเลือกเหมือน Trading Symbol
+                      // ข้อ 1: ทำรูปแบบปุ่มเลือก Trading Mode พร้อมสีที่แตกต่างกันในแต่ละปุ่มตามตัวอย่างรูปที่ 2
                       Row(
-                        children: tradingModeOptions.map((mode) {
+                        children: tradingModeOptions.map((modeMap) {
+                          String mode = modeMap['name'];
+                          Color modeColor = modeMap['color'];
                           bool isSelected = tradingMode == mode;
+
                           return Expanded(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 2.0),
@@ -2313,14 +2339,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     });
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     side: BorderSide(
-                                      color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
-                                      width: isSelected ? 2 : 1,
+                                      color: modeColor,
+                                      width: isSelected ? 2.5 : 1,
                                     ),
                                     elevation: isSelected ? 4 : 0,
                                     padding: EdgeInsets.zero,
@@ -2328,7 +2354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.black : Colors.white70,
+                                      color: isSelected ? Colors.white : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 10,
                                     ),
@@ -2520,7 +2546,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // ข้อ 2: แสดงผล TP อัตโนมัติที่คำนวนแบบ Real-time
                       Text(
                         'คำนวณ TP อัตโนมัติ: ${calculatedTp.toStringAsFixed(1)} Points',
                         style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold),
