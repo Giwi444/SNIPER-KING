@@ -505,8 +505,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
-  // ข้อ 1: ตัวแปรควบคุมการเปิด-ปิดกล่อง Log เชื่อมกับปุ่มบอลลูน
+  // ควบคุมสถานะเปิด/ปิดกล่อง Log และ ขยาย/ย่อขนาดกล่อง Log (ข้อ 3)
   bool _isLogBoxVisible = true;
+  bool _isLogBoxExpanded = false; 
   bool _isOrderDetailsVisible = true;
 
   Offset _robotBubbleOffset = const Offset(20, 100);
@@ -516,6 +517,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _bubbleBounceController;
   late Animation<double> _bubbleBounceAnimation;
   bool isConnected = false;
+
+  // สำหรับเอฟเฟกต์ตัวหนังสือพิมพ์ทีละตัวอักษร (ข้อ 2)
+  String _typedText = "";
+  int _charIndex = 0;
+  final String _targetText = "> NEW SIGNAL: XAUUSD SELL\n> OPENING POSITION...";
+  late AnimationController _typingController;
 
   @override
   void initState() {
@@ -538,12 +545,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _bubbleBounceAnimation = Tween<double>(begin: 0, end: 10).animate(
       CurvedAnimation(parent: _bubbleBounceController, curve: Curves.easeInOut),
     );
+
+    // กำหนดการทำงานของเอฟเฟกต์พิมพ์ตัวหนังสือทีละตัว (ข้อ 2)
+    _typingController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..addListener(() {
+        setState(() {
+          int length = (_targetText.length * _typingController.value).round();
+          _typedText = _targetText.substring(0, length);
+        });
+      });
+    _typingController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _logMarqueeController.dispose();
     _bubbleBounceController.dispose();
+    _typingController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -858,11 +878,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // ข้อ 1: แสดง/ซ่อนกล่อง Log ตามสถานะ _isLogBoxVisible ที่ควบคุมจากปุ่มบอลลูน
+                    
+                    // ข้อ 1 & 3: แสดงกล่อง Log ดีไซน์ตามภาพ พร้อมรองรับการขยายขนาดเมื่อกดที่ไอคอน
                     if (_isLogBoxVisible) ...[
-                      _buildLogsBoxContent(),
+                      _buildCyberpunkLogBox(),
                       const SizedBox(height: 14),
                     ],
+
                     if (_isOrderDetailsVisible)
                       _buildOrdersDetailCard(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                     const SizedBox(height: 120),
@@ -871,7 +893,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ข้อ 1: บอลลูนลอยเมื่อกดแล้วสลับเปิด/ปิดกล่อง Log ทิ้งการยุบตัวแอปเดิม
+          
+          // ข้อ 3: บอลลูนลอยเมื่อกดแล้วสลับขยายกล่อง Log ใหญ่ขึ้น หรือ ยุบขนาด
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -898,7 +921,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     onTapUp: (_) {
                       setState(() {
                         _isBubblePressed = false;
-                        _isLogBoxVisible = !_isLogBoxVisible; // สลับเปิด-ปิดกล่อง Log ตามคำสั่งข้อ 1
+                        // กดไอคอนเพื่อสลับขยายกล่อง Log (ข้อ 3)
+                        _isLogBoxVisible = true;
+                        _isLogBoxExpanded = !_isLogBoxExpanded;
                       });
                     },
                     onTapCancel: () {
@@ -967,6 +992,175 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ข้อ 1 & 2 & 3: ดีไซน์กล่อง Log สอดคล้องตามภาพตัวอย่าง ppp.jpg มีรูปอนิเมะ หัวข้อชื่อ ตัวหนังสือพิมพ์ทีละตัว และปุ่มขยาย/ปิด
+  Widget _buildCyberpunkLogBox() {
+    bool isServerActive = isConnected && isRunning;
+    // ปรับขนาดความสูงกล่องตามสถานะขยาย (ข้อ 3)
+    double boxHeight = _isLogBoxExpanded ? 280 : 160;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121216).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD50000),
+          width: 2.5,
+        ),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2A0000), Color(0xFF121216), Color(0xFF4A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ส่วนหัวของกล่อง Log (มีรูปตัวละคร ppp.jpg และปุ่มปิด/ขยาย X)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/ppp.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'BLACK NOVA SCALPER',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLogBoxExpanded = !_isLogBoxExpanded; // ขยาย/ยุบกล่อง
+                      });
+                    },
+                    child: Icon(
+                      _isLogBoxExpanded ? Icons.fullscreen_exit : Icons.fullscreen,
+                      color: Colors.amberAccent,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLogBoxVisible = false; // ปิดกล่อง Log
+                      });
+                    },
+                    child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // สถานะ Server Connected พร้อมไฟสถานะเขียว/แดง
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
+                style: TextStyle(
+                  color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // ส่วนแสดงผลข้อความ Log แบบพิมพ์ตัวหนังสือทีละตัว (ข้อ 2)
+          Container(
+            width: double.infinity,
+            height: boxHeight,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
+            ),
+            child: SingleChildScrollView(
+              controller: _logScrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ข้อ 2: ตัวหนังสือวิ่ง/กระพริบพิมพ์ทีละตัวอักษรเหมือนในภาพ
+                  Text(
+                    _typedText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Divider(color: Colors.white24, height: 10),
+                  // แสดงรายการ Logs จริงจาก Firebase เพิ่มเติม
+                  ..._botLogs.map((log) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: Text(
+                          log,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      )),
+                ],
               ),
             ),
           ),
@@ -1091,83 +1285,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               fontSize: 11,
               letterSpacing: 0.5,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogsBoxContent() {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 3.0,
-        ),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A0000), Color(0xFF161619), Color(0xFF5A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '🤖 BOT Status & System Log',
-                style: TextStyle(
-                  color: Color(0xFFFFB300),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
-              GestureDetector(
-                onTap: _clearLogs,
-                child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 16),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            height: 130,
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
-            ),
-            child: _botLogs.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No system logs available',
-                      style: TextStyle(color: Colors.white70, fontSize: 10),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _logScrollController,
-                    itemCount: _botLogs.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 2.0),
-                        child: Text(
-                          _botLogs[index],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
           ),
         ],
       ),
@@ -2103,11 +2220,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     {'name': 'Enqulfing', 'color': const Color(0xFFFF5722)},
   ];
 
-  // ข้อ 2: กำหนดรายการและสีสันของปุ่ม Lot Mode ตามรูปที่ 2 อย่างชัดเจน
   final List<Map<String, dynamic>> lotModeOptions = [
-    {'name': 'Fixed', 'color': const Color(0xFF00BCD4)},   // สีฟ้า
-    {'name': 'Step', 'color': const Color(0xFF9C27B0)},    // สีม่วง
-    {'name': 'Double', 'color': const Color(0xFFFFB300)},  // สีส้ม/เหลือง
+    {'name': 'Fixed', 'color': const Color(0xFF00BCD4)},
+    {'name': 'Step', 'color': const Color(0xFF9C27B0)},
+    {'name': 'Double', 'color': const Color(0xFFFFB300)},
   ];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -2371,7 +2487,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Lot Size Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      // ข้อ 2: สร้างกล่องปุ่มเลือก Lot Mode (Fixed, Step, Double) แบบในรูปที่ 2 พร้อมแถบสีรอบปุ่มเมื่อเลือก
                       Row(
                         children: lotModeOptions.map((lotMap) {
                           String mode = lotMap['name'];
