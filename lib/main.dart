@@ -510,6 +510,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isOrderBubblePressed = false;
   bool isConnected = false;
 
+  // ควบคุมการเปิด-ปิดกล่องข้อความรายงานสถานะบอทด้วยบอลลูน
+  bool _isReportBoxVisible = true;
+
+  // ตัวแปรสำหรับการแสดงผลกล่อง Bid / Ask เมื่อกดที่บอลลูน Symbol
+  bool _isBidAskBoxVisible = false;
+  Offset _bidAskBoxOffset = const Offset(80, 160); // ตำแหน่งเริ่มต้นใกล้กับ Sniper King
+  double realTimeBid = 0.0;
+  double realTimeAsk = 0.0;
+  DatabaseReference? _marketRef;
+
   // ตัวแปรสำหรับข้อความสัญญาณเทรดพิมพ์ดีด
   String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
   String _displayedTypewriterText = "";
@@ -522,6 +532,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToOrdersForDialog();
     _listenToLogs();
     _listenToConnectionStatus();
+    _listenToMarketPrices();
 
     _startTypewriterEffect(latestSignalText);
   }
@@ -566,6 +577,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("Connection listen error: $e");
+    }
+  }
+
+  void _listenToMarketPrices() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      // ตัวอย่าง Path ราคาตลาดใน Firebase (สามารถปรับเปลี่ยนตามโครงสร้างจริงของคุณได้)
+      _marketRef = database.ref('market/$symbol');
+      _marketRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            realTimeBid = (data['bid'] ?? 0.0).toDouble();
+            realTimeAsk = (data['ask'] ?? 0.0).toDouble();
+          });
+        }
+      });
+    } catch (e) {
+      print("Market prices listen error: $e");
     }
   }
 
@@ -838,8 +871,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     
-                    // นำกล่องรายงานสถานะบอทมาวางแทนที่ตำแหน่งกล่อง Log เดิม และเพิ่มความสูงให้เห็นข้อความอย่างน้อย 2 ข้อความ
-                    _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                    // แสดงหรือซ่อนกล่องรายงานสถานะบอทตามการควบคุมของบอลลูน
+                    if (_isReportBoxVisible)
+                      _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
                     const SizedBox(height: 120),
                   ],
@@ -848,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // บอลลูน Symbol ด้านซ้าย (ยังใช้งานได้ปกติ)
+          // 1. บอลลูนควบคุม (เปิด/ปิดกล่องข้อความ และกดเพื่อเปิด/ปิดกล่อง Bid/Ask ของ Symbol)
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -872,6 +906,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 onTapUp: (_) {
                   setState(() {
                     _isOrderBubblePressed = false;
+                    // เมื่อแตะที่บอลลูน สลับเปิด/ปิดกล่อง Bid/Ask และสามารถเปิดกล่องข้อความได้ด้วย
+                    setState(() {
+                      _isBidAskBoxVisible = !_isBidAskBoxVisible;
+                      _isReportBoxVisible = true; 
+                    });
                   });
                 },
                 onTapCancel: () {
@@ -882,11 +921,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: AnimatedScale(
                   scale: _isOrderBubblePressed ? 0.85 : 1.0,
                   duration: const Duration(milliseconds: 100),
-                  child: _buildSymbolBubbleWidget(),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      _buildSymbolBubbleWidget(),
+                      // ปุ่มย่อยบนบอลลูนเพื่อเปิด/ปิดกล่องข้อความโดยเฉพาะ (หรือแตะที่บอลลูนหลักก็ได้)
+                      Positioned(
+                        right: -4,
+                        bottom: -4,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isReportBoxVisible = !_isReportBoxVisible;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: _isReportBoxVisible ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: Icon(
+                              _isReportBoxVisible ? Icons.visibility : Icons.visibility_off,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+
+          // 2. กล่องราคา Bid/Ask ของ Symbol ที่เด้งขึ้นมา และสามารถลากเลื่อนได้อิสระ
+          if (_isBidAskBoxVisible)
+            Positioned(
+              left: _bidAskBoxOffset.dx,
+              top: _bidAskBoxOffset.dy,
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildBidAskBoxContent(),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _bidAskBoxOffset = details.offset;
+                  });
+                },
+                child: _buildBidAskBoxContent(),
+              ),
+            ),
         ],
       ),
     );
@@ -939,6 +1028,89 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 2),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget กล่องราคา Bid/Ask แบบเรียลไทม์ที่ลากเลื่อนได้
+  Widget _buildBidAskBoxContent() {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    symbol,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isBidAskBoxVisible = false;
+                  });
+                },
+                child: const Icon(Icons.close, color: Colors.grey, size: 16),
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white24, height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Container(height: 25, width: 1, color: Colors.white24),
+              Column(
+                children: [
+                  const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Center(
+            child: Text(
+              '*(ลากเพื่อย้ายตำแหน่ง)',
+              style: TextStyle(color: Colors.grey, fontSize: 9),
             ),
           ),
         ],
@@ -1063,7 +1235,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                     Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
                     Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
                         fontSize: 11,
