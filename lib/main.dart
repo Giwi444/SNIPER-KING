@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -535,6 +534,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // เชื่อมต่อระบบจริงกับ Firebase เพื่อเช็คสถานะการเชื่อมต่อ
   void _listenToConnectionStatus() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -859,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ไอคอนบอลลูนลอย (Line-style Bubble) ที่มุมหน้าจอ พร้อมฟังก์ชันย่อแอป
+          // บอลลูนลอย (Floating Bubble) พร้อมฟังก์ชัน Minimize แอปพลิเคชัน (true)
           Positioned(
             left: _robotBubbleOffset.dx,
             top: _robotBubbleOffset.dy,
@@ -876,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               child: GestureDetector(
                 onTap: () async {
-                  // แก้ไขให้ย่อแอปพลิเคชัน (Minimize ไปหน้า Home) แทนการปิดแอพ
+                  // แก้ไขพารามิเตอร์เป็น true เพื่อย่อแอปไปเบื้องหลัง (Minimize) แทนที่จะปิดถาวร
                   await SystemChannels.platform.invokeMethod('SystemNavigator.pop', true);
                 },
                 child: _buildRobotBubbleWidget(),
@@ -888,8 +888,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะสีเขียวอยู่กึ่งกลางวงกลมพอดี
+  // วิดเจ็ตบอลลูนลอยพร้อมจุดสถานะที่เชื่อมโยงกับเซิร์ฟเวอร์จริง (เขียวเมื่อต่อ / แดงเมื่อตัดการเชื่อมต่อ)
   Widget _buildRobotBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
     return Container(
       width: 58,
       height: 58,
@@ -898,7 +899,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withOpacity(0.6),
+            color: (isServerActive ? Colors.green : Colors.red).withOpacity(0.6),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -919,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
             ),
           ),
-          // ปรับตำแหน่งจุดสีเขียวให้อยู่ตรงมุมขวาบนกึ่งกลางพอดี
+          // จุดสถานะทำงานจริง: สีเขียวเมื่อเชื่อมต่อ/บอททำงาน, สีแดงเมื่อหลุดหรือหยุดทำงาน
           Positioned(
             right: -2,
             top: -2,
@@ -927,7 +928,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: const Color(0xFF00C853),
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 2),
               ),
@@ -2161,7 +2162,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     double sl = double.tryParse(slPointsController.text) ?? 500;
     double rr = double.tryParse(riskRewardController.text) ?? 2.0;
-    double calculatedTP = sl * rr;
 
     return Scaffold(
       appBar: AppBar(
@@ -2260,52 +2260,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
 
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
-                          Color modeColor;
-                          if (mode == 'All Mode') {
-                            modeColor = const Color(0xFFFFD700);
-                          } else if (mode == 'Liquidity') {
-                            modeColor = const Color(0xFFE91E63);
-                          } else if (mode == 'Breakout') {
-                            modeColor = const Color(0xFF00BCD4);
-                          } else {
-                            modeColor = const Color(0xFFFF5722);
-                          }
+                          return ChoiceChip(
+                            label: Text(mode),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFFD50000),
+                            backgroundColor: const Color(0xFF0B0B0E),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            onSelected: (selected) {
+                              setState(() {
+                                tradingMode = mode;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
 
+                      const SizedBox(height: 16),
+                      const Text('Lot Size Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: lotModeOptions.map((lMode) {
+                          bool isSelected = lotMode == lMode;
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                              child: SizedBox(
-                                height: 40,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      tradingMode = mode;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    side: BorderSide(
-                                      color: modeColor,
-                                      width: isSelected ? 2 : 1,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: Text(
-                                    mode,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.black : Colors.white70,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
-                                    ),
-                                  ),
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ChoiceChip(
+                                label: Center(child: Text(lMode)),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFFFFB300),
+                                backgroundColor: const Color(0xFF0B0B0E),
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.black : Colors.white70,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    lotMode = lMode;
+                                  });
+                                },
                               ),
                             ),
                           );
@@ -2315,218 +2316,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: selectedTf,
-                        dropdownColor: const Color(0xFF161619),
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF0B0B0E),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        items: timeframes.map((tf) {
-                          return DropdownMenuItem(value: tf, child: Text(tf));
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              selectedTf = val;
-                            });
-                          }
-                        },
-                      ),
 
-                      const SizedBox(height: 16),
-                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: lotModeOptions.map((lm) {
-                          bool isSelected = lotMode == lm;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: SizedBox(
-                                height: 40,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      lotMode = lm;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    side: BorderSide(color: const Color(0xFFFFB300), width: isSelected ? 2 : 1),
-                                  ),
-                                  child: Text(lm, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                ),
-                              ),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: timeframes.map((tf) {
+                          bool isSelected = selectedTf == tf;
+                          return ChoiceChip(
+                            label: Text(tf),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFFFFB300),
+                            backgroundColor: const Color(0xFF0B0B0E),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.black : Colors.white70,
+                              fontWeight: FontWeight.bold,
                             ),
+                            onSelected: (selected) {
+                              setState(() {
+                                selectedTf = tf;
+                              });
+                            },
                           );
                         }).toList(),
                       ),
 
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: _buildTextField('Initial Lot', initialLotController)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildTextField('Max Recovery', maxRecoveryController)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(child: _buildTextField('Max Orders', maxOrdersController)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildTextField('Swing Bars', swingBarsController)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(child: _buildTextField('SL Points', slPointsController)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildTextField('Risk Reward (RR)', riskRewardController)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Calculated Take Profit (TP): ${calculatedTP.toStringAsFixed(0)} Points',
-                          style: const TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: initialLotController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Initial Lot Size',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'TRADING TIME CONFIGURATION (TH)',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildTextField('Start Time (HH:mm)', startTimeController)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildTextField('End Time (HH:mm)', endTimeController)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'RISK MANAGEMENT TARGETS',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Enable Daily Target (\$)', style: TextStyle(color: Colors.white, fontSize: 12)),
-                          Switch(
-                            value: enableDailyTarget,
-                            activeColor: const Color(0xFF00C853),
-                            onChanged: (val) {
-                              setState(() {
-                                enableDailyTarget = val;
-                              });
-                            },
-                          ),
-                        ],
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: maxOrdersController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Max Orders',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        ),
                       ),
-                      if (enableDailyTarget) ...[
-                        const SizedBox(height: 6),
-                        _buildTextField('Daily Target Amount (\$)', dailyTargetController),
-                      ],
-                      const Divider(color: Colors.white12, height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Enable Daily Loss Limit (\$)', style: TextStyle(color: Colors.white, fontSize: 12)),
-                          Switch(
-                            value: enableDailyLoss,
-                            activeColor: Colors.redAccent,
-                            onChanged: (val) {
-                              setState(() {
-                                enableDailyLoss = val;
-                              });
-                            },
-                          ),
-                        ],
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: slPointsController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Stop Loss Points (SL)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        ),
                       ),
-                      if (enableDailyLoss) ...[
-                        const SizedBox(height: 6),
-                        _buildTextField('Daily Loss Amount (\$)', dailyLossController),
-                      ],
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: riskRewardController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Risk Reward Ratio (TP = SL x ${riskRewardController.text})',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: _saveSettingsToFirebase,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD50000),
-                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 6,
                     ),
                     child: const Text(
-                      'SAVE & SYNC TO BOT (EA)',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      'SAVE & SYNC TO EA',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1),
                     ),
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 40),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF0B0B0E),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ],
     );
   }
 }
