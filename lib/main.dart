@@ -1209,7 +1209,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Container(
-              height: 300,
+              height: 280,
               width: double.infinity,
               color: Colors.black,
               child: Image.asset(
@@ -1217,7 +1217,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 fit: BoxFit.contain,
                 alignment: Alignment.center,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 250,
+                  height: 240,
                   color: Colors.black,
                 ),
               ),
