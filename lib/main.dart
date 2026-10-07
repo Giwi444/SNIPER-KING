@@ -878,7 +878,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         height: 250,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          // เอาเส้นแถบสีแดงตรงกลางกล่องรูปผู้หญิงออกแล้ว ตามสั่ง
+                          // เอาขอบเส้นแถบสีแดงออก เหลือเฉพาะเงาเรืองแสงรอบนอกกล่องรูปผู้หญิง
                           border: Border.all(color: Colors.transparent, width: 0),
                           boxShadow: [
                             BoxShadow(
@@ -1089,7 +1089,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      // เพิ่มขนาดความหนาและสีแดงเข้มขึ้นตามสั่ง (width: 4.0, สีแดงเข้มพิเศษ)
+                      // กล่อง Log (EA STATUS & BOT LOGS) คงความหนาและความเข้มสีแดงตามข้อ 2 ไว้สมบูรณ์
                       border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
                       boxShadow: [
                         BoxShadow(
@@ -1144,7 +1144,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        // เพิ่มความเข้มและหนาของเส้นคั่นในกล่อง Log ด้วย
                         const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
                         
                         Expanded(
