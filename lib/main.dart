@@ -2336,14 +2336,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
         final data = event.snapshot.value;
         if (mounted) {
           setState(() {
-            alertItems.clear();
+            List<Map<String, dynamic>> tempList = [];
             if (data is Map) {
               data.forEach((key, value) {
                 if (value != null) {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   if (cleanMsg.toUpperCase().contains('ORDER') || cleanMsg.toUpperCase().contains('BUY') || cleanMsg.toUpperCase().contains('SELL') || cleanMsg.toUpperCase().contains('POSITION')) {
-                    alertItems.add({
+                    tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
                     });
@@ -2356,7 +2356,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String rawMsg = data[i].toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   if (cleanMsg.toUpperCase().contains('ORDER') || cleanMsg.toUpperCase().contains('BUY') || cleanMsg.toUpperCase().contains('SELL') || cleanMsg.toUpperCase().contains('POSITION')) {
-                    alertItems.add({
+                    tempList.add({
                       'key': i.toString(),
                       'message': cleanMsg,
                     });
@@ -2364,6 +2364,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 }
               }
             }
+            // กลับลำดับให้ข้อมูลล่าสุด (รายการท้ายหรือที่ถูกเพิ่มเข้ามาทีหลัง) อยู่ด้านบนสุด
+            alertItems = tempList.reversed.toList();
           });
         }
       });
@@ -2463,6 +2465,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 // ==========================================
 // #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
