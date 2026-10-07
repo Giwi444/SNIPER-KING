@@ -604,13 +604,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _marketRef = database.ref('status');
+      // รองรับการฟังค่าจาก path 'market' หรือ 'status' ตามที่ EA ส่งข้อมูลจริงมา
+      _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        final data = event.snapshot.value;
         if (data != null && mounted) {
+          if (data is Map) {
+            setState(() {
+              realTimeBid = double.tryParse(data['bid']?.toString() ?? '0.0') ?? 0.0;
+              realTimeAsk = double.tryParse(data['ask']?.toString() ?? '0.0') ?? 0.0;
+            });
+          }
+        }
+      });
+
+      // สำรอง: ฟังจาก status ด้วยเผื่อ EA อัพเดต Bid/Ask ไว้ที่นั่น
+      database.ref('status').onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (data != null && mounted && data is Map) {
           setState(() {
-            realTimeBid = (data['bid'] ?? 0.0).toDouble();
-            realTimeAsk = (data['ask'] ?? 0.0).toDouble();
+            if (data['bid'] != null) {
+              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+            }
+            if (data['ask'] != null) {
+              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+            }
           });
         }
       });
@@ -2358,7 +2376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController dailyLossController = TextEditingController();
 
   DatabaseReference? _settingsRef;
-  bool _isDataLoaded = false; // ป้องกันข้อมูลทับตอนกำลังพิมพ์
+  bool _isDataLoaded = false;
 
   @override
   void initState() {
@@ -2392,7 +2410,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            // โหลดครั้งแรกเท่านั้น หรืออัปเดตเมื่อไม่ได้กำลังแก้
             if (!_isDataLoaded) {
               selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
               tradingMode = data['trading_mode']?.toString() ?? 'All Mode';
@@ -2414,7 +2431,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               enableDailyLoss = data['enable_daily_loss'] ?? false;
               dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
               
-              _isDataLoaded = true; // ล็อกไม่ให้ onValue มาทับซ้อนขณะใช้งาน
+              _isDataLoaded = true;
             }
           });
         }
@@ -2910,7 +2927,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          decoration: _inputDecoration('Max Daily Loss in USD'),
+                          decoration: _inputDataTypeHint('Max Daily Loss in USD'),
                         ),
                       ],
                     ],
@@ -2946,14 +2963,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(string hint) {
+  InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.white38),
       filled: true,
       fillColor: const Color(0xFF0B0B0E),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineIndicator(
+      border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.white24),
       ),
@@ -2967,4 +2984,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  InputDecoration _inputDataTypeHint(String hint) => _inputDecoration(hint);
 }
