@@ -967,7 +967,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 20),
 
-                    // 👉 กล่อง Bid/Ask ที่ถูกล็อคตำแหน่งให้อยู่ตรงนี้ (ตามรูปตัวอย่าง)
                     if (_isBidAskBoxVisible) ...[
                       _buildBidAskBoxContent(context),
                       const SizedBox(height: 15),
@@ -1137,32 +1136,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
 
-                                  ..._botLogs.map((log) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8.0),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "> ${log['message']}",
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontFamily: 'monospace',
-                                              fontSize: 12,
-                                              height: 1.4,
+                                  // วนลูปแสดง Logs พร้อมกำหนดให้ Index 0 (ข้อความล่าสุด) แสดงผลแบบพิมพ์ดีด
+                                  ..._botLogs.asMap().entries.map((entry) {
+                                    int index = entry.key;
+                                    var log = entry.value;
+                                    bool isLatest = (index == 0);
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: isLatest
+                                                ? _TypewriterText(message: "> ${log['message']}")
+                                                : Text(
+                                                    "> ${log['message']}",
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontFamily: 'monospace',
+                                                      fontSize: 16, // ปรับฟอนต์ข้อความLogเป็นขนาด 16
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _clearLogItem(log['key']),
+                                            child: const Padding(
+                                              padding: EdgeInsets.only(left: 8.0),
+                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
                                             ),
                                           ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () => _clearLogItem(log['key']),
-                                          child: const Padding(
-                                            padding: EdgeInsets.only(left: 8.0),
-                                            child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
+                                        ],
+                                      ),
+                                    );
+                                  }),
                                 ],
                               ),
                             ),
@@ -1472,6 +1480,69 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+// ==========================================
+// #2 TYPEWRITER WIDGET FOR LATEST LOG
+// ==========================================
+class _TypewriterText extends StatefulWidget {
+  final String message;
+  const _TypewriterText({required this.message});
+
+  @override
+  State<_TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<_TypewriterText> {
+  String _displayedText = "";
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTypewriter();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) {
+      _displayedText = "";
+      _currentIndex = 0;
+      _startTypewriter();
+    }
+  }
+
+  void _startTypewriter() {
+    Future.doWhile(() async {
+      if (!mounted) return false;
+      await Future.delayed(const Duration(milliseconds: 25)); // ความเร็วในการพิมพ์ตัวอักษร
+      if (!mounted) return false;
+
+      setState(() {
+        if (_currentIndex < widget.message.length) {
+          _currentIndex++;
+          _displayedText = widget.message.substring(0, _currentIndex);
+        }
+      });
+
+      return _currentIndex < widget.message.length;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: const TextStyle(
+        color: Colors.white70,
+        fontFamily: 'monospace',
+        fontSize: 16, // ขนาดฟอนต์ 16
+        height: 1.4,
+      ),
+    );
+  }
+}
+
 
 // ==========================================
 // #2 ORDERS SCREEN
