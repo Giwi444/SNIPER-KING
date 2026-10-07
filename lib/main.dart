@@ -548,6 +548,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 // ==========================================
 // #1 HOME SCREEN
 // ==========================================
@@ -588,6 +592,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
   );
 
+  // Controller สำหรับเส้นเรดาร์สแกนสีแดงเรืองแสง (เลื่อนขึ้น-ลง)
+  late final AnimationController _scannerController = AnimationController(
+    duration: const Duration(seconds: 2),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
+  );
+
   bool _isBidAskBoxVisible = false;
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
@@ -608,6 +622,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _bounceController.dispose();
+    _scannerController.dispose();
     super.dispose();
   }
 
@@ -879,12 +894,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(14),
-                          child: Image.asset(
-                            'assets/images/ppp.jpg',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(color: Colors.black);
-                            },
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.asset(
+                                'assets/images/ppp.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(color: Colors.black);
+                                },
+                              ),
+                              // เส้นเลเซอร์เรดาร์สแกนสีแดงเรืองแสง (หน้าหลัก)
+                              AnimatedBuilder(
+                                animation: _scannerAnimation,
+                                builder: (context, child) {
+                                  return Positioned(
+                                    top: _scannerAnimation.value * (250 - 10),
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF1744),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.redAccent,
+                                            blurRadius: 10,
+                                            spreadRadius: 3,
+                                          ),
+                                          BoxShadow(
+                                            color: Colors.white,
+                                            blurRadius: 3,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1208,14 +1257,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               height: 200,
               width: double.infinity,
               color: Colors.black,
-              child: Image.asset(
-                'assets/images/ppp.jpg',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 200,
-                  color: Colors.black,
-                ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/ppp.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      color: Colors.black,
+                    ),
+                  ),
+                  // เส้นเลเซอร์เรดาร์สแกนสีแดงเรืองแสง (ในกล่อง Logs Modal ตามรูปตัวอย่าง)[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)
+                  AnimatedBuilder(
+                    animation: _scannerAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: _scannerAnimation.value * (200 - 6),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF1744),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent,
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                              BoxShadow(
+                                color: Colors.white,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -1475,6 +1558,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LogTypewriterText extends StatefulWidget {
+  final String message;
+  const _LogTypewriterText({required this.message});
+
+  @override
+  State<_LogTypewriterText> createState() => _LogTypewriterTextState();
+}
+
+class _LogTypewriterTextState extends State<_LogTypewriterText> {
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      widget.message,
+      style: const TextStyle(
+        color: Colors.white,
+        fontFamily: 'monospace',
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        height: 1.4,
       ),
     );
   }
@@ -2719,7 +2826,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'SNIPER KING PARAMETERS',
+                  'PARAMETERS',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
