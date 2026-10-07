@@ -48,6 +48,81 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
+// TYPEWRITER EFFECT WIDGET (เอฟเฟกต์พิมพ์ดีด)
+// ==========================================
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final Duration duration;
+
+  const TypewriterText({
+    super.key,
+    required this.text,
+    this.style,
+    this.textAlign,
+    this.duration = const Duration(milliseconds: 50),
+  });
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> {
+  String _displayedText = "";
+  int _currentIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTypewriter();
+  }
+
+  @override
+  void didUpdateWidget(covariant TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _startTypewriter();
+    }
+  }
+
+  void _startTypewriter() {
+    _timer?.cancel();
+    setState(() {
+      _displayedText = "";
+      _currentIndex = 0;
+    });
+
+    _timer = Timer.periodic(widget.duration, (timer) {
+      if (_currentIndex < widget.text.length) {
+        setState(() {
+          _displayedText += widget.text[_currentIndex];
+          _currentIndex++;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: widget.style,
+      textAlign: widget.textAlign,
+    );
+  }
+}
+
+// ==========================================
 // PIN AUTH WRAPPER
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
@@ -185,8 +260,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
               children: [
                 const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 48),
                 const SizedBox(height: 16),
-                Text(
-                  titleText,
+                TypewriterText(
+                  text: titleText,
                   style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
@@ -650,7 +725,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               for (var entry in sortedEntries) {
                 if (entry.value != null) {
                   String rawMsg = entry.value.toString();
-                  // ลบคำว่า command ออก ให้เหลือเฉพาะ BOT RECEIVED : [ข้อความ]
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   tempLogs.add({
                     'key': entry.key.toString(),
@@ -797,13 +871,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
+                    // ปรับแก้ไขกรอบรูปภาพผู้หญิงให้เห็นเต็มใบหน้า ขยายความสูงลงมาตามกรอบ
                     Center(
                       child: Container(
                         width: 250,
-                        height: 250,
+                        height: 380, // ขยายความสูงลงมาให้เห็นเต็มใบหน้า
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD50000), width: 6.5),
+                          borderRadius: BorderRadius.circular(20), // ปรับเป็นทรงมนสี่เหลี่ยมโค้งสวยงาม
+                          border: Border.all(color: const Color(0xFFD50000), width: 4.5),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.red.withOpacity(0.9),
@@ -812,10 +887,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ],
                         ),
-                        child: ClipOval(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
                           child: Image.asset(
                             'assets/images/ppp.jpg',
                             fit: BoxFit.cover,
+                            alignment: Alignment.topCenter, // จัดตำแหน่งให้เห็นใบหน้าส่วนบนชัดเจน
                             errorBuilder: (context, error, stackTrace) {
                               return Container(color: Colors.black);
                             },
@@ -2213,7 +2290,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
               data.forEach((key, value) {
                 if (value != null) {
                   String rawMsg = value.toString();
-                  // ลบคำว่า command ออก ให้แสดงผลสะอาดตา
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   if (cleanMsg.toUpperCase().contains('ORDER') || cleanMsg.toUpperCase().contains('BUY') || cleanMsg.toUpperCase().contains('SELL') || cleanMsg.toUpperCase().contains('POSITION')) {
                     alertItems.add({
@@ -2237,8 +2313,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 }
               }
             }
-
-            alertItems.sort((a, b) => b['message'].compareTo(a['message']));
           });
         }
       });
@@ -2247,14 +2321,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  void _deleteAlert(String key) {
+  void _clearAlertItem(String key) {
     try {
       _alertsRef?.child(key).remove();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deleted alert successfully', style: TextStyle(fontFamily: 'monospace')), duration: Duration(seconds: 1)),
-      );
     } catch (e) {
-      print("Delete alert error: $e");
+      print("Clear alert item error: $e");
     }
   }
 
@@ -2264,9 +2335,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
       setState(() {
         alertItems.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cleared all alerts successfully', style: TextStyle(fontFamily: 'monospace')), duration: Duration(seconds: 1)),
-      );
     } catch (e) {
       print("Clear all alerts error: $e");
     }
@@ -2276,7 +2344,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Push Alerts', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         actions: [
           if (alertItems.isNotEmpty)
@@ -2301,32 +2369,42 @@ class _AlertsScreenState extends State<AlertsScreen> {
             color: Colors.black.withOpacity(0.8),
           ),
           alertItems.isEmpty
-              ? const Center(child: Text('No new order alerts...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')))
+              ? const Center(
+                  child: Text(
+                    'No active alerts found',
+                    style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
                     final alert = alertItems[index];
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white12, width: 1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.2),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               alert['message'],
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace', height: 1.4),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                            onPressed: () => _deleteAlert(alert['key']),
+                          GestureDetector(
+                            onTap: () => _clearAlertItem(alert['key']),
+                            child: const Padding(
+                              padding: EdgeInsets.only(left: 8.0),
+                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                            ),
                           ),
                         ],
                       ),
@@ -2350,44 +2428,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool pushAlerts = true;
-  bool soundEnabled = true;
-  String currentPinState = "******";
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      pushAlerts = prefs.getBool('push_alerts') ?? true;
-      soundEnabled = prefs.getBool('sound_enabled') ?? true;
-    });
-  }
-
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-  }
-
-  Future<void> _resetPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PIN reset successfully. Please restart app to set new PIN.', style: TextStyle(fontFamily: 'monospace')), backgroundColor: Colors.orange),
-    );
-  }
+  bool notificationsEnabled = true;
+  bool autoTradingAllowed = true;
+  double riskLevel = 2.0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings & Configuration', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
@@ -2401,45 +2450,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withOpacity(0.8),
           ),
           ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Text('GENERAL SETTINGS', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
-              const SizedBox(height: 10),
-              SwitchListTile(
-                title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                subtitle: const Text('Receive alert updates from EA', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                value: pushAlerts,
-                activeColor: const Color(0xFFFFB300),
-                onChanged: (val) {
-                  setState(() {
-                    pushAlerts = val;
-                  });
-                  _saveSetting('push_alerts', val);
-                },
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white12, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('EA Preferences', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace')),
+                    const Divider(color: Colors.white24, height: 20),
+                    SwitchListTile(
+                      title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                      subtitle: const Text('Receive trading signal alerts', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                      value: notificationsEnabled,
+                      activeColor: const Color(0xFFFFB300),
+                      onChanged: (val) {
+                        setState(() {
+                          notificationsEnabled = val;
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      title: const Text('Allow Live Auto Trading', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                      subtitle: const Text('Enable automated order execution', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                      value: autoTradingAllowed,
+                      activeColor: const Color(0xFF00C853),
+                      onChanged: (val) {
+                        setState(() {
+                          autoTradingAllowed = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
-              SwitchListTile(
-                title: const Text('App Sound FX', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                subtitle: const Text('Play sound on alerts and order events', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                value: soundEnabled,
-                activeColor: const Color(0xFFFFB300),
-                onChanged: (val) {
-                  setState(() {
-                    soundEnabled = val;
-                  });
-                  _saveSetting('sound_enabled', val);
-                },
-              ),
-              const Divider(color: Colors.white24, height: 30),
-              const Text('SECURITY', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
-              const SizedBox(height: 10),
-              ListTile(
-                title: const Text('Reset Security PIN', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                subtitle: const Text('Clear stored PIN and setup a new one', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                trailing: const Icon(Icons.lock_reset, color: Color(0xFFFFB300)),
-                onTap: _resetPin,
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161619).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white12, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Risk Management', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace')),
+                    const Divider(color: Colors.white24, height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Risk Multiplier Level:', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                        Text('${riskLevel.toStringAsFixed(1)}x', style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace')),
+                      ],
+                    ),
+                    Slider(
+                      value: riskLevel,
+                      min: 1.0,
+                      max: 5.0,
+                      divisions: 8,
+                      activeColor: const Color(0xFFD50000),
+                      inactiveColor: Colors.white24,
+                      onChanged: (val) {
+                        setState(() {
+                          riskLevel = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
