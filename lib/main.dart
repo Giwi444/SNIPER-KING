@@ -482,7 +482,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN (Updated: Separated Logs & Pop-up)
+// #1 HOME SCREEN (Updated: Removed Home Log Box)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -529,12 +529,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   bool _isLargeLogsModalOpen = false;
 
-  final String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
-  String _displayedTypewriterText = "";
-  Timer? _typewriterTimer;
-
-  final ScrollController _terminalScrollController = ScrollController();
-
   @override
   void initState() {
     super.initState();
@@ -543,38 +537,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToLogs();
     _listenToConnectionStatus();
     _listenToMarketPrices();
-
-    _startTypewriterEffect(latestSignalText);
   }
 
   @override
   void dispose() {
     _bounceController.dispose();
-    _typewriterTimer?.cancel();
-    _terminalScrollController.dispose();
     super.dispose();
-  }
-
-  void _startTypewriterEffect(String fullText) {
-    _typewriterTimer?.cancel();
-    int charIndex = 0;
-    _displayedTypewriterText = "";
-    
-    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
-      if (charIndex < fullText.length) {
-        if (mounted) {
-          setState(() {
-            _displayedTypewriterText = fullText.substring(0, charIndex + 1);
-          });
-          if (_terminalScrollController.hasClients) {
-            _terminalScrollController.jumpTo(_terminalScrollController.position.maxScrollExtent);
-          }
-        }
-        charIndex++;
-      } else {
-        timer.cancel();
-      }
-    });
   }
 
   void _listenToConnectionStatus() {
@@ -687,11 +655,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }
             }
             _botLogs = tempLogs;
-            
-            if (_botLogs.isNotEmpty) {
-              String lastLog = _botLogs.last;
-              _startTypewriterEffect("> $lastLog");
-            }
           });
         }
       });
@@ -826,7 +789,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ตำแหน่งอ้างอิงชื่อบอท SNIPER KING
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
@@ -904,10 +866,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 20),
 
-                    // [กล่องที่ 1] แสดงเฉพาะส่วน Log ในหน้า Home (พิมพ์ดีด)
-                    _buildHomeLogBox(),
-                    const SizedBox(height: 15),
-
                     // กล่องรายงานสถานะ EA (ตามรูปแบบรูปที่ 2)
                     _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
@@ -981,7 +939,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // [กล่องที่ 2] แสดงแบบป็อปอัพเมื่อกดปุ่ม Logs (ตำแหน่งวางอยู่ใกล้บริเวณชื่อบอท SNIPER KING)
+          // ป็อปอัพแสดง Logs เมื่อกดปุ่ม LOGS
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1079,46 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // 1. กล่อง Log สำหรับแสดงในหน้า Home เท่านั้น (พิมพ์ดีด)
-  Widget _buildHomeLogBox() {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 70, maxHeight: 100),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 2.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        controller: _terminalScrollController,
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: Text(
-            _displayedTypewriterText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontFamily: 'monospace',
-              height: 1.3,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 2. กล่องแสดงรายงานสถานะ EA (ตามรูปที่ 2 ที่แก้ไขแล้ว)
+  // กล่องแสดงรายงานสถานะ EA
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1142,7 +1061,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ส่วนรูปภาพประกอบ
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Image.asset(
@@ -1156,8 +1074,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          // ส่วนล่าง: รายงานข้อมูลสถานะ EA, Server, Active Orders
           Padding(
             padding: const EdgeInsets.all(14.0),
             child: Column(
