@@ -482,7 +482,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN (Updated: Clean 2-Box Separation & Popup Location)
+// #1 HOME SCREEN (Updated: Separated Logs & Pop-up)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -529,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   bool _isLargeLogsModalOpen = false;
 
-  final String latestSignalText = "> [07.10.2026 08:27:51] SNIPER KING ROBOT Initialized successfully.";
+  final String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
   String _displayedTypewriterText = "";
   Timer? _typewriterTimer;
 
@@ -826,6 +826,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // ตำแหน่งอ้างอิงชื่อบอท SNIPER KING
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
@@ -903,8 +904,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 20),
 
-                    // กล่องที่ 1: แสดงเฉพาะในหน้า Home (รวม Log แบบพิมพ์ดีดไว้ด้านบนตามรูปที่ 1 และ 2)
-                    _buildHomeReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                    // [กล่องที่ 1] แสดงเฉพาะส่วน Log ในหน้า Home (พิมพ์ดีด)
+                    _buildHomeLogBox(),
+                    const SizedBox(height: 15),
+
+                    // กล่องรายงานสถานะ EA (ตามรูปแบบรูปที่ 2)
+                    _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
                     const SizedBox(height: 120),
                   ],
@@ -976,34 +981,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // กล่องที่ 2: แสดงแบบ Popup ตรงส่วนตำแหน่งชื่อบอท SNIPER KING เมื่อกดปุ่ม LOGS
+          // [กล่องที่ 2] แสดงแบบป็อปอัพเมื่อกดปุ่ม Logs (ตำแหน่งวางอยู่ใกล้บริเวณชื่อบอท SNIPER KING)
           if (_isLargeLogsModalOpen)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.92,
-                  height: MediaQuery.of(context).size.height * 0.75,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFD50000), width: 2.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.6),
-                        blurRadius: 20,
-                        spreadRadius: 3,
-                      ),
-                    ],
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/ppp.jpg'),
-                      fit: BoxFit.cover,
-                      opacity: 0.25,
-                    ),
-                  ),
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isLargeLogsModalOpen = false;
+                    });
+                  },
+                  child: Container(color: Colors.black54),
+                ),
+                Center(
                   child: Container(
+                    width: MediaQuery.of(context).size.width * 0.92,
+                    height: MediaQuery.of(context).size.height * 0.65,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: Colors.black.withOpacity(0.88),
+                      border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.6),
+                          blurRadius: 20,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                      color: const Color(0xFF121215),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1047,19 +1051,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (_displayedTypewriterText.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: Text(
-                                        _displayedTypewriterText,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: 'monospace',
-                                          fontSize: 13,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ),
                                   ..._botLogs.map((log) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
                                     child: Text(
@@ -1081,15 +1072,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
         ],
       ),
     );
   }
 
-  // กล่องที่ 1: ดีไซน์สำหรับแสดงบนหน้า Home ตามรูปที่ 1 และ 2 (มีกล่อง Log พิมพ์ดีดอยู่ด้านบน และกรอบสถานะด้านล่าง)
-  Widget _buildHomeReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+  // 1. กล่อง Log สำหรับแสดงในหน้า Home เท่านั้น (พิมพ์ดีด)
+  Widget _buildHomeLogBox() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 70, maxHeight: 100),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD50000),
+          width: 2.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        controller: _terminalScrollController,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Text(
+            _displayedTypewriterText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontFamily: 'monospace',
+              height: 1.3,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 2. กล่องแสดงรายงานสถานะ EA (ตามรูปที่ 2 ที่แก้ไขแล้ว)
+  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
     return Container(
@@ -1112,37 +1142,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ส่วนบน: กล่อง Log ขนาดเล็กแสดงผลแบบพิมพ์ดีดตามรูปที่ 1
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 65, maxHeight: 90),
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0B0B0E),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFD50000), width: 1.5),
-              ),
-            ),
-            child: SingleChildScrollView(
-              controller: _terminalScrollController,
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  _displayedTypewriterText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontFamily: 'monospace',
-                    height: 1.3,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ส่วนรูปภาพประกอบตรงกลาง
+          // ส่วนรูปภาพประกอบ
           ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Image.asset(
               'assets/images/ppp.jpg',
               height: 160,
@@ -1155,7 +1157,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ส่วนล่าง: สถานะ EA และข้อมูลแทนที่ในตำแหน่งกรอบสีขาว (ตามรูปที่ 2)
+          // ส่วนล่าง: รายงานข้อมูลสถานะ EA, Server, Active Orders
           Padding(
             padding: const EdgeInsets.all(14.0),
             child: Column(
