@@ -863,32 +863,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
-                    Center(
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD50000), width: 6.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/ppp.jpg',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(color: Colors.black);
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
+                    // 👉 โค้ดใหม่ (เปลี่ยนเป็นสี่เหลี่ยมตัดขอบมน เช่น มุมโค้ง 20)
+Center(
+  child: Container(
+    width: 250,
+    height: 250,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20), // ปรับความโค้งของมุมได้ตามต้องการ
+      border: Border.all(color: const Color(0xFFD50000), width: 6.5),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.red.withOpacity(0.9),
+          blurRadius: 22,
+          spreadRadius: 4,
+        ),
+      ],
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(14), // ให้รูปภาพด้านในโค้งรับกับกรอบ
+      child: Image.asset(
+        'assets/images/ppp.jpg',
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(color: Colors.black);
+        },
+      ),
+    ),
+  ),
+),
                     const SizedBox(height: 16),
                     const Text(
                       'SNIPER KING',
@@ -1209,15 +1211,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Container(
-              height: 280,
+              height: 200, // ลดความสูงกล่องรูปภาพลงจาก 280 เหลือ 200
               width: double.infinity,
               color: Colors.black,
               child: Image.asset(
                 'assets/images/ppp.jpg',
-                fit: BoxFit.contain,
+                fit: BoxFit.cover, // ปรับให้รูปเต็มพื้นที่สวยงาม
                 alignment: Alignment.center,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 240,
+                  height: 200,
                   color: Colors.black,
                 ),
               ),
