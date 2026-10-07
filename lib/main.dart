@@ -723,7 +723,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _toggleBotStatus(bool status) {
     try {
-      _dbRef?.update({'is_running': status});
+      _dbRef?.update({
+        'is_running': status,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
     } catch (e) {
       print("Toggle bot error: $e");
     }
@@ -885,8 +888,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    
-                    // 1. เพิ่มกล่อง Log ขนาดเล็กแยกต่างหาก วางตำแหน่งเหนือการ์ดรายงาน ตัวหนังสือพิมพ์ดีด
                     _buildSmallLogBox(),
                     const SizedBox(height: 16),
 
@@ -963,7 +964,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // 2. กล่อง Log ใหญ่ (อิงกับวงกลม LOGS เมื่อกดจะแสดงเป็นป๊อปอัพ เลื่อนดูย้อนหลังและกดปิดได้)
           if (_isLargeLogsModalOpen)
             Container(
               color: Colors.black54,
@@ -1075,7 +1075,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // วิดเจ็ตกล่อง Log เล็กแยกต่างหาก (ตัวหนังสือเลื่อนแบบพิมพ์ดีด)
   Widget _buildSmallLogBox() {
     return Container(
       width: double.infinity,
@@ -2310,7 +2309,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #5 SETTINGS SCREEN
+// #5 SETTINGS SCREEN (Fixed value bouncing issue)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2359,6 +2358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController dailyLossController = TextEditingController();
 
   DatabaseReference? _settingsRef;
+  bool _isDataLoaded = false; // ป้องกันข้อมูลทับตอนกำลังพิมพ์
 
   @override
   void initState() {
@@ -2392,25 +2392,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
-            tradingMode = data['trading_mode']?.toString() ?? 'All Mode';
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
-            selectedTf = data['timeframe']?.toString() ?? 'M1';
-            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
-            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
+            // โหลดครั้งแรกเท่านั้น หรืออัปเดตเมื่อไม่ได้กำลังแก้
+            if (!_isDataLoaded) {
+              selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+              tradingMode = data['trading_mode']?.toString() ?? 'All Mode';
+              lotMode = data['lot_mode']?.toString() ?? 'Double';
+              selectedTf = data['timeframe']?.toString() ?? 'M1';
+              startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
+              endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
 
-            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
-            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
-            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
-            slPointsController.text = data['sl_points']?.toString() ?? '500';
-            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
+              initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
+              maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
+              maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
+              swingBarsController.text = data['swing_bars']?.toString() ?? '30';
+              slPointsController.text = data['sl_points']?.toString() ?? '500';
+              riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
 
-            enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+              enableDailyTarget = data['enable_daily_target'] ?? true;
+              dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
 
-            enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+              enableDailyLoss = data['enable_daily_loss'] ?? false;
+              dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+              
+              _isDataLoaded = true; // ล็อกไม่ให้ onValue มาทับซ้อนขณะใช้งาน
+            }
           });
         }
       });
@@ -2438,6 +2443,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2940,14 +2946,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(string hint) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.white38),
       filled: true,
       fillColor: const Color(0xFF0B0B0E),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineInputBorder(
+      border: OutlineIndicator(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.white24),
       ),
