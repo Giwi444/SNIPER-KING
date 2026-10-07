@@ -478,6 +478,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
+
 // ==========================================
 // #1 HOME SCREEN (RED-BLACK STYLE)
 // ==========================================
@@ -800,7 +801,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ปรับดีไซน์ตามรูปแบบอ้างอิงรูปที่ 2 และ 3
                     const Text(
                       'SNIPER KING',
                       textAlign: TextAlign.center,
@@ -970,6 +970,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
+          // ==========================================
+          // 2. เลเยอร์ Modal สำหรับแสดง BOT ACTIVITY LOGS
+          // ==========================================
           if (_isLargeLogsModalOpen)
             Container(
               color: Colors.black54,
@@ -1002,7 +1005,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -1040,17 +1043,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    _displayedTypewriterText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'monospace',
-                                      fontSize: 14,
-                                      height: 1.5,
+                                  if (_displayedTypewriterText.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      child: Text(
+                                        _displayedTypewriterText,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
+                                      ),
                                     ),
-                                  ),
                                   ..._botLogs.map((log) => Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
+                                    padding: const EdgeInsets.only(bottom: 8.0),
                                     child: Text(
                                       "> $log",
                                       style: const TextStyle(
@@ -1398,6 +1405,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 // ==========================================
 // #2 ORDERS SCREEN
