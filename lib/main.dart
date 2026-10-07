@@ -522,7 +522,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   );
 
   bool _isBidAskBoxVisible = false;
-  Offset _bidAskBoxOffset = const Offset(80, 160); // รองรับการลากเปลี่ยนตำแหน่ง
+  // ปรับตำแหน่งเริ่มต้นให้อยู่บริเวณตำแหน่งตามลูกศรชี้ในรูปภาพตัวอย่าง
+  Offset _bidAskBoxOffset = const Offset(70, 500); 
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
@@ -571,7 +572,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       
-      // ฟังข้อมูลจาก path 'market'
       _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
@@ -589,7 +589,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-      // ฟังข้อมูลสำรองจาก path 'status' (เผื่อ EA ส่งค่า Bid/Ask ไว้ที่นี่)
       database.ref('status').onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted && data is Map) {
@@ -661,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 }
               }
             }
-            _botLogs = tempLogs.reversed.toList(); // ให้แสดงข้อมูลล่าสุดไว้ด้านบนหรือตามต้องการ
+            _botLogs = tempLogs.reversed.toList();
           });
         }
       });
@@ -810,7 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const Text(
-                      'EA v4 PLUS+',
+                      'EA v4 PLUS',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 26,
@@ -1349,8 +1348,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
-
-
 
 // ==========================================
 // #2 ORDERS SCREEN
