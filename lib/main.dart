@@ -482,7 +482,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN (Updated: Combined Status Box into Logs Modal & Removed from Home)
+// #1 HOME SCREEN (Updated: Live Logs fix & Free Draggable Bid/Ask Box)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -522,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   );
 
   bool _isBidAskBoxVisible = false;
-  final Offset _bidAskBoxOffset = const Offset(80, 160);
+  Offset _bidAskBoxOffset = const Offset(80, 160); // รองรับการลากเปลี่ยนตำแหน่ง
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
@@ -570,19 +570,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+      
+      // ฟังข้อมูลจาก path 'market'
       _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted) {
           if (data is Map) {
             setState(() {
-              realTimeBid = double.tryParse(data['bid']?.toString() ?? '0.0') ?? 0.0;
-              realTimeAsk = double.tryParse(data['ask']?.toString() ?? '0.0') ?? 0.0;
+              if (data['bid'] != null) {
+                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+              }
+              if (data['ask'] != null) {
+                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+              }
             });
           }
         }
       });
 
+      // ฟังข้อมูลสำรองจาก path 'status' (เผื่อ EA ส่งค่า Bid/Ask ไว้ที่นี่)
       database.ref('status').onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted && data is Map) {
@@ -654,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 }
               }
             }
-            _botLogs = tempLogs;
+            _botLogs = tempLogs.reversed.toList(); // ให้แสดงข้อมูลล่าสุดไว้ด้านบนหรือตามต้องการ
           });
         }
       });
@@ -930,11 +937,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: _buildBidAskBoxContent(),
                 ),
                 childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _bidAskBoxOffset = details.offset;
+                  });
+                },
                 child: _buildBidAskBoxContent(),
               ),
             ),
 
-          // ป็อปอัพรวมกล่องรายงานสถานะ EA และ BOT ACTIVITY LOGS ไว้ด้วยกัน
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -965,7 +976,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header ของป็อปอัพ
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           child: Row(
@@ -999,7 +1009,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const Divider(color: Color(0xFFD50000), height: 1),
                         
-                        // เนื้อหาภายในป็อปอัพ (รวมกล่องสถานะ EA และรายการ Logs ไว้ข้างใน)
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
@@ -1007,11 +1016,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // กล่องรายงานสถานะ EA (กล่องรูปที่ 1)
                                   _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                                   const SizedBox(height: 16),
                                   
-                                  // ส่วนหัวข้อ Logs
                                   const Row(
                                     children: [
                                       Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
@@ -1029,7 +1036,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                   const SizedBox(height: 8),
 
-                                  // รายการ Logs แบบพิมพ์ดีดเดิม (กล่องรูปที่ 2)
                                   ..._botLogs.map((log) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
                                     child: Text(
@@ -1058,7 +1064,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่องแสดงรายงานสถานะ EA (นำมาใช้ร่วมในป็อปอัพ)
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
