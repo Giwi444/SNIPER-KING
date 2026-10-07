@@ -1190,7 +1190,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-// 1. แก้ไขความสูงและความพอดีของรูปผู้หญิงในกล่อง Logs ให้เห็นเต็มตัว
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1210,13 +1209,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Container(
-              height: 450, // เพิ่มความสูงของกล่องรูปภาพรองรับรูปเต็มตัว
+              height: 450,
               width: double.infinity,
-              color: Colors.black, // พื้นหลังดำกันขอบว่างกรณีรูปไม่เต็มกรอบ
+              color: Colors.black,
               child: Image.asset(
                 'assets/images/ppp.jpg',
-                fit: BoxFit.contain, // เปลี่ยนจาก cover เป็น contain เพื่อให้เห็นผู้หญิงเต็มตัว ไม่โดนตัดขอบ
-                alignment: Alignment.center, // จัดตำแหน่งให้อยู่ตรงกลางพอดี
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 250,
                   color: Colors.black,
@@ -1320,7 +1319,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ClipOval(
             child: Image.asset(
               'assets/images/ppp.jpg',
-              fit: BoxFit.cover, // วงกลมเล็กคงใช้ cover เพื่อให้รูปเต็มวงกลมสวยงาม
+              fit: BoxFit.cover,
               width: 54,
               height: 54,
               errorBuilder: (context, error, stackTrace) {
@@ -1345,7 +1344,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   Widget _buildBidAskBoxContent(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -2409,14 +2407,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #5 SETTINGS SCREEN
-// ==========================================
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// ==========================================
 // #5 COMBINED SETTINGS SCREEN (Exact UI Match)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
@@ -2742,14 +2732,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: lotModeOptions.map((mode) {
                           bool isSelected = lotMode == mode;
-                          Color modeColor;
-                          if (mode == 'Fixed') {
-                            modeColor = const Color(0xFF00E5FF);
-                          } else if (mode == 'Step') {
-                            modeColor = const Color(0xFF9C27B0);
-                          } else {
-                            modeColor = const Color(0xFFFF9100);
-                          }
+                          Color modeColor = buttonColorForLot(mode);
 
                           return Expanded(
                             child: Padding(
@@ -2762,7 +2745,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    side: BorderSide(color: buttonColorForLot(mode), width: isSelected ? 2.5 : 1), // ใช้สีตามโหมด
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
@@ -2783,14 +2766,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       const SizedBox(height: 16),
                       
-                      // --- Timeframe แบบปุ่มกด Grid ตามในรูปภาพต้นฉบับ ---
                       const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4, // 4 ปุ่มต่อแถว
+                          crossAxisCount: 4,
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,
                           childAspectRatio: 2.2,
@@ -2858,7 +2840,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      // Calculated TP Box
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -2957,7 +2938,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Save Button for Bot Parameters
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -2973,9 +2953,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // ==========================================
-                // SECTION 2: GENERAL SETTINGS & PREFERENCES
-                // ==========================================
                 const Text(
                   'GENERAL SETTINGS & PREFERENCES',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
@@ -3106,4 +3083,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-
