@@ -482,7 +482,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (Updated: Combined Log Box)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -520,8 +520,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
     CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
   );
-
-  final bool _isReportBoxVisible = true;
 
   bool _isBidAskBoxVisible = false;
   final Offset _bidAskBoxOffset = const Offset(80, 160);
@@ -604,7 +602,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      // รองรับการฟังค่าจาก path 'market' หรือ 'status' ตามที่ EA ส่งข้อมูลจริงมา
       _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
@@ -618,7 +615,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-      // สำรอง: ฟังจาก status ด้วยเผื่อ EA อัพเดต Bid/Ask ไว้ที่นั่น
       database.ref('status').onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted && data is Map) {
@@ -905,12 +901,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildSmallLogBox(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    if (_isReportBoxVisible)
-                      _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                    // รวมกล่อง Log และรายงานสถานะเข้าด้วยกันเป็นกล่องเดียว
+                    _buildCombinedLogAndReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
                     const SizedBox(height: 120),
                   ],
@@ -1093,37 +1087,138 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSmallLogBox() {
+  // สร้างกล่องคอมไบน์ (รวม Log เล็ก และรายงานสถานะ EA ไว้ในกล่องเดียวกัน)
+  Widget _buildCombinedLogAndReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+
     return Container(
       width: double.infinity,
-      height: 70,
-      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD50000),
+          width: 2.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.red.withOpacity(0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        controller: _terminalScrollController,
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: Text(
-            _displayedTypewriterText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontFamily: 'monospace',
-              height: 1.3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ส่วนบน: กล่อง Log ขนาดเล็กที่รวมอยู่ในกล่องเดียวกัน
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 65, maxHeight: 90),
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0B0B0E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFD50000), width: 1.5),
+              ),
+            ),
+            child: SingleChildScrollView(
+              controller: _terminalScrollController,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  _displayedTypewriterText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    height: 1.3,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+
+          // ส่วนรูปภาพประกอบ
+          ClipRRect(
+            child: Image.asset(
+              'assets/images/ppp.jpg',
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 160,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          // ส่วนล่าง: รายงานข้อมูลสถานะ EA, Server, Active Orders
+          Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'SNIPER KING EA v4 PLUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Divider(color: Colors.white24, height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1267,110 +1362,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFixedOrderReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    bool isServerActive = isConnected && isRunning;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 2.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.6),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Image.asset(
-              'assets/images/ppp.jpg',
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 180,
-                color: Colors.black,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SNIPER KING EA v4 PLUS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                            blurRadius: 6,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
-                      style: TextStyle(
-                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Divider(color: Colors.white24, height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCircularButton({
     required String label,
     required IconData icon,
@@ -1420,6 +1411,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 // ==========================================
 // #2 ORDERS SCREEN
