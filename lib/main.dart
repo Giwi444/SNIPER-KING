@@ -522,8 +522,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   );
 
   bool _isBidAskBoxVisible = false;
-  // ปรับตำแหน่งเริ่มต้นให้อยู่บริเวณตำแหน่งตามลูกศรชี้ในรูปภาพตัวอย่าง
-  Offset _bidAskBoxOffset = const Offset(70, 500); 
+  // ปรับตำแหน่งเริ่มต้นให้สอดคล้องกับกรอบสีแดงกว้างๆ ตามรูป
+  Offset _bidAskBoxOffset = const Offset(24, 500); 
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
@@ -933,7 +933,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Draggable(
                 feedback: Material(
                   color: Colors.transparent,
-                  child: _buildBidAskBoxContent(),
+                  child: _buildBidAskBoxContent(context),
                 ),
                 childWhenDragging: Container(),
                 onDragEnd: (details) {
@@ -941,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _bidAskBoxOffset = details.offset;
                   });
                 },
-                child: _buildBidAskBoxContent(),
+                child: _buildBidAskBoxContent(context),
               ),
             ),
 
@@ -1214,10 +1214,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBidAskBoxContent() {
+  Widget _buildBidAskBoxContent(BuildContext context) {
+    // ปรับความกว้างให้เท่ากับกรอบสีแดง (ตัวอย่างความกว้างเต็มตามหน้าจอหักด้วย Padding เล็กน้อย)
+    double screenWidth = MediaQuery.of(context).size.width;
+    double boxWidth = screenWidth - 32;
+
     return Container(
-      width: 220,
-      padding: const EdgeInsets.all(12),
+      width: boxWidth,
+      padding: const EdgeInsets.all(4), // ลดขอบนอกให้บางลงแนบชิด
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
@@ -1234,7 +1238,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF161619),
           borderRadius: BorderRadius.circular(13),
@@ -1266,7 +1270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            const Divider(color: Colors.white24, height: 12),
+            const Divider(color: Colors.white24, height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
