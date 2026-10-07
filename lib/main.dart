@@ -99,7 +99,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sniper King',
+      title: 'ROSE CYBER BOT',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
@@ -890,27 +890,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // แก้ไขชื่อบอท บรรทัดที่ 1 พร้อมใส่กุหลาบ 🌹
                     const Text(
-                      'SNIPER KING',
+                      '🌹 R   O   S   E 🌹',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 2.0,
+                        letterSpacing: 3.0,
                         shadows: [
                           Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
                         ],
                       ),
                     ),
+                    // แก้ไขชื่อบอท บรรทัดที่ 2
                     const Text(
-                      'EA v4 PLUS',
+                      'C Y B E R   B O T',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 1.5,
+                        letterSpacing: 2.5,
                         shadows: [
                           Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
                         ],
@@ -1224,12 +1226,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // แก้ไขชื่อบอทในกล่อง Status Report
                 const Text(
-                  'SNIPER KING EA v4 PLUS',
+                  '🌹 R O S E   C Y B E R   B O T',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 18,
+                    fontSize: 16,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -1479,6 +1482,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 // ==========================================
 // #2 TYPEWRITER WIDGET FOR LATEST LOG (Fixed Duplication)
@@ -2671,7 +2675,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'SNIPER KING PARAMETERS',
+                  'PARAMETERS',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
