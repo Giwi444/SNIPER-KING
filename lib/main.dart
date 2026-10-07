@@ -878,7 +878,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         height: 250,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD50000), width: 6.5),
+                          // เอาเส้นแถบสีแดงตรงกลางกล่องรูปผู้หญิงออกแล้ว ตามสั่ง
+                          border: Border.all(color: Colors.transparent, width: 0),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.red.withOpacity(0.9),
@@ -1088,12 +1089,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+                      // เพิ่มขนาดความหนาและสีแดงเข้มขึ้นตามสั่ง (width: 4.0, สีแดงเข้มพิเศษ)
+                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.6),
-                          blurRadius: 20,
-                          spreadRadius: 3,
+                          color: Colors.red.withOpacity(0.9),
+                          blurRadius: 25,
+                          spreadRadius: 5,
                         ),
                       ],
                       color: const Color(0xFF121215),
@@ -1142,7 +1144,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFFD50000), height: 1),
+                        // เพิ่มความเข้มและหนาของเส้นคั่นในกล่อง Log ด้วย
+                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
                         
                         Expanded(
                           child: Padding(
@@ -1238,8 +1241,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: const Color(0xFF161619),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFD50000),
-          width: 2.0,
+          color: const Color(0xFFFF0000),
+          width: 2.5,
         ),
       ),
       child: Column(
