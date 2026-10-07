@@ -2342,7 +2342,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 if (value != null) {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                  if (cleanMsg.toUpperCase().contains('ORDER') || cleanMsg.toUpperCase().contains('BUY') || cleanMsg.toUpperCase().contains('SELL') || cleanMsg.toUpperCase().contains('POSITION')) {
+                  
+                  // เพิ่มเงื่อนไขตรวจสอบคำว่า PROFIT และ LOSS
+                  String upperMsg = cleanMsg.toUpperCase();
+                  if (upperMsg.contains('ORDER') || 
+                      upperMsg.contains('BUY') || 
+                      upperMsg.contains('SELL') || 
+                      upperMsg.contains('POSITION') ||
+                      upperMsg.contains('PROFIT') || 
+                      upperMsg.contains('LOSS')) {
                     tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
@@ -2355,7 +2363,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 if (data[i] != null) {
                   String rawMsg = data[i].toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                  if (cleanMsg.toUpperCase().contains('ORDER') || cleanMsg.toUpperCase().contains('BUY') || cleanMsg.toUpperCase().contains('SELL') || cleanMsg.toUpperCase().contains('POSITION')) {
+                  
+                  // เพิ่มเงื่อนไขตรวจสอบคำว่า PROFIT และ LOSS
+                  String upperMsg = cleanMsg.toUpperCase();
+                  if (upperMsg.contains('ORDER') || 
+                      upperMsg.contains('BUY') || 
+                      upperMsg.contains('SELL') || 
+                      upperMsg.contains('POSITION') ||
+                      upperMsg.contains('PROFIT') || 
+                      upperMsg.contains('LOSS')) {
                     tempList.add({
                       'key': i.toString(),
                       'message': cleanMsg,
@@ -2364,7 +2380,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 }
               }
             }
-            // กลับลำดับให้ข้อมูลล่าสุด (รายการท้ายหรือที่ถูกเพิ่มเข้ามาทีหลัง) อยู่ด้านบนสุด
+            // กลับลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุด
             alertItems = tempList.reversed.toList();
           });
         }
