@@ -99,7 +99,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ROSE CYBER BOT',
+      title: 'Sniper King',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
@@ -890,7 +890,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // แก้ไขชื่อบอท บรรทัดที่ 1 พร้อมใส่กุหลาบ 🌹
                     const Text(
                       '🌹 R   O   S   E 🌹',
                       textAlign: TextAlign.center,
@@ -904,7 +903,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    // แก้ไขชื่อบอท บรรทัดที่ 2
                     const Text(
                       'C Y B E R   B O T',
                       textAlign: TextAlign.center,
@@ -1226,7 +1224,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // แก้ไขชื่อบอทในกล่อง Status Report
                 const Text(
                   '🌹 R O S E   C Y B E R   B O T',
                   style: TextStyle(
@@ -1483,9 +1480,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-
 // ==========================================
-// #2 TYPEWRITER WIDGET FOR LATEST LOG (Fixed Duplication)
+// #2 TYPEWRITER WIDGET FOR LATEST LOG
 // ==========================================
 class _LogTypewriterText extends StatefulWidget {
   final String message;
@@ -2469,7 +2465,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #5 COMBINED SETTINGS SCREEN (Exact UI Match)
+// #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2517,6 +2513,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   DatabaseReference? _statusRef;
   DatabaseReference? _settingsRef;
 
+  // เพิ่มตัวแปรเช็คว่าผู้ใช้กำลังแก้ไขข้อมูลอยู่หรือไม่ เพื่อป้องกันข้อมูลจาก Firebase ทับระหว่างพิมพ์
+  bool _isEditing = false;
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -2549,6 +2549,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       _statusRef = database.ref('status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
+        // หากผู้ใช้กำลังพิมพ์อยู่ ไม่ให้อัปเดตค่าทับหน้าจอ
+        if (_isEditing) return;
+
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
@@ -2556,6 +2559,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
             lotMode = data['lot_mode']?.toString() ?? 'Double';
             selectedTf = data['timeframe']?.toString() ?? 'M1';
+            
             startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
             endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
 
@@ -2571,12 +2575,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+
+            _isInitialized = true;
           });
         }
       });
 
       _settingsRef = database.ref('settings');
       _settingsRef?.onValue.listen((DatabaseEvent event) {
+        if (_isEditing) return;
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
@@ -2616,6 +2623,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
       });
 
+      // บันทึกเสร็จสิ้น ปลดล็อกสถานะการแก้ไข
+      setState(() {
+        _isEditing = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
@@ -2630,6 +2642,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _updateGeneralSetting(String key, dynamic value) {
     try {
       _settingsRef?.update({key: value});
+      setState(() {
+        _isEditing = false;
+      });
     } catch (e) {
       print("Update general setting error: $e");
     }
@@ -2675,7 +2690,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'PARAMETERS',
+                  'SNIPER KING PARAMETERS',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
@@ -2710,7 +2725,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: SizedBox(
                                 height: 45,
                                 child: ElevatedButton(
-                                  onPressed: () => setState(() => selectedSymbol = sym),
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    selectedSymbol = sym;
+                                  }),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
@@ -2758,7 +2776,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: SizedBox(
                                 height: 45,
                                 child: ElevatedButton(
-                                  onPressed: () => setState(() => tradingMode = mode),
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    tradingMode = mode;
+                                  }),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.black : Colors.white70,
@@ -2797,7 +2818,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: SizedBox(
                                 height: 45,
                                 child: ElevatedButton(
-                                  onPressed: () => setState(() => lotMode = mode),
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    lotMode = mode;
+                                  }),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
@@ -2839,7 +2863,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           String tf = timeframes[index];
                           bool isSelected = selectedTf == tf;
                           return ElevatedButton(
-                            onPressed: () => setState(() => selectedTf = tf),
+                            onPressed: () => setState(() {
+                              _isEditing = true;
+                              selectedTf = tf;
+                            }),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
                               foregroundColor: isSelected ? Colors.black : Colors.white70,
@@ -2949,7 +2976,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       Switch(
                                         value: enableDailyTarget,
                                         activeColor: const Color(0xFF00C853),
-                                        onChanged: (val) => setState(() => enableDailyTarget = val),
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyTarget = val;
+                                        }),
                                       ),
                                     ],
                                   ),
@@ -2978,7 +3008,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       Switch(
                                         value: enableDailyLoss,
                                         activeColor: Colors.redAccent,
-                                        onChanged: (val) => setState(() => enableDailyLoss = val),
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyLoss = val;
+                                        }),
                                       ),
                                     ],
                                   ),
@@ -3031,6 +3064,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         controller: _lotController,
                         style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (val) => setState(() => _isEditing = true),
                         decoration: const InputDecoration(
                           labelText: 'Default Lot Size',
                           labelStyle: TextStyle(color: Colors.grey),
@@ -3044,6 +3078,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         controller: _spreadController,
                         style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
                         keyboardType: TextInputType.number,
+                        onChanged: (val) => setState(() => _isEditing = true),
                         decoration: const InputDecoration(
                           labelText: 'Max Spread Filter',
                           labelStyle: TextStyle(color: Colors.grey),
@@ -3073,7 +3108,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: enableNotifications,
                         activeColor: const Color(0xFFFFB300),
                         onChanged: (val) {
-                          setState(() => enableNotifications = val);
+                          setState(() {
+                            _isEditing = true;
+                            enableNotifications = val;
+                          });
                           _updateGeneralSetting('notifications', val);
                         },
                       ),
@@ -3082,7 +3120,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: useSoundAlerts,
                         activeColor: const Color(0xFFFFB300),
                         onChanged: (val) {
-                          setState(() => useSoundAlerts = val);
+                          setState(() {
+                            _isEditing = true;
+                            useSoundAlerts = val;
+                          });
                           _updateGeneralSetting('sound_alerts', val);
                         },
                       ),
@@ -3128,7 +3169,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             keyboardType: keyboardType,
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {}),
+            onChanged: (val) => setState(() {
+              _isEditing = true;
+            }),
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
