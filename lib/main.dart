@@ -482,7 +482,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN (Updated: Removed Home Log Box)
+// #1 HOME SCREEN (Updated: Combined Status Box into Logs Modal & Removed from Home)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -864,12 +864,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // กล่องรายงานสถานะ EA (ตามรูปแบบรูปที่ 2)
-                    _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-
-                    const SizedBox(height: 120),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -939,7 +934,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
 
-          // ป็อปอัพแสดง Logs เมื่อกดปุ่ม LOGS
+          // ป็อปอัพรวมกล่องรายงานสถานะ EA และ BOT ACTIVITY LOGS ไว้ด้วยกัน
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -953,8 +948,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.92,
-                    height: MediaQuery.of(context).size.height * 0.65,
+                    width: MediaQuery.of(context).size.width * 0.94,
+                    height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFD50000), width: 2.5),
@@ -970,6 +965,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header ของป็อปอัพ
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           child: Row(
@@ -980,7 +976,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   Icon(Icons.terminal, color: Color(0xFFFFB300), size: 20),
                                   SizedBox(width: 8),
                                   Text(
-                                    'BOT ACTIVITY LOGS',
+                                    'EA STATUS & BOT LOGS',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w900,
@@ -1002,13 +998,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const Divider(color: Color(0xFFD50000), height: 1),
+                        
+                        // เนื้อหาภายในป็อปอัพ (รวมกล่องสถานะ EA และรายการ Logs ไว้ข้างใน)
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(12.0),
                             child: SingleChildScrollView(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // กล่องรายงานสถานะ EA (กล่องรูปที่ 1)
+                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                  const SizedBox(height: 16),
+                                  
+                                  // ส่วนหัวข้อ Logs
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'ACTIVITY LOGS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // รายการ Logs แบบพิมพ์ดีดเดิม (กล่องรูปที่ 2)
                                   ..._botLogs.map((log) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
                                     child: Text(
@@ -1016,7 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontFamily: 'monospace',
-                                        fontSize: 13,
+                                        fontSize: 12,
                                         height: 1.4,
                                       ),
                                     ),
@@ -1037,7 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // กล่องแสดงรายงานสถานะ EA
+  // กล่องแสดงรายงานสถานะ EA (นำมาใช้ร่วมในป็อปอัพ)
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1048,15 +1069,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 2.5,
+          width: 2.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.6),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,17 +1079,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Image.asset(
               'assets/images/ppp.jpg',
-              height: 160,
+              height: 130,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
-                height: 160,
+                height: 130,
                 color: Colors.black,
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(14.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1084,16 +1098,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 22,
+                    fontSize: 18,
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
                         color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
                         shape: BoxShape.circle,
@@ -1110,15 +1124,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
                       style: TextStyle(
                         color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                const Divider(color: Colors.white24, height: 12),
+                const SizedBox(height: 10),
+                const Divider(color: Colors.white24, height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1128,7 +1142,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1330,6 +1344,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 
 // ==========================================
