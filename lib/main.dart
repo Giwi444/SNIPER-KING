@@ -878,7 +878,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         height: 250,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          // เอาขอบเส้นแถบสีแดงออก เหลือเฉพาะเงาเรืองแสงรอบนอกกล่องรูปผู้หญิง
                           border: Border.all(color: Colors.transparent, width: 0),
                           boxShadow: [
                             BoxShadow(
@@ -898,34 +897,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Colors.black);
-                                },
-                              ),
-                              AnimatedBuilder(
-                                animation: _scannerAnimation,
-                                builder: (context, child) {
-                                  return Positioned(
-                                    top: _scannerAnimation.value * (250 - 10),
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFF1744),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.redAccent,
-                                            blurRadius: 10,
-                                            spreadRadius: 3,
-                                          ),
-                                          BoxShadow(
-                                            color: Colors.white,
-                                            blurRadius: 3,
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
                                 },
                               ),
                             ],
@@ -1089,7 +1060,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      // กล่อง Log (EA STATUS & BOT LOGS) คงความหนาและความเข้มสีแดงตามข้อ 2 ไว้สมบูรณ์
                       border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
                       boxShadow: [
                         BoxShadow(
