@@ -2343,14 +2343,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   
-                  // เพิ่มเงื่อนไขตรวจสอบคำว่า PROFIT และ LOSS
+                  // ครอบคลุมทุกเงื่อนไขการเปิด-ปิดออเดอร์และแจ้งเตือนทั้งหมด
                   String upperMsg = cleanMsg.toUpperCase();
                   if (upperMsg.contains('ORDER') || 
                       upperMsg.contains('BUY') || 
                       upperMsg.contains('SELL') || 
                       upperMsg.contains('POSITION') ||
                       upperMsg.contains('PROFIT') || 
-                      upperMsg.contains('LOSS')) {
+                      upperMsg.contains('LOSS') ||
+                      upperMsg.contains('OPEN') ||
+                      upperMsg.contains('CLOSE') ||
+                      upperMsg.contains('TP') ||
+                      upperMsg.contains('SL')) {
                     tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
@@ -2364,14 +2368,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String rawMsg = data[i].toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   
-                  // เพิ่มเงื่อนไขตรวจสอบคำว่า PROFIT และ LOSS
                   String upperMsg = cleanMsg.toUpperCase();
                   if (upperMsg.contains('ORDER') || 
                       upperMsg.contains('BUY') || 
                       upperMsg.contains('SELL') || 
                       upperMsg.contains('POSITION') ||
                       upperMsg.contains('PROFIT') || 
-                      upperMsg.contains('LOSS')) {
+                      upperMsg.contains('LOSS') ||
+                      upperMsg.contains('OPEN') ||
+                      upperMsg.contains('CLOSE') ||
+                      upperMsg.contains('TP') ||
+                      upperMsg.contains('SL')) {
                     tempList.add({
                       'key': i.toString(),
                       'message': cleanMsg,
@@ -2380,8 +2387,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 }
               }
             }
-            // กลับลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุด
-            alertItems = tempList.reversed.toList();
+            
+            // เรียงลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุดอย่างแม่นยำ (ใช้การเรียง Key จากมากไปน้อย หรือตามเวลา)
+            tempList.sort((a, b) => b['key'].compareTo(a['key']));
+            alertItems = tempList;
           });
         }
       });
@@ -2481,6 +2490,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 
 // ==========================================
