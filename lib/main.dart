@@ -1209,7 +1209,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Container(
-              height: 450,
+              height: 350,
               width: double.infinity,
               color: Colors.black,
               child: Image.asset(
