@@ -1155,7 +1155,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     style: const TextStyle(
                                                       color: Colors.white70,
                                                       fontFamily: 'monospace',
-                                                      fontSize: 16, // ปรับฟอนต์ข้อความLogเป็นขนาด 16
+                                                      fontSize: 16,
                                                       height: 1.4,
                                                     ),
                                                   ),
@@ -1515,7 +1515,7 @@ class _TypewriterTextState extends State<_TypewriterText> {
   void _startTypewriter() {
     Future.doWhile(() async {
       if (!mounted) return false;
-      await Future.delayed(const Duration(milliseconds: 25)); // ความเร็วในการพิมพ์ตัวอักษร
+      await Future.delayed(const Duration(milliseconds: 25));
       if (!mounted) return false;
 
       setState(() {
@@ -1536,13 +1536,12 @@ class _TypewriterTextState extends State<_TypewriterText> {
       style: const TextStyle(
         color: Colors.white70,
         fontFamily: 'monospace',
-        fontSize: 16, // ขนาดฟอนต์ 16
+        fontSize: 16,
         height: 1.4,
       ),
     );
   }
 }
-
 
 // ==========================================
 // #2 ORDERS SCREEN
