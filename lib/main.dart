@@ -533,6 +533,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _displayedTypewriterText = "";
   Timer? _typewriterTimer;
 
+  // เพิ่ม Controller สำหรับควบคุมการเลื่อนของ Terminal
+  final ScrollController _terminalScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -549,19 +552,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _bounceController.dispose();
     _typewriterTimer?.cancel();
+    _terminalScrollController.dispose();
     super.dispose();
   }
 
+  // ปรับฟังก์ชันพิมพ์ดีดให้สั่งเลื่อน Scroll ลงล่างสุดทุกครั้งที่มีตัวอักษรพิมพ์เพิ่ม
   void _startTypewriterEffect(String fullText) {
     _typewriterTimer?.cancel();
     int charIndex = 0;
     _displayedTypewriterText = "";
-    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 35), (timer) {
+    
+    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
       if (charIndex < fullText.length) {
         if (mounted) {
           setState(() {
-            _displayedTypewriterText += fullText[charIndex];
+            _displayedTypewriterText = fullText.substring(0, charIndex + 1);
           });
+          // สั่งเลื่อนลงล่างสุดอัตโนมัติเมื่อพิมพ์ข้อความใหม่
+          if (_terminalScrollController.hasClients) {
+            _terminalScrollController.jumpTo(_terminalScrollController.position.maxScrollExtent);
+          }
         }
         charIndex++;
       } else {
@@ -815,7 +825,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const Text(
-                      'EA v6+',
+                      'EA v4 PLUS+',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 26,
@@ -827,35 +837,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: isConnected && isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isConnected && isRunning ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                                blurRadius: 6,
-                              )
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isConnected && isRunning ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
-                          style: TextStyle(
-                            color: isConnected && isRunning ? const Color(0xFF00C853) : Colors.redAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
+                const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                        color: Colors.black.withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                        ],
+                      ),
+                      child: const Text(
+                        'Powered By Algohost',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -1228,18 +1224,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161619).withOpacity(0.98),
+        color: const Color(0xFF161619),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD50000),
-          width: 3.0,
-        ),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A0000), Color(0xFF101014), Color(0xFF5A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          width: 2.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -1250,99 +1240,114 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/ppp.jpg',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'SNIPER KING EA v6+',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+          // 1. ส่วนรูปภาพแบนเนอร์ด้านบนสุด (เต็มความกว้างกล่อง)
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Image.asset(
+              'assets/images/ppp.jpg',
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 180,
+                color: Colors.black,
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
-                style: TextStyle(
-                  color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 65),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
             ),
+          ),
+          
+          // 2. ส่วนเนื้อหาภายในกล่อง (ชื่อ, สถานะ, และหน้าต่าง Terminal)
+          Padding(
+            padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _displayedTypewriterText,
-                  style: const TextStyle(
+                // ชื่อบอทตัวใหญ่หนา
+                const Text(
+                  'SNIPER KING EA v4 PLUS',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: 1.2,
                   ),
                 ),
+                const SizedBox(height: 8),
+                
+                // สถานะ Server Connected
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                        color: Colors.black.withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                        ],
+                      ),
+                      child: const Text(
+                        'Powered By Algohost',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                    ),
+                const SizedBox(height: 14),
+                
+                // กล่อง Terminal สีดำด้านล่างสุด (พร้อมระบบเลื่อนอัตโนมัติ, ตัวหนังสือสีขาว ขนาด 16)
+                Container(
+                  width: double.infinity,
+                  height: 90,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
+                  ),
+                  child: SingleChildScrollView(
+                    controller: _terminalScrollController,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        _displayedTypewriterText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'monospace',
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 const Divider(color: Colors.white24, height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
                     Text(
                       'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                       style: TextStyle(
                         color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1405,6 +1410,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 
 // ==========================================
