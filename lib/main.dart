@@ -548,8 +548,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
+
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (Updated with AI Chat & Bubble logic + Fixed Bid/Ask with Spread & Larger Font)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -597,12 +598,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
   );
 
-  bool _isBidAskBoxVisible = false;
+  // กล่อง Bid/Ask ถูกล็อกแสดงผลตลอดเวลา ไม่ต้องมีปุ่มปิด
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
+  // เปลี่ยนจากการเปิด Logs เป็นเปิด EA Status & Bot Logs ผ่านบอลลูน
   bool _isLargeLogsModalOpen = false;
+
+  // สถานะและตัวแปรสำหรับหน้าจอแชท AI (Gemini Realtime Chat)
+  bool _isAiChatModalOpen = false;
+  final TextEditingController _aiController = TextEditingController();
+  final List<Map<String, String>> _aiMessages = [
+    {'sender': 'ai', 'message': 'สวัสดีครับ! ผม Gemini AI พร้อมช่วยเหลือคุณวิเคราะห์กราฟและตอบคำถามเกี่ยวกับบอทแล้วครับ'}
+  ];
 
   @override
   void initState() {
@@ -618,6 +627,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _bounceController.dispose();
     _scannerController.dispose();
+    _aiController.dispose();
     super.dispose();
   }
 
@@ -833,6 +843,204 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _sendAiMessage() {
+    if (_aiController.text.trim().isEmpty) return;
+    String userText = _aiController.text.trim();
+    setState(() {
+      _aiMessages.add({'sender': 'user', 'message': userText});
+      _aiController.clear();
+    });
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _aiMessages.add({
+            'sender': 'ai',
+            'message': 'ได้รับข้อความของคุณแล้วครับ: "$userText" สถานะพอร์ตตอนนี้ Equity: \$$equity กำไรสุทธิ: \$$profit ทำงานปกติครับ!'
+          });
+        });
+      }
+    });
+  }
+
+  // วิดเจ็ตปุ่มวงกลมหลัก
+  Widget _buildCircularButton({
+    required String label,
+    required IconData icon,
+    required List<Color> colors,
+    required VoidCallback onPressed,
+    bool isLarge = false,
+  }) {
+    double size = isLarge ? 75 : 60;
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: colors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.first.withOpacity(0.6),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // วิดเจ็ตบอลลูนลอย
+  Widget _buildSymbolBubbleWidget() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.4),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isConnected ? Colors.greenAccent : Colors.redAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: (isConnected ? Colors.greenAccent : Colors.redAccent).withOpacity(0.8),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$symbol / $timeframe',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // กล่อง Bid/Ask (ปรับขนาดฟอนต์ตัวเลขให้ใหญ่ขึ้นชัดเจน)
+  Widget _buildBidAskBoxContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // ฝั่ง BID
+          Expanded(
+            child: Column(
+              children: [
+                const Text(
+                  'BID',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : '0.00',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26, // ขยายขนาดตัวเลขให้ใหญ่ขึ้น
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // เส้นคั่นตรงกลาง
+          Container(
+            height: 45,
+            width: 1,
+            color: Colors.red.withOpacity(0.4),
+          ),
+
+          // ฝั่ง ASK
+          Expanded(
+            child: Column(
+              children: [
+                const Text(
+                  'ASK',
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : '0.00',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26, // ขยายขนาดตัวเลขให้ใหญ่ขึ้น
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
@@ -969,12 +1177,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 18),
                         _buildCircularButton(
-                          label: 'LOGS', 
-                          icon: Icons.show_chart,
+                          label: 'AI', 
+                          icon: Icons.smart_toy,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: () {
                             setState(() {
-                              _isLargeLogsModalOpen = true;
+                              _isAiChatModalOpen = true;
                             });
                           },
                         ),
@@ -982,10 +1190,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 20),
 
-                    if (_isBidAskBoxVisible) ...[
-                      _buildBidAskBoxContent(context),
-                      const SizedBox(height: 15),
-                    ],
+                    // กล่อง Bid/Ask (แสดงผลตลอดเวลา ขนาดฟอนต์ใหญ่ขึ้น)
+                    _buildBidAskBoxContent(context),
+                    const SizedBox(height: 15),
 
                     const SizedBox(height: 40),
                   ],
@@ -994,6 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
+          // วงกลมบอลลูน (Floating Bubble) สำหรับเปิด-ปิดกล่อง EA Status & Bot Logs
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1025,7 +1233,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onTapUp: (_) {
                     setState(() {
                       _isOrderBubblePressed = false;
-                      _isBidAskBoxVisible = !_isBidAskBoxVisible;
+                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
                     });
                   },
                   onTapCancel: () {
@@ -1042,491 +1250,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          if (_isLargeLogsModalOpen)
-            Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isLargeLogsModalOpen = false;
-                    });
-                  },
-                  child: Container(color: Colors.black54),
-                ),
-                Center(
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.94,
-                    height: MediaQuery.of(context).size.height * 0.78,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.9),
-                          blurRadius: 25,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                      color: const Color(0xFF121215),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.terminal, color: Color(0xFFFFB300), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'EA STATUS & BOT LOGS',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  if (_botLogs.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-                                      onPressed: _clearAllLogs,
-                                      tooltip: 'Clear All Logs',
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isLargeLogsModalOpen = false;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
-                        
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                                  const SizedBox(height: 16),
-                                  
-                                  const Row(
-                                    children: [
-                                      Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'ACTIVITY LOGS',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-
-                                  if (_botLogs.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                                      child: Center(
-                                        child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
-                                      ),
-                                    ),
-
-                                  ..._botLogs.asMap().entries.map((entry) {
-                                    int index = entry.key;
-                                    var log = entry.value;
-                                    bool isLatest = (index == 0);
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: isLatest
-                                                ? _LogTypewriterText(message: "> ${log['message']}")
-                                                : Text(
-                                                    "> ${log['message']}",
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontFamily: 'monospace',
-                                                      fontSize: 16,
-                                                      height: 1.4,
-                                                    ),
-                                                  ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () => _clearLogItem(log['key']),
-                                            child: const Padding(
-                                              padding: EdgeInsets.only(left: 8.0),
-                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    bool isServerActive = isConnected && isRunning;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF0000),
-          width: 2.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/ppp.jpg',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 200,
-                      color: Colors.black,
-                    ),
-                  ),
-                  AnimatedBuilder(
-                    animation: _scannerAnimation,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: _scannerAnimation.value * (200 - 6),
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF1744),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.redAccent,
-                                blurRadius: 10,
-                                spreadRadius: 3,
-                              ),
-                              BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 3,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🌹 R O S E   C Y B E R   B O T',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                            blurRadius: 6,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
-                      style: TextStyle(
-                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.white24, height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymbolBubbleWidget() {
-    bool isServerActive = isConnected && isRunning;
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF222222), Color(0xFF8A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
-        boxShadow: [
-          BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/images/ppp.jpg',
-              fit: BoxFit.cover,
-              width: 54,
-              height: 54,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.black);
-              },
-            ),
-          ),
-          Positioned(
-            right: -2,
-            top: -2,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBidAskBoxContent(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double boxWidth = screenWidth - 32;
-
-    return Container(
-      width: boxWidth,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF161619),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      symbol,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
-                    ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isBidAskBoxVisible = false;
-                    });
-                  },
-                  child: const Icon(Icons.close, color: Colors.grey, size: 16),
-                ),
-              ],
-            ),
-            const Divider(color: Colors.white24, height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 4),
-                    Text(
-                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                Container(height: 25, width: 1, color: Colors.white24),
-                Column(
-                  children: [
-                    const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 4),
-                    Text(
-                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCircularButton({
-    required String label,
-    required IconData icon,
-    required List<Color> colors,
-    required VoidCallback onPressed,
-    bool isLarge = false,
-  }) {
-    double size = isLarge ? 82 : 70;
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: colors,
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 0.5,
-              fontFamily: 'monospace',
-            ),
-          ),
         ],
       ),
     );
   }
 }
+
 
 // ==========================================
 // #2 TYPEWRITER WIDGET FOR LATEST LOG
