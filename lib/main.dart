@@ -73,6 +73,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Future<void> _checkPinExists() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final pin = prefs.getString('user_pin');
     setState(() {
       hasStoredPin = pin != null && pin.isNotEmpty;
@@ -82,11 +83,13 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Future<void> _saveNewPin(String pin) async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     await prefs.setString('user_pin', pin);
   }
 
   Future<void> _verifyPin(String pin) async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final storedPin = prefs.getString('user_pin');
     if (storedPin == pin) {
       setState(() {
@@ -478,9 +481,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-
 // ==========================================
-// #1 HOME SCREEN (RED-BLACK STYLE)
+// #1 HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -519,21 +521,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
   );
 
-  bool _isReportBoxVisible = true;
+  final bool _isReportBoxVisible = true;
 
   bool _isBidAskBoxVisible = false;
-  Offset _bidAskBoxOffset = const Offset(80, 160);
+  final Offset _bidAskBoxOffset = const Offset(80, 160);
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
   bool _isLargeLogsModalOpen = false;
 
-  String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
+  final String latestSignalText = "> NEW SIGNAL: XAUUSD SELL\n> WAITING FOR POSITION...";
   String _displayedTypewriterText = "";
   Timer? _typewriterTimer;
 
-  // เพิ่ม Controller สำหรับควบคุมการเลื่อนของ Terminal
   final ScrollController _terminalScrollController = ScrollController();
 
   @override
@@ -556,7 +557,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ปรับฟังก์ชันพิมพ์ดีดให้สั่งเลื่อน Scroll ลงล่างสุดทุกครั้งที่มีตัวอักษรพิมพ์เพิ่ม
   void _startTypewriterEffect(String fullText) {
     _typewriterTimer?.cancel();
     int charIndex = 0;
@@ -568,7 +568,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           setState(() {
             _displayedTypewriterText = fullText.substring(0, charIndex + 1);
           });
-          // สั่งเลื่อนลงล่างสุดอัตโนมัติเมื่อพิมพ์ข้อความใหม่
           if (_terminalScrollController.hasClients) {
             _terminalScrollController.jumpTo(_terminalScrollController.position.maxScrollExtent);
           }
@@ -677,8 +676,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             
             if (_botLogs.isNotEmpty) {
               String lastLog = _botLogs.last;
-              latestSignalText = "> $lastLog";
-              _startTypewriterEffect(latestSignalText);
+              _startTypewriterEffect("> $lastLog");
             }
           });
         }
@@ -837,7 +835,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                const SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
@@ -888,6 +886,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     
+                    // 1. เพิ่มกล่อง Log ขนาดเล็กแยกต่างหาก วางตำแหน่งเหนือการ์ดรายงาน ตัวหนังสือพิมพ์ดีด
+                    _buildSmallLogBox(),
+                    const SizedBox(height: 16),
+
                     if (_isReportBoxVisible)
                       _buildFixedOrderReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
 
@@ -957,18 +959,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: _buildBidAskBoxContent(),
                 ),
                 childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _bidAskBoxOffset = details.offset;
-                  });
-                },
                 child: _buildBidAskBoxContent(),
               ),
             ),
 
-          // ==========================================
-          // 2. เลเยอร์ Modal สำหรับแสดง BOT ACTIVITY LOGS
-          // ==========================================
+          // 2. กล่อง Log ใหญ่ (อิงกับวงกลม LOGS เมื่อกดจะแสดงเป็นป๊อปอัพ เลื่อนดูย้อนหลังและกดปิดได้)
           if (_isLargeLogsModalOpen)
             Container(
               color: Colors.black54,
@@ -1076,6 +1071,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  // วิดเจ็ตกล่อง Log เล็กแยกต่างหาก (ตัวหนังสือเลื่อนแบบพิมพ์ดีด)
+  Widget _buildSmallLogBox() {
+    return Container(
+      width: double.infinity,
+      height: 70,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        controller: _terminalScrollController,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Text(
+            _displayedTypewriterText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontFamily: 'monospace',
+              height: 1.3,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1242,7 +1273,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. ส่วนรูปภาพแบนเนอร์ด้านบนสุด (เต็มความกว้างกล่อง)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Image.asset(
@@ -1256,14 +1286,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
-            // 2. ส่วนเนื้อหาภายในกล่อง (ชื่อ, สถานะ, และหน้าต่าง Terminal)
           Padding(
             padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ชื่อบอทตัวใหญ่หนา
                 const Text(
                   'SNIPER KING EA v4 PLUS',
                   style: TextStyle(
@@ -1274,8 +1301,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
-                // สถานะ Server Connected
                 Row(
                   children: [
                     Container(
@@ -1305,34 +1330,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
                 const SizedBox(height: 14),
-                
-                // กล่อง Terminal สีดำด้านล่างสุด (พร้อมระบบเลื่อนอัตโนมัติ, ตัวหนังสือสีขาว ขนาด 16)
-                Container(
-                  width: double.infinity,
-                  height: 90,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFD50000).withOpacity(0.4), width: 1),
-                  ),
-                  child: SingleChildScrollView(
-                    controller: _terminalScrollController,
-                    child: Align(
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                        _displayedTypewriterText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'monospace',
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
                 const Divider(color: Colors.white24, height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1406,7 +1403,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
-
 
 // ==========================================
 // #2 ORDERS SCREEN
