@@ -548,7 +548,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-
 // ==========================================
 // #1 HOME SCREEN
 // ==========================================
@@ -589,7 +588,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
   );
 
-  // Controller สำหรับเส้นเรดาร์สแกนสีแดงเรืองแสง (เลื่อนขึ้น-ลง)
   late final AnimationController _scannerController = AnimationController(
     duration: const Duration(seconds: 2),
     vsync: this,
@@ -901,7 +899,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   return Container(color: Colors.black);
                                 },
                               ),
-                              // เส้นเลเซอร์เรดาร์สแกนสีแดงเรืองแสง (หน้าหลัก)
                               AnimatedBuilder(
                                 animation: _scannerAnimation,
                                 builder: (context, child) {
@@ -1266,7 +1263,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: Colors.black,
                     ),
                   ),
-                  // เส้นเลเซอร์เรดาร์สแกนสีแดงเรืองแสง (ในกล่อง Logs Modal ตามรูปตัวอย่าง)[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)
                   AnimatedBuilder(
                     animation: _scannerAnimation,
                     builder: (context, child) {
@@ -1555,30 +1551,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LogTypewriterText extends StatefulWidget {
-  final String message;
-  const _LogTypewriterText({required this.message});
-
-  @override
-  State<_LogTypewriterText> createState() => _LogTypewriterTextState();
-}
-
-class _LogTypewriterTextState extends State<_LogTypewriterText> {
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      widget.message,
-      style: const TextStyle(
-        color: Colors.white,
-        fontFamily: 'monospace',
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        height: 1.4,
       ),
     );
   }
@@ -2447,7 +2419,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   
-                  // ครอบคลุมทุกเงื่อนไขการเปิด-ปิดออเดอร์และแจ้งเตือนทั้งหมด
                   String upperMsg = cleanMsg.toUpperCase();
                   if (upperMsg.contains('ORDER') || 
                       upperMsg.contains('BUY') || 
@@ -2492,7 +2463,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
               }
             }
             
-            // เรียงลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุดอย่างแม่นยำ (ใช้การเรียง Key จากมากไปน้อย หรือตามเวลา)
             tempList.sort((a, b) => b['key'].compareTo(a['key']));
             alertItems = tempList;
           });
@@ -2595,8 +2565,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-
-
 // ==========================================
 // #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
 // ==========================================
@@ -2646,7 +2614,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   DatabaseReference? _statusRef;
   DatabaseReference? _settingsRef;
 
-  // เพิ่มตัวแปรเช็คว่าผู้ใช้กำลังแก้ไขข้อมูลอยู่หรือไม่ เพื่อป้องกันข้อมูลจาก Firebase ทับระหว่างพิมพ์
   bool _isEditing = false;
   bool _isInitialized = false;
 
@@ -2682,7 +2649,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       _statusRef = database.ref('status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
-        // หากผู้ใช้กำลังพิมพ์อยู่ ไม่ให้อัปเดตค่าทับหน้าจอ
         if (_isEditing) return;
 
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2756,7 +2722,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
       });
 
-      // บันทึกเสร็จสิ้น ปลดล็อกสถานะการแก้ไข
       setState(() {
         _isEditing = false;
       });
@@ -2979,7 +2944,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      
                       const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       GridView.builder(
@@ -3264,7 +3228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ListTile(
                         leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
                         title: const Text('Reset PIN Code', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                        onTap: _resetPinCode,
+                        onTap: _resetPINCodeHelper,
                       ),
                     ],
                   ),
@@ -3300,19 +3264,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {
-              _isEditing = true;
-            }),
+            textAlign: TextAlign.start,
+            style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 13),
+            onChanged: (val) {
+              setState(() {
+                _isEditing = true;
+              });
+            },
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _resetPINCodeHelper() async {
+    await _resetPinCode();
   }
 }
