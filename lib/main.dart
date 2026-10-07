@@ -1257,7 +1257,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // 2. ส่วนเนื้อหาภายในกล่อง (ชื่อ, สถานะ, และหน้าต่าง Terminal)
+            // 2. ส่วนเนื้อหาภายในกล่อง (ชื่อ, สถานะ, และหน้าต่าง Terminal)
           Padding(
             padding: const EdgeInsets.all(14.0),
             child: Column(
@@ -1292,22 +1292,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                        color: Colors.black.withOpacity(0.6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                        ],
-                      ),
-                      child: const Text(
-                        'Powered By Algohost',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    const SizedBox(width: 8),
+                    Text(
+                      isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
                     ),
+                  ],
+                ),
                 const SizedBox(height: 14),
                 
                 // กล่อง Terminal สีดำด้านล่างสุด (พร้อมระบบเลื่อนอัตโนมัติ, ตัวหนังสือสีขาว ขนาด 16)
@@ -1410,7 +1406,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
-
 
 
 // ==========================================
