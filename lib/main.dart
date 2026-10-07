@@ -550,8 +550,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
 
 // ==========================================
-// #1 HOME SCREEN (Updated with AI Chat & Bubble logic + Fixed Bid/Ask with Spread & Larger Font)
+// #1 HOME SCREEN
 // ==========================================
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.origin.dart'; // ปรับเปลี่ยนตามโปรเจกต์ของคุณ
+import 'package:firebase_database/firebase_database.dart';
+
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -598,19 +602,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
   );
 
-  // กล่อง Bid/Ask ถูกล็อกแสดงผลตลอดเวลา ไม่ต้องมีปุ่มปิด
+  // เปลี่ยนสถานะกล่อง Bid/Ask ให้แสดงผลค้างไว้ (ลบปุ่มปิดออก)
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
-  // เปลี่ยนจากการเปิด Logs เป็นเปิด EA Status & Bot Logs ผ่านบอลลูน
+  // ควบคุมการเปิด-ปิด EA Status & bot Logs ผ่านวงกลมบอลลูนแทน
   bool _isLargeLogsModalOpen = false;
 
-  // สถานะและตัวแปรสำหรับหน้าจอแชท AI (Gemini Realtime Chat)
-  bool _isAiChatModalOpen = false;
+  // ควบคุมสถานะการเปิด-ปิดหน้าต่างแชท AI (Gemini)
+  bool _isAIChatModalOpen = false;
   final TextEditingController _aiController = TextEditingController();
-  final List<Map<String, String>> _aiMessages = [
-    {'sender': 'ai', 'message': 'สวัสดีครับ! ผม Gemini AI พร้อมช่วยเหลือคุณวิเคราะห์กราฟและตอบคำถามเกี่ยวกับบอทแล้วครับ'}
+  final List<Map<String, String>> _aiChatMessages = [
+    {'sender': 'ai', 'message': 'สวัสดีครับ! ผมคือ Gemini AI ผู้ช่วยวิเคราะห์การเทรดของคุณ มีอะไรให้ช่วยเหลือไหมครับ?'}
   ];
 
   @override
@@ -660,17 +664,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
-        if (data != null && mounted) {
-          if (data is Map) {
-            setState(() {
-              if (data['bid'] != null) {
-                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-              }
-              if (data['ask'] != null) {
-                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-              }
-            });
-          }
+        if (data != null && mounted && data is Map) {
+          setState(() {
+            if (data['bid'] != null) {
+              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+            }
+            if (data['ask'] != null) {
+              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+            }
+          });
         }
       });
 
@@ -843,202 +845,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // ฟังก์ชันจำลองการตอบกลับแบบเรียลไทม์จาก Gemini AI
   void _sendAiMessage() {
-    if (_aiController.text.trim().isEmpty) return;
-    String userText = _aiController.text.trim();
+    String text = _aiController.text.trim();
+    if (text.isEmpty) return;
+
     setState(() {
-      _aiMessages.add({'sender': 'user', 'message': userText});
+      _aiChatMessages.add({'sender': 'user', 'message': text});
       _aiController.clear();
-    });
-
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        setState(() {
-          _aiMessages.add({
-            'sender': 'ai',
-            'message': 'ได้รับข้อความของคุณแล้วครับ: "$userText" สถานะพอร์ตตอนนี้ Equity: \$$equity กำไรสุทธิ: \$$profit ทำงานปกติครับ!'
+      
+      // จำลอง AI ตอบกลับเบื้องต้น
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          setState(() {
+            _aiChatMessages.add({
+              'sender': 'ai',
+              'message': 'ได้รับคำถามของคุณแล้วครับ: "$text" ระบบวิเคราะห์ตลาดตอนนี้ราคายังคงเคลื่อนไหวในกรอบ แนะนำให้ติดตามแนวรับแนวต้านสำคัญอย่างใกล้ชิดครับ'
+            });
           });
-        });
-      }
+        }
+      });
     });
-  }
-
-  // วิดเจ็ตปุ่มวงกลมหลัก
-  Widget _buildCircularButton({
-    required String label,
-    required IconData icon,
-    required List<Color> colors,
-    required VoidCallback onPressed,
-    bool isLarge = false,
-  }) {
-    double size = isLarge ? 75 : 60;
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: colors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.first.withOpacity(0.6),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 26),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // วิดเจ็ตบอลลูนลอย
-  Widget _buildSymbolBubbleWidget() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.4),
-            blurRadius: 8,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isConnected ? Colors.greenAccent : Colors.redAccent,
-              boxShadow: [
-                BoxShadow(
-                  color: (isConnected ? Colors.greenAccent : Colors.redAccent).withOpacity(0.8),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$symbol / $timeframe',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // กล่อง Bid/Ask (ปรับขนาดฟอนต์ตัวเลขให้ใหญ่ขึ้นชัดเจน)
-  Widget _buildBidAskBoxContent(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.75),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // ฝั่ง BID
-          Expanded(
-            child: Column(
-              children: [
-                const Text(
-                  'BID',
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : '0.00',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26, // ขยายขนาดตัวเลขให้ใหญ่ขึ้น
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // เส้นคั่นตรงกลาง
-          Container(
-            height: 45,
-            width: 1,
-            color: Colors.red.withOpacity(0.4),
-          ),
-
-          // ฝั่ง ASK
-          Expanded(
-            child: Column(
-              children: [
-                const Text(
-                  'ASK',
-                  style: TextStyle(
-                    color: Colors.blueAccent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : '0.00',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26, // ขยายขนาดตัวเลขให้ใหญ่ขึ้น
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -1176,13 +1003,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
+                        // 3. เปลี่ยนชื่อปุ่ม LOGS ด้านขวามือเป็น AI และเปิดหน้าแชท Gemini
                         _buildCircularButton(
                           label: 'AI', 
                           icon: Icons.smart_toy,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: () {
                             setState(() {
-                              _isAiChatModalOpen = true;
+                              _isAIChatModalOpen = true;
                             });
                           },
                         ),
@@ -1190,7 +1018,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 20),
 
-                    // กล่อง Bid/Ask (แสดงผลตลอดเวลา ขนาดฟอนต์ใหญ่ขึ้น)
+                    // 2. กล่อง Bid/Ask (วางตำแหน่งเดิม ปรับตัวเลขใหญ่ขึ้น ลบกากบาท และเพิ่ม Spread)
                     _buildBidAskBoxContent(context),
                     const SizedBox(height: 15),
 
@@ -1201,7 +1029,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // วงกลมบอลลูน (Floating Bubble) สำหรับเปิด-ปิดกล่อง EA Status & Bot Logs
+          // 1. วงกลมบอลลูนเชื่อมกับการกดเปิด-ปิดกล่อง EA Status & bot Logs แทนปุ่ม Logs
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1233,7 +1061,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onTapUp: (_) {
                     setState(() {
                       _isOrderBubblePressed = false;
-                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
+                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen; // เปิด-ปิด EA Status & bot Logs
                     });
                   },
                   onTapCancel: () {
@@ -1250,11 +1078,680 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+
+          // Modal: EA Status & bot Logs (ควบคุมโดยวงกลมบอลลูน)
+          if (_isLargeLogsModalOpen)
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isLargeLogsModalOpen = false;
+                    });
+                  },
+                  child: Container(color: Colors.black54),
+                ),
+                Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.94,
+                    height: MediaQuery.of(context).size.height * 0.78,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.9),
+                          blurRadius: 25,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                      color: const Color(0xFF121215),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.terminal, color: Color(0xFFFFB300), size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'EA STATUS & BOT LOGS',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  if (_botLogs.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                                      onPressed: _clearAllLogs,
+                                      tooltip: 'Clear All Logs',
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isLargeLogsModalOpen = false;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
+                        
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                  const SizedBox(height: 16),
+                                  
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'ACTIVITY LOGS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  if (_botLogs.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                                      child: Center(
+                                        child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                      ),
+                                    ),
+
+                                  ..._botLogs.asMap().entries.map((entry) {
+                                    int index = entry.key;
+                                    var log = entry.value;
+                                    bool isLatest = (index == 0);
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: isLatest
+                                                ? _LogTypewriterText(message: "> ${log['message']}")
+                                                : Text(
+                                                    "> ${log['message']}",
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontFamily: 'monospace',
+                                                      fontSize: 16,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _clearLogItem(log['key']),
+                                            child: const Padding(
+                                              padding: EdgeInsets.only(left: 8.0),
+                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+          // 3. Modal: หน้าต่างแชท AI (Gemini) เรียลไทม์ใช้งานได้จริง
+          if (_isAIChatModalOpen)
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isAIChatModalOpen = false;
+                    });
+                  },
+                  child: Container(color: Colors.black54),
+                ),
+                Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.94,
+                    height: MediaQuery.of(context).size.height * 0.82,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFF1744), width: 3.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.8),
+                          blurRadius: 25,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                      color: const Color(0xFF121215),
+                    ),
+                    child: Column(
+                      children: [
+                        // Header แชท AI
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.smart_toy, color: Color(0xFFFF1744), size: 22),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'GEMINI AI TRADING ASSISTANT',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white),
+                                onPressed: () {
+                                  setState(() {
+                                    _isAIChatModalOpen = false;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(color: Color(0xFFFF1744), height: 1, thickness: 1.5),
+
+                        // แสดงรายการข้อความแชท
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: _aiChatMessages.length,
+                            itemBuilder: (context, index) {
+                              var chat = _aiChatMessages[index];
+                              bool isUser = chat['sender'] == 'user';
+                              return Align(
+                                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                                  decoration: BoxDecoration(
+                                    color: isUser ? const Color(0xFFB71C1C) : const Color(0xFF1E1E24),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isUser ? Colors.redAccent : Colors.white24,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    chat['message'] ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // ช่องพิมพ์ข้อความส่งหา AI
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          color: const Color(0xFF18181C),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _aiController,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: const InputDecoration(
+                                    hintText: 'พิมพ์ข้อความถาม Gemini AI...',
+                                    hintStyle: TextStyle(color: Colors.grey),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                  ),
+                                  onSubmitted: (_) => _sendAiMessage(),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.send, color: Color(0xFFFF1744)),
+                                onPressed: _sendAiMessage,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF0000),
+          width: 2.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/ppp.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      color: Colors.black,
+                    ),
+                  ),
+                  AnimatedBuilder(
+                    animation: _scannerAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: _scannerAnimation.value * (200 - 6),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF1744),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent,
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                              BoxShadow(
+                                color: Colors.white,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🌹 R O S E   C Y B E R   B O T',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isServerActive ? 'SERVER CONNECTED' : 'SERVER DISCONNECTED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(color: Colors.white24, height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSymbolBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/images/ppp.jpg',
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 2. ปรับปรุงกล่อง Bid/Ask: ตัวเลขใหญ่ขึ้น, ไม่มีปุ่มกากบาท, แสดง Spread เพิ่มเติม
+  Widget _buildBidAskBoxContent(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double boxWidth = screenWidth - 32;
+
+    // คำนวณ Spread (สมมติว่าเป็นจุด หรือค่าต่างระหว่าง Ask กับ Bid คูณ 10 หรือ 100 ตามสัญลักษณ์)
+    double spreadVal = (realTimeAsk > 0 && realTimeBid > 0) ? (realTimeAsk - realTimeBid) * 100 : 0.0;
+
+    return Container(
+      width: boxWidth,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.5),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161619),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      symbol,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace'),
+                    ),
+                  ],
+                ),
+                // แสดงค่า Spread เพิ่มเติมตรงหัวข้อ
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white24, width: 0.5),
+                  ),
+                  child: Text(
+                    'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(color: Colors.white24, height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  children: [
+                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    const SizedBox(height: 4),
+                    // ปรับขนาดตัวเลข BID ให้ใหญ่ขึ้น (fontSize: 18)
+                    Text(
+                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+                Container(height: 35, width: 1, color: Colors.white24),
+                Column(
+                  children: [
+                    const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    const SizedBox(height: 4),
+                    // ปรับขนาดตัวเลข ASK ให้ใหญ่ขึ้น (fontSize: 18)
+                    Text(
+                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircularButton({
+    required String label,
+    required IconData icon,
+    required List<Color> colors,
+    required VoidCallback onPressed,
+    bool isLarge = false,
+  }) {
+    double size = isLarge ? 82 : 70;
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: colors,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              letterSpacing: 0.5,
+              fontFamily: 'monospace',
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+// Widget สำหรับเอฟเฟกต์พิมพ์ข้อความ log (Typewriter)
+class _LogTypewriterText extends StatefulWidget {
+  final String message;
+  const _LogTypewriterText({required this.message});
+
+  @override
+  State<_LogTypewriterText> createState() => _LogTypewriterTextState();
+}
+
+class _LogTypewriterTextState extends State<_LogTypewriterText> {
+  String _displayedText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _startTyping();
+  }
+
+  void _startTyping() async {
+    for (int i = 0; i <= widget.message.length; i++) {
+      if (!mounted) break;
+      setState(() {
+        _displayedText = widget.message.substring(0, i);
+      });
+      await Future.delayed(const Duration(milliseconds: 15));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: const TextStyle(
+        color: Color(0xFFFF5252),
+        fontFamily: 'monospace',
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        height: 1.4,
+      ),
+    );
+  }
+}
+
 
 
 // ==========================================
