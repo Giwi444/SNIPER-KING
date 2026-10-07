@@ -1136,7 +1136,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
 
-                                  // วนลูปแสดง Logs พร้อมกำหนดให้ Index 0 (ข้อความล่าสุด) แสดงผลแบบพิมพ์ดีด
                                   ..._botLogs.asMap().entries.map((entry) {
                                     int index = entry.key;
                                     var log = entry.value;
@@ -1149,7 +1148,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         children: [
                                           Expanded(
                                             child: isLatest
-                                                ? _TypewriterText(message: "> ${log['message']}")
+                                                ? _LogTypewriterText(message: "> ${log['message']}")
                                                 : Text(
                                                     "> ${log['message']}",
                                                     style: const TextStyle(
@@ -1482,17 +1481,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 // ==========================================
-// #2 TYPEWRITER WIDGET FOR LATEST LOG
+// #2 TYPEWRITER WIDGET FOR LATEST LOG (Fixed Duplication)
 // ==========================================
-class _TypewriterText extends StatefulWidget {
+class _LogTypewriterText extends StatefulWidget {
   final String message;
-  const _TypewriterText({required this.message});
+  const _LogTypewriterText({required this.message});
 
   @override
-  State<_TypewriterText> createState() => _TypewriterTextState();
+  State<_LogTypewriterText> createState() => _LogTypewriterTextState();
 }
 
-class _TypewriterTextState extends State<_TypewriterText> {
+class _LogTypewriterTextState extends State<_LogTypewriterText> {
   String _displayedText = "";
   int _currentIndex = 0;
 
@@ -1503,7 +1502,7 @@ class _TypewriterTextState extends State<_TypewriterText> {
   }
 
   @override
-  void didUpdateWidget(covariant _TypewriterText oldWidget) {
+  void didUpdateWidget(covariant _LogTypewriterText oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.message != widget.message) {
       _displayedText = "";
@@ -2476,7 +2475,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // --- Bot Parameters State ---
   String selectedSymbol = 'XAUUSD';
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
@@ -2504,7 +2502,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // --- General Settings & Preferences State ---
   bool enableNotifications = true;
   bool useSoundAlerts = true;
   String lotSize = "0.01";
@@ -2513,7 +2510,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _lotController = TextEditingController();
   final TextEditingController _spreadController = TextEditingController();
 
-  // Database References
   DatabaseReference? _statusRef;
   DatabaseReference? _settingsRef;
 
@@ -2547,7 +2543,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 1. โหลดข้อมูล Status / Bot Parameters
       _statusRef = database.ref('status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2576,7 +2571,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       });
 
-      // 2. โหลดข้อมูล General Settings
       _settingsRef = database.ref('settings');
       _settingsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
