@@ -2584,84 +2584,109 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
               ),
+              
+              // ========================================================
+              // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบบริเวณรายชื่อประวัติการเทรด
+              // ========================================================
               Expanded(
-                child: filteredHistory.isEmpty
-                    ? const Center(
-                        child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: filteredHistory.length,
-                        itemBuilder: (context, index) {
-                          final trade = filteredHistory[index];
-                          final String type = trade['type']?.toString() ?? 'BUY';
-                          final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
-                          final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
-                          final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
-                          final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
-                          final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-                          
-                          final String rawCloseTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-                          final String closeTime = _formatDisplayDate(rawCloseTime);
-
-                          bool isBuy = type.toUpperCase().contains('BUY');
-                          bool isProfit = profit >= 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: Colors.redAccent,
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.7),
+                        blurRadius: 14,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: filteredHistory.isEmpty
+                        ? const Center(
+                            child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                          )
+                        : ListView.builder(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF161619).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12, width: 1),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
+                            itemCount: filteredHistory.length,
+                            itemBuilder: (context, index) {
+                              final trade = filteredHistory[index];
+                              final String type = trade['type']?.toString() ?? 'BUY';
+                              final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
+                              final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
+                              final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
+                              final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
+                              final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                              
+                              final String rawCloseTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                              final String closeTime = _formatDisplayDate(rawCloseTime);
+
+                              bool isBuy = type.toUpperCase().contains('BUY');
+                              bool isProfit = profit >= 0;
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF161619).withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white12, width: 1),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        type,
-                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                    Row(
                                       children: [
-                                        Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            type,
+                                            style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                          ),
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
+                                        const SizedBox(width: 12),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
+                                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
+                                          ],
+                                        ),
                                       ],
+                                    ),
+                                    Text(
+                                      '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        fontFamily: 'monospace',
+                                      ),
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ],
@@ -2669,6 +2694,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
+
 
 
 
@@ -3195,17 +3221,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ==========================================
-                // SECTION 1: BOT PARAMETERS
-                // ==========================================
-                const Text(
-                  'PARAMETERS BOT',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
-                ),
-                const SizedBox(height: 8),
-                
                 // ========================================================
-                // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบยาวลงมาสุดส่วนพารามิเตอร์บ็อต (รวมปุ่ม Sync)
+                // กรอบสีแดงขอบหนาเรืองแสงครอบยาวตั้งแต่PARAMETERS BOT ลงไปถึงส่วน Password (Reset PIN)
                 // ========================================================
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -3227,6 +3244,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text(
+                        'PARAMETERS BOT',
+                        style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                      ),
+                      const SizedBox(height: 12),
+                      
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       Row(
@@ -3549,101 +3572,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
 
-                // ==========================================
-                // SECTION 2: APP CONFIGURATION & SECURITY
-                // ==========================================
-                const Text(
-                  'APP CONFIGURATION & PREFERENCES',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Sound Effects', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                        subtitle: const Text('Play sound on order execution & alerts', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                        value: isSoundEnabled,
-                        activeColor: const Color(0xFFFFB300),
-                        onChanged: (val) {
-                          setState(() {
-                            isSoundEnabled = val;
-                          });
-                          _saveSettingBool('pref_sound', val);
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                        subtitle: const Text('Receive background push alerts from EA', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                        value: isPushEnabled,
-                        activeColor: const Color(0xFFFFB300),
-                        onChanged: (val) {
-                          setState(() {
-                            isPushEnabled = val;
-                          });
-                          _saveSettingBool('pref_push', val);
-                        },
-                      ),
+                      const SizedBox(height: 20),
                       const Divider(color: Colors.white24, height: 24),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Auto Lot Size Allocation', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                        subtitle: const Text('Dynamically calculate lot size based on balance', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                        value: isAutoLotEnabled,
-                        activeColor: const Color(0xFFFFB300),
-                        onChanged: (val) {
-                          setState(() {
-                            isAutoLotEnabled = val;
-                          });
-                          _saveSettingBool('pref_autolot', val);
-                        },
+                      const SizedBox(height: 8),
+                      const Text(
+                        'SECURITY & PRIVACY', 
+                        style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
-                      const SizedBox(height: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Risk Factor per Trade', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                              Text('${riskPercent.toStringAsFixed(1)}%', style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                            ],
-                          ),
-                          Slider(
-                            value: riskPercent,
-                            min: 0.1,
-                            max: 5.0,
-                            divisions: 49,
-                            activeColor: const Color(0xFFFFB300),
-                            inactiveColor: Colors.white24,
-                            onChanged: (val) {
-                              setState(() {
-                                riskPercent = val;
-                              });
-                            },
-                            onChangeEnd: (val) {
-                              _saveSettingDouble('pref_risk', val);
-                            },
-                          ),
-                        ],
-                      ),
-                      const Divider(color: Colors.white24, height: 24),
-                      const Text('SECURITY & PRIVACY', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')),
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
