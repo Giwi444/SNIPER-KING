@@ -739,7 +739,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (mounted) {
           List<Map<String, dynamic>> tempLogs = [];
           if (data is Map) {
-            // ใช้การเรียงลำดับตาม Key หรือ Timestamp จากมากไปน้อย (ล่าสุดอยู่บนสุด) อย่างแม่นยำ
             var sortedEntries = data.entries.toList()
               ..sort((a, b) => b.key.toString().compareTo(a.key.toString()));
             for (var entry in sortedEntries) {
@@ -2573,7 +2572,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   
-                  // ครอบคลุมทุกเงื่อนไขการเปิด-ปิดออเดอร์และแจ้งเตือนทั้งหมด
                   String upperMsg = cleanMsg.toUpperCase();
                   if (upperMsg.contains('ORDER') || 
                       upperMsg.contains('BUY') || 
@@ -2618,7 +2616,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
               }
             }
             
-            // เรียงลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุดอย่างแม่นยำ (ใช้การเรียง Key จากมากไปน้อย หรือตามเวลา)
             tempList.sort((a, b) => b['key'].compareTo(a['key']));
             alertItems = tempList;
           });
@@ -2723,75 +2720,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #5 SETTINGS SCREEN
-// ==========================================
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _pinController = TextEditingController();
-  bool isPinConfigured = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkPinStatus();
-  }
-
-  Future<void> _checkPinStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final pin = prefs.getString('user_pin');
-    if (mounted) {
-      setState(() {
-        isPinConfigured = pin != null && pin.isNotEmpty;
-      });
-    }
-  }
-
-  Future<void> _resetPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
-    if (mounted) {
-      setState(() {
-        isPinConfigured = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รีเซ็ตรหัส PIN เรียบร้อยแล้ว กรุณา restart แอพเพื่อตั้งใหม่'), backgroundColor: Colors.orange),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings & Security', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-// ==========================================
-// #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
+// #5 SETTINGS SCREEN (Combined & Fixed)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2839,9 +2768,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   DatabaseReference? _statusRef;
   DatabaseReference? _settingsRef;
 
-  // เพิ่มตัวแปรเช็คว่าผู้ใช้กำลังแก้ไขข้อมูลอยู่หรือไม่ เพื่อป้องกันข้อมูลจาก Firebase ทับระหว่างพิมพ์
   bool _isEditing = false;
-  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -2866,6 +2793,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  Color buttonColorForLot(String mode) {
+    if (mode == 'Fixed') return const Color(0xFF2196F3);
+    if (mode == 'Step') return const Color(0xFFFF9800);
+    return const Color(0xFF9C27B0);
+  }
+
   void _loadAllSettingsFromFirebase() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -2875,7 +2808,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       _statusRef = database.ref('status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
-        // หากผู้ใช้กำลังพิมพ์อยู่ ไม่ให้อัปเดตค่าทับหน้าจอ
         if (_isEditing) return;
 
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2901,8 +2833,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
-
-            _isInitialized = true;
           });
         }
       });
@@ -2949,7 +2879,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
       });
 
-      // บันทึกเสร็จสิ้น ปลดล็อกสถานะการแก้ไข
       setState(() {
         _isEditing = false;
       });
@@ -2965,23 +2894,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _updateGeneralSetting(String key, dynamic value) {
-    try {
-      _settingsRef?.update({key: value});
-      setState(() {
-        _isEditing = false;
-      });
-    } catch (e) {
-      print("Update general setting error: $e");
-    }
-  }
-
-  Future<void> _resetPinCode() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('รีเซ็ตรหัส PIN สำเร็จ กรุณาตั้งค่าใหม่ในครั้งถัดไป'), backgroundColor: Colors.green),
+  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType type) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          keyboardType: type,
+          onChanged: (_) => setState(() => _isEditing = true),
+          style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            filled: true,
+            fillColor: const Color(0xFF0B0B0E),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2993,7 +2927,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parameters Bot', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Parameters Bot & Settings', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -3016,7 +2950,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'PARAMETERS',
+                  'PARAMETERS CONFIGURATION',
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
@@ -3032,18 +2966,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
-                      
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color buttonColor;
-                          if (sym == 'XAUUSD') {
-                            buttonColor = const Color(0xFFFFB300);
-                          } else if (sym == 'BTCUSD') {
-                            buttonColor = const Color(0xFF00C853);
-                          } else {
-                            buttonColor = const Color(0xFFD50000);
-                          }
+                          Color buttonColor = sym == 'XAUUSD'
+                              ? const Color(0xFFFFB300)
+                              : (sym == 'BTCUSD' ? const Color(0xFF00C853) : const Color(0xFFD50000));
 
                           return Expanded(
                             child: Padding(
@@ -3081,20 +3009,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
-
                       Row(
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
-                          Color modeColor;
-                          if (mode == 'All Mode') {
-                            modeColor = const Color(0xFFFFD700);
-                          } else if (mode == 'Liquidity') {
-                            modeColor = const Color(0xFFE91E63);
-                          } else if (mode == 'Breakout') {
-                            modeColor = const Color(0xFF00BCD4);
-                          } else {
-                            modeColor = const Color(0xFFFF5722);
-                          }
+                          Color modeColor = mode == 'All Mode'
+                              ? const Color(0xFFFFD700)
+                              : (mode == 'Liquidity' ? const Color(0xFFE91E63) : (mode == 'Breakout' ? const Color(0xFF00BCD4) : const Color(0xFFFF5722)));
 
                           return Expanded(
                             child: Padding(
@@ -3119,7 +3039,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 11,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ),
@@ -3132,7 +3052,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
-
                       Row(
                         children: lotModeOptions.map((mode) {
                           bool isSelected = lotMode == mode;
@@ -3172,7 +3091,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      
                       const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       GridView.builder(
@@ -3240,7 +3158,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
@@ -3309,8 +3226,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                  TextField(
+                                    controller: dailyTargetController,
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setState(() => _isEditing = true),
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Target (\$)',
+                                      hintStyle: const TextStyle(color: Colors.grey),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -3341,89 +3268,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                  TextField(
+                                    controller: dailyLossController,
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setState(() => _isEditing = true),
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Loss Limit (\$)',
+                                      hintStyle: const TextStyle(color: Colors.grey),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _saveBotParametersToFirebase,
-                    icon: const Icon(Icons.save, color: Colors.white),
-                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFB300),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                const Text(
-                  'GENERAL SETTINGS & PREFERENCES',
-                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Preferences & Security', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
-                      SwitchListTile(
-                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                        value: enableNotifications,
-                        activeColor: const Color(0xFFFFB300),
-                        onChanged: (val) {
-                          setState(() {
-                            _isEditing = true;
-                            enableNotifications = val;
-                          });
-                          _updateGeneralSetting('notifications', val);
-                        },
-                      ),
-                      SwitchListTile(
-                        title: const Text('Sound Alerts', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                        value: useSoundAlerts,
-                        activeColor: const Color(0xFFFFB300),
-                        onChanged: (val) {
-                          setState(() {
-                            _isEditing = true;
-                            useSoundAlerts = val;
-                          });
-                          _updateGeneralSetting('sound_alerts', val);
-                        },
-                      ),
-                      const Divider(color: Colors.white24),
-                      ListTile(
-                        leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
-                        title: const Text('Reset PIN Code', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                        onTap: _resetPinCode,
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _saveBotParametersToFirebase,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 6,
+                          ),
+                          child: const Text(
+                            'SAVE & SYNC TO EA',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -3434,44 +3314,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF00E5FF);
-    if (mode == 'Step') return const Color(0xFF9C27B0);
-    return const Color(0xFFFF9100);
-  }
-
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {
-              _isEditing = true;
-            }),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
