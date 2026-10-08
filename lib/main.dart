@@ -2144,7 +2144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
             title: const Text('Reset PIN Code', style: TextStyle(color: Colors.white)),
-            onPressed: () async {
+            onTap: () async {
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('user_pin');
               if (!mounted) return;
