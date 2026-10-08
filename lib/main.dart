@@ -488,60 +488,75 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-              if (index == 4) {
-                unreadAlertsCount = 0;
-              }
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: const Color(0xFFFFB300),
-          unselectedItemColor: Colors.white70,
-          items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-            const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-            const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.notifications_active),
-                  if (unreadAlertsCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$unreadAlertsCount',
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.red,
+              width: 3.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.8),
+                blurRadius: 12.0,
+                spreadRadius: 2.0,
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+                if (index == 4) {
+                  unreadAlertsCount = 0;
+                }
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedItemColor: const Color(0xFFFFB300),
+            unselectedItemColor: Colors.white70,
+            items: [
+              const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+              const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
+              const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+              const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+              BottomNavigationBarItem(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.notifications_active),
+                    if (unreadAlertsCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          textAlign: TextAlign.center,
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            '$unreadAlertsCount',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
+                label: 'Alerts',
               ),
-              label: 'Alerts',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1770,7 +1785,11 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
+  DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
+  String activeTimeframe = 'M1';
+  String accountServer = 'Exness-MT5Server';
+
   double balance = 0.0;
   double equity = 0.0;
   double margin = 0.0;
@@ -1781,7 +1800,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     _listenToOrders();
+    _listenToStatusForSymbol();
     _listenToFinancialStatus();
+  }
+
+  void _listenToStatusForSymbol() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _dbRef = database.ref('status');
+      _dbRef?.onValue.listen((event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            activeTimeframe = data['timeframe']?.toString() ?? 'M1';
+            accountServer = data['server']?.toString() ?? 'Exness-MT5Server';
+            
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            margin = (data['margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            profitLoss = (data['profit'] ?? 0.0).toDouble();
+          });
+        }
+      });
+    } catch (e) {
+      print("Status symbol listen error: $e");
+    }
   }
 
   void _listenToFinancialStatus() {
@@ -1799,7 +1847,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
             margin = (data['margin'] ?? 0.0).toDouble();
             freeMargin = (data['free_margin'] ?? 0.0).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
-            activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            if (data['server'] != null) {
+              accountServer = data['server'].toString();
+            }
           });
         }
       });
@@ -1814,26 +1864,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+
       _ordersRef = database.ref('orders');
+
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
-          List<Map<dynamic, dynamic>> newOrders = [];
-          if (data is Map) {
-            data.forEach((key, value) {
-              if (value is Map) {
-                newOrders.add(Map<dynamic, dynamic>.from(value));
-              }
-            });
-          } else if (data is List) {
-            for (var e in data) {
-              if (e is Map) {
-                newOrders.add(Map<dynamic, dynamic>.from(e));
+          setState(() {
+            activeOrders.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value is Map) {
+                  activeOrders.add(Map<dynamic, dynamic>.from(value));
+                }
+              });
+            } else if (data is List) {
+              for (var e in data) {
+                if (e is Map) {
+                  activeOrders.add(Map<dynamic, dynamic>.from(e));
+                }
               }
             }
-          }
-          setState(() {
-            activeOrders = newOrders;
           });
         }
       });
@@ -1844,59 +1895,282 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isTotalProfit = totalOrdersProfit >= 0;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Orders - ${widget.accountLogin}'),
-        backgroundColor: const Color(0xFF161619),
+        title: const Text('Active Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
       ),
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
           Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF161619),
+            color: Colors.black.withOpacity(0.8),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xFFFFB300),
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'TRADING ACCOUNT INFO',
+                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber, width: 1),
+                            ),
+                            child: Text(
+                              activeSymbol,
+                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Account Login', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.accountLogin,
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('Server', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              const SizedBox(height: 2),
+                              Text(
+                                accountServer,
+                                style: const TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Balance: \$${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70)),
-                    Text('Equity: \$${equity.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white)),
+                    Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Profit: \$${profitLoss.toStringAsFixed(2)}', style: TextStyle(color: profitLoss >= 0 ? Colors.green : Colors.red)),
-                    Text('Margin: \$${margin.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70)),
+                    Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isTotalProfit
+                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'TOTAL OPEN PROFIT',
+                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8, fontFamily: 'monospace'),
+                      ),
+                      Text(
+                        '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                activeOrders.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(30.0),
+                        child: Center(
+                          child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace')),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: activeOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = activeOrders[index];
+                          final String type = order['type']?.toString() ?? 'BUY';
+                          final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
+                          final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
+                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
+                          bool isBuy = type.toUpperCase().contains('BUY');
+                          bool orderProfit = profit >= 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                                        const SizedBox(height: 2),
+                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.white24),
-          Expanded(
-            child: activeOrders.isEmpty
-                ? const Center(child: Text('No active orders', style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    itemCount: activeOrders.length,
-                    itemBuilder: (context, index) {
-                      var order = activeOrders[index];
-                      double orderProfit = double.tryParse(order['profit']?.toString() ?? '0') ?? 0;
-                      return Card(
-                        color: const Color(0xFF161619),
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: ListTile(
-                          title: Text('${order['symbol'] ?? activeSymbol} (${order['type'] ?? 'BUY'})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          subtitle: Text('Lot: ${order['lot'] ?? '0.01'} | Open: ${order['open_price'] ?? '0'}', style: const TextStyle(color: Colors.white70)),
-                          trailing: Text(
-                            '${orderProfit >= 0 ? "+" : ""}\$${orderProfit.toStringAsFixed(2)}',
-                            style: TextStyle(color: orderProfit >= 0 ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.grey, size: 15),
+              const SizedBox(width: 6),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 19,
+              fontFamily: 'monospace',
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -1905,7 +2179,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// #3 HISTORY SCREEN
+// #3 TRADE HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -1916,41 +2190,65 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  List<Map<dynamic, dynamic>> historyOrders = [];
+  List<Map<dynamic, dynamic>> allTradeHistory = [];
   DatabaseReference? _historyRef;
+  
+  String selectedFilter = 'วันนี้';
+  final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
 
   @override
   void initState() {
     super.initState();
-    _listenToHistory();
+    _listenToHistory(widget.accountLogin);
   }
 
-  void _listenToHistory() {
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountLogin != widget.accountLogin) {
+      _listenToHistory(widget.accountLogin);
+    }
+  }
+
+  void _listenToHistory(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+
       _historyRef = database.ref('history');
+
       _historyRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
-          List<Map<dynamic, dynamic>> tempHistory = [];
-          if (data is Map) {
-            data.forEach((key, value) {
-              if (value is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(value));
-              }
-            });
-          } else if (data is List) {
-            for (var e in data) {
-              if (e is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(e));
+          setState(() {
+            allTradeHistory.clear();
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value is Map) {
+                  allTradeHistory.add(Map<dynamic, dynamic>.from(value));
+                } else if (value is List) {
+                  for (var item in value) {
+                    if (item is Map) {
+                      allTradeHistory.add(Map<dynamic, dynamic>.from(item));
+                    }
+                  }
+                }
+              });
+            } else if (data is List) {
+              for (var e in data) {
+                if (e is Map) {
+                  allTradeHistory.add(Map<dynamic, dynamic>.from(e));
+                }
               }
             }
-          }
-          setState(() {
-            historyOrders = tempHistory.reversed.toList();
+
+            allTradeHistory.sort((a, b) {
+              String timeA = a['close_time']?.toString() ?? a['time']?.toString() ?? '';
+              String timeB = b['close_time']?.toString() ?? b['time']?.toString() ?? '';
+              return timeB.compareTo(timeA);
+            });
           });
         }
       });
@@ -1959,34 +2257,275 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  List<Map<dynamic, dynamic>> _getFilteredHistory() {
+    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
+
+    DateTime now = DateTime.now();
+    return allTradeHistory.where((trade) {
+      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+      if (timeStr.isEmpty) return false;
+
+      String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
+      DateTime? tradeDate;
+
+      try {
+        List<String> parts = formattedTime.split(' ')[0].split('-');
+        if (parts.length == 3) {
+          int? p1 = int.tryParse(parts[0]);
+          int? p2 = int.tryParse(parts[1]);
+          int? p3 = int.tryParse(parts[2]);
+
+          if (p1 != null && p2 != null && p3 != null) {
+            if (p1 > 1000) {
+              tradeDate = DateTime(p1, p2, p3);
+            } else {
+              int year = p3;
+              if (year < 100) year += 2000;
+              tradeDate = DateTime(year, p2, p1);
+            }
+          }
+        }
+      } catch (e) {
+        tradeDate = null;
+      }
+
+      tradeDate ??= DateTime.tryParse(formattedTime);
+      if (tradeDate == null && formattedTime.length >= 10) {
+        tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+      }
+
+      if (tradeDate == null) return false;
+
+      if (selectedFilter == 'วันนี้') {
+        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
+      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
+        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
+      } else if (selectedFilter == 'เดือนล่าสุด') {
+        return tradeDate.year == now.year && tradeDate.month == now.month;
+      } else if (selectedFilter == '3 เดือนล่าสุด') {
+        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+        return tradeDate.isAfter(threeMonthsAgo);
+      }
+      return true;
+    }).toList();
+  }
+
+  String _formatDisplayDate(String rawDate) {
+    if (rawDate.isEmpty) return '';
+    try {
+      List<String> spaceSplit = rawDate.split(' ');
+      String datePart = spaceSplit[0];
+      String timePart = spaceSplit.length > 1 ? ' ${spaceSplit[1]}' : '';
+
+      String cleanDate = datePart.replaceAll('.', '-').replaceAll('/', '-');
+      List<String> parts = cleanDate.split('-');
+      
+      if (parts.length == 3) {
+        int? p1 = int.tryParse(parts[0]);
+        int? p2 = int.tryParse(parts[1]);
+        int? p3 = int.tryParse(parts[2]);
+
+        if (p1 != null && p2 != null && p3 != null) {
+          String day, month, year;
+          if (p1 > 1000) {
+            year = p1.toString();
+            month = p2.toString().padLeft(2, '0');
+            day = p3.toString();
+          } else {
+            day = p1.toString();
+            month = p2.toString().padLeft(2, '0');
+            year = p3 < 100 ? '${2000 + p3}' : p3.toString();
+          }
+          return '$day.$month.$year$timePart';
+        }
+      }
+    } catch (e) {}
+    return rawDate;
+  }
+
   @override
   Widget build(BuildContext context) {
+    List<Map<dynamic, dynamic>> filteredHistory = _getFilteredHistory();
+
+    double totalProfit = filteredHistory.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trading History'),
-        backgroundColor: const Color(0xFF161619),
+        title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
       ),
-      body: historyOrders.isEmpty
-          ? const Center(child: Text('No closed history available', style: TextStyle(color: Colors.grey)))
-          : ListView.builder(
-              itemCount: historyOrders.length,
-              itemBuilder: (context, index) {
-                var item = historyOrders[index];
-                double profit = double.tryParse(item['profit']?.toString() ?? '0') ?? 0;
-                return Card(
-                  color: const Color(0xFF161619),
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    title: Text('${item['symbol'] ?? 'XAUUSD'} - Ticket: ${item['ticket'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text('Close Time: ${item['close_time'] ?? '-'} | Lot: ${item['lot'] ?? '0'}', style: const TextStyle(color: Colors.white70)),
-                    trailing: Text(
-                      '${profit >= 0 ? "+" : ""}\$${profit.toStringAsFixed(2)}',
-                      style: TextStyle(color: profit >= 0 ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold),
-                    ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          Column(
+            children: [
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: filterOptions.length,
+                  itemBuilder: (context, index) {
+                    String filter = filterOptions[index];
+                    bool isSelected = selectedFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFFB300),
+                        backgroundColor: const Color(0xFF161619),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                        onSelected: (bool selected) {
+                          setState(() {
+                            selectedFilter = filter;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                );
-              },
-            ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFFFB300),
+                    width: 2.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.5),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    Text(
+                      '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: filteredHistory.isEmpty
+                    ? const Center(
+                        child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filteredHistory.length,
+                        itemBuilder: (context, index) {
+                          final trade = filteredHistory[index];
+                          final String type = trade['type']?.toString() ?? 'BUY';
+                          final String symbol = trade['symbol']?.toString() ?? 'BTCUSD';
+                          final double lot = double.tryParse(trade['lot']?.toString() ?? '0.01') ?? 0.01;
+                          final double priceOpen = double.tryParse(trade['price_open']?.toString() ?? '0.0') ?? 0.0;
+                          final double priceClose = double.tryParse(trade['price_close']?.toString() ?? '0.0') ?? 0.0;
+                          final double profit = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
+                          
+                          final String rawCloseTime = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+                          final String closeTime = _formatDisplayDate(rawCloseTime);
+
+                          bool isBuy = type.toUpperCase().contains('BUY');
+                          bool isProfit = profit >= 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161619).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('$symbol, lot: $lot', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
+                                          style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2003,7 +2542,7 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
-  List<Map<dynamic, dynamic>> alertsList = [];
+  List<Map<String, dynamic>> alertItems = [];
   DatabaseReference? _alertsRef;
 
   @override
@@ -2019,26 +2558,68 @@ class _AlertsScreenState extends State<AlertsScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+
       _alertsRef = database.ref('alerts');
+
       _alertsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
-          List<Map<dynamic, dynamic>> tempAlerts = [];
-          if (data is Map) {
-            data.forEach((key, value) {
-              if (value is Map) {
-                tempAlerts.add(Map<dynamic, dynamic>.from(value));
-              }
-            });
-          } else if (data is List) {
-            for (var e in data) {
-              if (e is Map) {
-                tempAlerts.add(Map<dynamic, dynamic>.from(e));
+          setState(() {
+            List<Map<String, dynamic>> tempList = [];
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value != null) {
+                  String rawMsg = value.toString();
+                  String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                  
+                  // ครอบคลุมทุกเงื่อนไขการเปิด-ปิดออเดอร์และแจ้งเตือนทั้งหมด
+                  String upperMsg = cleanMsg.toUpperCase();
+                  if (upperMsg.contains('ORDER') || 
+                      upperMsg.contains('BUY') || 
+                      upperMsg.contains('SELL') || 
+                      upperMsg.contains('POSITION') ||
+                      upperMsg.contains('PROFIT') || 
+                      upperMsg.contains('LOSS') ||
+                      upperMsg.contains('OPEN') ||
+                      upperMsg.contains('CLOSE') ||
+                      upperMsg.contains('TP') ||
+                      upperMsg.contains('SL')) {
+                    tempList.add({
+                      'key': key.toString(),
+                      'message': cleanMsg,
+                    });
+                  }
+                }
+              });
+            } else if (data is List) {
+              for (int i = 0; i < data.length; i++) {
+                if (data[i] != null) {
+                  String rawMsg = data[i].toString();
+                  String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                  
+                  String upperMsg = cleanMsg.toUpperCase();
+                  if (upperMsg.contains('ORDER') || 
+                      upperMsg.contains('BUY') || 
+                      upperMsg.contains('SELL') || 
+                      upperMsg.contains('POSITION') ||
+                      upperMsg.contains('PROFIT') || 
+                      upperMsg.contains('LOSS') ||
+                      upperMsg.contains('OPEN') ||
+                      upperMsg.contains('CLOSE') ||
+                      upperMsg.contains('TP') ||
+                      upperMsg.contains('SL')) {
+                    tempList.add({
+                      'key': i.toString(),
+                      'message': cleanMsg,
+                    });
+                  }
+                }
               }
             }
-          }
-          setState(() {
-            alertsList = tempAlerts.reversed.toList();
+            
+            // เรียงลำดับให้ข้อมูลล่าสุดอยู่ด้านบนสุดอย่างแม่นยำ (ใช้การเรียง Key จากมากไปน้อย หรือตามเวลา)
+            tempList.sort((a, b) => b['key'].compareTo(a['key']));
+            alertItems = tempList;
           });
         }
       });
@@ -2047,14 +2628,22 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
+  void _clearAlertItem(String key) {
+    try {
+      _alertsRef?.child(key).remove();
+    } catch (e) {
+      print("Clear alert item error: $e");
+    }
+  }
+
   void _clearAllAlerts() {
     try {
       _alertsRef?.remove();
       setState(() {
-        alertsList.clear();
+        alertItems.clear();
       });
     } catch (e) {
-      print("Clear alerts error: $e");
+      print("Clear all alerts error: $e");
     }
   }
 
@@ -2062,10 +2651,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications & Alerts'),
-        backgroundColor: const Color(0xFF161619),
+        title: const Text('Notifications & Alerts', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
         actions: [
-          if (alertsList.isNotEmpty)
+          if (alertItems.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
               onPressed: _clearAllAlerts,
@@ -2073,30 +2662,68 @@ class _AlertsScreenState extends State<AlertsScreen> {
             ),
         ],
       ),
-      body: alertsList.isEmpty
-          ? const Center(child: Text('No notifications found', style: TextStyle(color: Colors.grey)))
-          : ListView.builder(
-              itemCount: alertsList.length,
-              itemBuilder: (context, index) {
-                var alert = alertsList[index];
-                return Card(
-                  color: const Color(0xFF161619),
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    leading: const Icon(Icons.notifications, color: Color(0xFFFFB300)),
-                    title: Text(alert['title']?.toString() ?? 'Alert', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(alert['message']?.toString() ?? alert.toString(), style: const TextStyle(color: Colors.white70)),
-                    trailing: Text(alert['time']?.toString() ?? '', style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                  ),
-                );
-              },
-            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          alertItems.isEmpty
+              ? const Center(
+                  child: Text('No new notifications', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: alertItems.length,
+                  itemBuilder: (context, index) {
+                    final item = alertItems[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              item['message'],
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _clearAlertItem(item['key']),
+                            child: const Padding(
+                              padding: EdgeInsets.all(4.0),
+                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
     );
   }
 }
 
+
+
 // ==========================================
-// #5 SETTINGS SCREEN
+// #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2106,55 +2733,746 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool notificationsEnabled = true;
-  bool soundEnabled = true;
+  String selectedSymbol = 'XAUUSD';
+  String tradingMode = 'Sniper';
+  String lotMode = 'Fixed';
+  
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
+  String selectedTf = "M1";
+
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
+  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
+  
+  final TextEditingController initialLotController = TextEditingController();
+  final TextEditingController maxRecoveryController = TextEditingController();
+  final TextEditingController maxOrdersController = TextEditingController(); 
+  final TextEditingController swingBarsController = TextEditingController();
+  final TextEditingController slPointsController = TextEditingController();
+  final TextEditingController riskRewardController = TextEditingController();
+
+  final TextEditingController startTimeController = TextEditingController(text: "08:00");
+  final TextEditingController endTimeController = TextEditingController(text: "22:00");
+
+  bool enableDailyTarget = true;
+  final TextEditingController dailyTargetController = TextEditingController();
+  
+  bool enableDailyLoss = false;
+  final TextEditingController dailyLossController = TextEditingController();
+
+  bool enableNotifications = true;
+  bool useSoundAlerts = true;
+  String lotSize = "0.01";
+  String maxSpread = "30";
+
+  final TextEditingController _lotController = TextEditingController();
+  final TextEditingController _spreadController = TextEditingController();
+
+  DatabaseReference? _statusRef;
+  DatabaseReference? _settingsRef;
+
+  // เพิ่มตัวแปรเช็คว่าผู้ใช้กำลังแก้ไขข้อมูลอยู่หรือไม่ เพื่อป้องกันข้อมูลจาก Firebase ทับระหว่างพิมพ์
+  bool _isEditing = false;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllSettingsFromFirebase();
+  }
+
+  @override
+  void dispose() {
+    initialLotController.dispose();
+    maxRecoveryController.dispose();
+    maxOrdersController.dispose();
+    swingBarsController.dispose();
+    slPointsController.dispose();
+    riskRewardController.dispose();
+    startTimeController.dispose();
+    endTimeController.dispose();
+    dailyTargetController.dispose();
+    dailyLossController.dispose();
+    _lotController.dispose();
+    _spreadController.dispose();
+    super.dispose();
+  }
+
+  void _loadAllSettingsFromFirebase() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _statusRef = database.ref('status');
+      _statusRef?.onValue.listen((DatabaseEvent event) {
+        // หากผู้ใช้กำลังพิมพ์อยู่ ไม่ให้อัปเดตค่าทับหน้าจอ
+        if (_isEditing) return;
+
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
+            lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedTf = data['timeframe']?.toString() ?? 'M1';
+            
+            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
+            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
+
+            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
+            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
+            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
+            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
+            slPointsController.text = data['sl_points']?.toString() ?? '500';
+            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
+
+            enableDailyTarget = data['enable_daily_target'] ?? true;
+            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+
+            enableDailyLoss = data['enable_daily_loss'] ?? false;
+            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+
+            _isInitialized = true;
+          });
+        }
+      });
+
+      _settingsRef = database.ref('settings');
+      _settingsRef?.onValue.listen((DatabaseEvent event) {
+        if (_isEditing) return;
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            lotSize = data['lot_size']?.toString() ?? '0.01';
+            maxSpread = data['max_spread']?.toString() ?? '30';
+            enableNotifications = data['notifications'] ?? true;
+            useSoundAlerts = data['sound_alerts'] ?? true;
+            
+            _lotController.text = lotSize;
+            _spreadController.text = maxSpread;
+          });
+        }
+      });
+    } catch (e) {
+      print("Load settings error: $e");
+    }
+  }
+
+  void _saveBotParametersToFirebase() {
+    try {
+      _statusRef?.update({
+        'symbol': selectedSymbol,
+        'trading_mode': tradingMode,
+        'lot_mode': lotMode,
+        'timeframe': selectedTf,
+        'start_time_th': startTimeController.text,
+        'end_time_th': endTimeController.text,
+        'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
+        'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
+        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
+        'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
+        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
+        'enable_daily_target': enableDailyTarget,
+        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
+        'enable_daily_loss': enableDailyLoss,
+        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+      });
+
+      // บันทึกเสร็จสิ้น ปลดล็อกสถานะการแก้ไข
+      setState(() {
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
+          backgroundColor: Color(0xFFFFB300),
+        ),
+      );
+    } catch (e) {
+      print("Save bot parameters error: $e");
+    }
+  }
+
+  void _updateGeneralSetting(String key, dynamic value) {
+    try {
+      _settingsRef?.update({key: value});
+      setState(() {
+        _isEditing = false;
+      });
+    } catch (e) {
+      print("Update general setting error: $e");
+    }
+  }
+
+  Future<void> _resetPinCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_pin');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('รีเซ็ตรหัส PIN สำเร็จ กรุณาตั้งค่าใหม่ในครั้งถัดไป'), backgroundColor: Colors.green),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    double sl = double.tryParse(slPointsController.text) ?? 500;
+    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
+    double calculatedTP = sl * rr;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFF161619),
+        title: const Text('Parameters Bot', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
       ),
-      body: ListView(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          SwitchListTile(
-            title: const Text('Push Notifications', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Receive alerts when bot executes trades', style: TextStyle(color: Colors.white70)),
-            value: notificationsEnabled,
-            activeColor: const Color(0xFFFFB300),
-            onChanged: (val) {
-              setState(() {
-                notificationsEnabled = val;
-              });
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
-          SwitchListTile(
-            title: const Text('Sound Effects', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Play sound on order execution or updates', style: TextStyle(color: Colors.white70)),
-            value: soundEnabled,
-            activeColor: const Color(0xFFFFB300),
-            onChanged: (val) {
-              setState(() {
-                soundEnabled = val;
-              });
-            },
+          Container(
+            color: Colors.black.withOpacity(0.8),
           ),
-          const Divider(color: Colors.white24),
-          ListTile(
-            leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
-            title: const Text('Reset PIN Code', style: TextStyle(color: Colors.white)),
-            onTap: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('user_pin');
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PIN reset successfully. Restart app to set a new PIN.')),
-              );
-            },
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PARAMETERS',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      
+                      Row(
+                        children: symbolOptions.map((sym) {
+                          bool isSelected = selectedSymbol == sym;
+                          Color buttonColor;
+                          if (sym == 'XAUUSD') {
+                            buttonColor = const Color(0xFFFFB300);
+                          } else if (sym == 'BTCUSD') {
+                            buttonColor = const Color(0xFF00C853);
+                          } else {
+                            buttonColor = const Color(0xFFD50000);
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    selectedSymbol = sym;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    sym,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = tradingMode == mode;
+                          Color modeColor;
+                          if (mode == 'All Mode') {
+                            modeColor = const Color(0xFFFFD700);
+                          } else if (mode == 'Liquidity') {
+                            modeColor = const Color(0xFFE91E63);
+                          } else if (mode == 'Breakout') {
+                            modeColor = const Color(0xFF00BCD4);
+                          } else {
+                            modeColor = const Color(0xFFFF5722);
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    tradingMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: lotModeOptions.map((mode) {
+                          bool isSelected = lotMode == mode;
+                          Color modeColor = buttonColorForLot(mode);
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    lotMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      
+                      const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 2.2,
+                        ),
+                        itemCount: timeframes.length,
+                        itemBuilder: (context, index) {
+                          String tf = timeframes[index];
+                          bool isSelected = selectedTf == tf;
+                          return ElevatedButton(
+                            onPressed: () => setState(() {
+                              _isEditing = true;
+                              selectedTf = tf;
+                            }),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
+                              foregroundColor: isSelected ? Colors.black : Colors.white70,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              tf,
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white70,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 46,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Text(
+                              '${calculatedTP.toStringAsFixed(1)} Pts',
+                              style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'DAILY TARGET & LOSS CONTROL', 
+                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyTarget,
+                                        activeColor: const Color(0xFF00C853),
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyTarget = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyLoss,
+                                        activeColor: Colors.redAccent,
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyLoss = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveBotParametersToFirebase,
+                    icon: const Icon(Icons.save, color: Colors.white),
+                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                const Text(
+                  'GENERAL SETTINGS & PREFERENCES',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _lotController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                              decoration: const InputDecoration(
+                                labelText: 'Lot Size',
+                                labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                              ),
+                              onChanged: (val) => setState(() => _isEditing = true),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () => _updateGeneralSetting('lot_size', _lotController.text),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFB300),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            child: const Text('Save Lot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _spreadController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                              decoration: const InputDecoration(
+                                labelText: 'Max Spread (Points)',
+                                labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                              ),
+                              onChanged: (val) => setState(() => _isEditing = true),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () => _updateGeneralSetting('max_spread', _spreadController.text),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFB300),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            child: const Text('Save Spread', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        value: enableNotifications,
+                        activeColor: const Color(0xFFFFB300),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (val) {
+                          setState(() {
+                            enableNotifications = val;
+                          });
+                          _updateGeneralSetting('notifications', val);
+                        },
+                      ),
+                      SwitchListTile(
+                        title: const Text('Sound Alerts', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        value: useSoundAlerts,
+                        activeColor: const Color(0xFFFFB300),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (val) {
+                          setState(() {
+                            useSoundAlerts = val;
+                          });
+                          _updateGeneralSetting('sound_alerts', val);
+                        },
+                      ),
+                      const Divider(color: Colors.white12, height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _resetPinCode,
+                          icon: const Icon(Icons.lock_reset, color: Colors.redAccent),
+                          label: const Text('RESET APP PIN CODE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.redAccent),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Color buttonColorForLot(String mode) {
+    switch (mode) {
+      case 'Fixed':
+        return const Color(0xFF00E676);
+      case 'Step':
+        return const Color(0xFF29B6F6);
+      case 'Double':
+        return const Color(0xFFAB47BC);
+      default:
+        return const Color(0xFFFFB300);
+    }
+  }
+
+  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 46,
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: const Color(0xFF0B0B0E),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+              ),
+            ),
+            onChanged: (val) {
+              setState(() {
+                _isEditing = true;
+              });
+            },
+          ),
+        ),
+      ],
     );
   }
 }
