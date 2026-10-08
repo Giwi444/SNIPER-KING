@@ -224,7 +224,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     }
 
     if (isAuthorized) {
-      return const MainNavigationScreen();
+      // หลังจากยืนยัน PIN ผ่านแล้ว ให้ตรวจสอบว่าได้ทำการเชื่อมต่อ MT5 หรือยัง (หรือข้ามมาหน้า Login MT5 ก่อน)
+      return const MT5LoginWrapper();
     }
 
     String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
@@ -377,6 +378,185 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
+// MT5 LOGIN WRAPPER (หน้าจอเชื่อมต่อบัญชี MT5)
+// ==========================================
+class MT5LoginWrapper extends StatefulWidget {
+  const MT5LoginWrapper({super.key});
+
+  @override
+  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
+}
+
+class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _serverController = TextEditingController(text: 'Exness-MT5Server');
+  bool _isLoading = false;
+  bool _isLoggedInMT5 = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingMT5Login();
+  }
+
+  Future<void> _checkExistingMT5Login() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLogin = prefs.getString('mt5_login');
+    if (savedLogin != null && savedLogin.isNotEmpty) {
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    }
+  }
+
+  void _submitMT5Login() async {
+    String login = _loginController.text.trim();
+    String password = _passwordController.text.trim();
+    String server = _serverController.text.trim();
+
+    if (login.isEmpty || password.isEmpty || server.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกข้อมูล MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mt5_login', login);
+      await prefs.setString('mt5_server', server);
+
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      await database.ref('status').update({
+        'login': login,
+        'server': server,
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoggedInMT5) {
+      return const MainNavigationScreen();
+    }
+
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+          ),
+          Container(color: Colors.black.withOpacity(0.85)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 50),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'CONNECT MT5 ACCOUNT',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace', letterSpacing: 1.5),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'กรอกข้อมูลพอร์ต MetaTrader 5 เพื่อเชื่อมต่อบอท',
+                        style: TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace'),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 30),
+                      TextField(
+                        controller: _loginController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'MT5 Account Login',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'MT5 Password',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _serverController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Broker Server',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitMT5Login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isLoading 
+                              ? const CircularProgressIndicator(color: Colors.black)
+                              : const Text('CONNECT ACCOUNT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
 // #0 MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
@@ -395,8 +575,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
+  }
+
+  Future<void> _loadSavedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('mt5_login');
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        currentLogin = saved;
+      });
+    }
   }
 
   void _listenToActiveAccount() {
@@ -562,10 +753,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
-
-
-
-
 
 // ==========================================
 // #1 HOME SCREEN
@@ -1378,7 +1565,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // คำนวณและสร้างเนื้อหาสรุปสถิติภาพรวม (Dashboard Stats) จาก Database (History & Active Orders)
   Widget _buildDashboardStatsContent() {
     int totalTrades = _historyTrades.length;
     int winTrades = 0;
@@ -1387,7 +1573,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     double maxProfit = 0.0;
     double maxLoss = 0.0;
 
-    // คำนวณจากประวัติการเทรดในฐานข้อมูล
     for (var trade in _historyTrades) {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       totalProfitLoss += p;
@@ -1401,16 +1586,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     double winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0.0;
-
-    // คำนวณค่า Drawdown โดยประเมินจากความต่างของ Equity/Balance หรือประวัติการขาดทุนสะสมสูงสุด
     double peak = balance > 0 ? balance : 1000.0;
     double maxDDAmount = 0.0;
     for (var trade in _historyTrades) {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       peak += p;
-      if (peak > maxProfit) {
-        // อัปเดตยอดสะสมสูงสุด
-      }
       double currentDD = peak > 0 ? (maxLoss.abs() / peak) * 100 : 0.0;
       if (currentDD > maxDDAmount) {
         maxDDAmount = currentDD;
@@ -1539,7 +1719,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // เปลี่ยนชื่อหัวข้อที่วงกลมสีขาวและปรับปรุงคำอธิบายสถานะให้สอดคล้องกับความหมายจริง
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
 
@@ -1612,7 +1791,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '🌹 ROSE CYBER BOT LIVE STATUS', // เปลี่ยนชื่อหัวข้อใหม่ให้ตรงกับความหมายของกล่องสถานะ
+                  '🌹 ROSE CYBER BOT LIVE STATUS',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -1872,10 +2051,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-
-
-
-
 // ==========================================
 // #2 ORDERS SCREEN
 // ==========================================
@@ -2113,9 +2288,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // ========================================================
-                // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบบริเวณ Metric และรายการ Order ทั้งหมด
-                // ========================================================
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
@@ -2312,10 +2484,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
-
-
-
-
 
 // ==========================================
 // #3 HISTORY SCREEN
@@ -2585,9 +2753,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
               
-              // ========================================================
-              // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบบริเวณรายชื่อประวัติการเทรด
-              // ========================================================
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -2695,11 +2860,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-
-
-
-
-
 // ==========================================
 // #4 ALERTS SCREEN
 // ==========================================
@@ -2722,7 +2882,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _listenToAlerts();
   }
 
-  // ฟังก์ชันช่วยดึง DateTime จากข้อความ (รองรับรูปแบบ [DD.MM.YYYY HH:mm:ss])
   DateTime? _extractDateTime(String message) {
     try {
       final regExp = RegExp(r'\[(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\]');
@@ -2736,9 +2895,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         int second = int.parse(match.group(6)!);
         return DateTime(year, month, day, hour, minute, second);
       }
-    } catch (e) {
-      // ถ้าแปลงไม่สำเร็จให้คืนค่า null
-    }
+    } catch (e) {}
     return null;
   }
 
@@ -2776,7 +2933,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
-                      'time': _extractDateTime(cleanMsg), // เก็บค่าเวลาสำหรับใช้เรียงลำดับ
+                      'time': _extractDateTime(cleanMsg),
                     });
                   }
                 }
@@ -2808,14 +2965,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
               }
             }
 
-            // จัดเรียงลำดับ: ให้ข้อความที่มีเวลาล่าสุด (Newest) อยู่บนสุด
             tempList.sort((a, b) {
               DateTime? timeA = a['time'];
               DateTime? timeB = b['time'];
               if (timeA == null && timeB == null) return 0;
               if (timeA == null) return 1;
               if (timeB == null) return -1;
-              return timeB.compareTo(timeA); // มากไปน้อย (ล่าสุดอยู่บนสุด)
+              return timeB.compareTo(timeA);
             });
 
             alertItems = tempList;
@@ -2874,18 +3030,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          // เพิ่มกรอบสีแดงเรืองแสงครอบ ListView / Center ด้านนอก
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.redAccent, width: 2), // ขอบสีแดงหนา
+              border: Border.all(color: Colors.redAccent, width: 2),
               boxShadow: [
                 BoxShadow(
                   color: Colors.redAccent.withOpacity(0.6),
                   blurRadius: 12,
                   spreadRadius: 2,
-                ), // แสงเรืองแสงสีแดง
+                ),
               ],
             ),
             child: ClipRRect(
@@ -2946,12 +3101,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-
-
-
-
 // ==========================================
-// #5 SETTINGS SCREEN (Fixed & Full Code)
+// #5 SETTINGS SCREEN
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2961,7 +3112,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // --- Bot Parameters States ---
   String selectedSymbol = 'XAUUSD';
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
@@ -2989,7 +3139,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // --- App Preferences & Security States ---
   bool isSoundEnabled = true;
   bool isPushEnabled = true;
   bool isAutoLotEnabled = false;
@@ -3024,7 +3173,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  // โหลดค่า Bot จาก Firebase Realtime Database
   void _loadAllSettingsFromFirebase() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -3064,24 +3212,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           });
         }
       });
-
-      _settingsRef = database.ref('settings');
-      _settingsRef?.onValue.listen((DatabaseEvent event) {
-        if (_isEditing) return;
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            isSoundEnabled = data['sound_alerts'] ?? true;
-            isPushEnabled = data['notifications'] ?? true;
-          });
-        }
-      });
     } catch (e) {
       print("Load settings error: $e");
     }
   }
 
-  // โหลดค่า Local Preferences
   Future<void> _loadLocalPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -3093,17 +3228,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  Future<void> _saveSettingBool(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-  }
-
-  Future<void> _saveSettingDouble(String key, double value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(key, value);
-  }
-
-  // บันทึก Bot Parameters ไปยัง Firebase
   void _saveBotParametersToFirebase() {
     try {
       _statusRef?.update({
@@ -3140,7 +3264,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // รีเซ็ต PIN Code
   Future<void> _resetPin() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
@@ -3221,9 +3344,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ========================================================
-                // กรอบสีแดงขอบหนาเรืองแสงครอบยาวตั้งแต่PARAMETERS BOT ลงไปถึงส่วน Password (Reset PIN)
-                // ========================================================
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
