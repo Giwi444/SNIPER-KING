@@ -563,6 +563,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
+
+
+
+
 // ==========================================
 // #1 HOME SCREEN
 // ==========================================
@@ -1869,6 +1873,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 
+
+
+
 // ==========================================
 // #2 ORDERS SCREEN
 // ==========================================
@@ -2106,133 +2113,162 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
+                // ========================================================
+                // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบบริเวณ Metric และรายการ Order ทั้งหมด
+                // ========================================================
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isTotalProfit
-                          ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                          : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
-                      width: 1.5,
+                      color: Colors.redAccent,
+                      width: 2.5,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'TOTAL OPEN PROFIT',
-                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8, fontFamily: 'monospace'),
-                      ),
-                      Text(
-                        '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'monospace',
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.7),
+                        blurRadius: 14,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: _buildMetricCard('Balance', '\$${balance.toStringAsFixed(2)}', Icons.account_balance_wallet)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildMetricCard('Equity', '\$${equity.toStringAsFixed(2)}', Icons.show_chart)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildMetricCard('Margin', '\$${margin.toStringAsFixed(2)}', Icons.lock_outline)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildMetricCard('Free Margin', '\$${freeMargin.toStringAsFixed(2)}', Icons.lock_open)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
 
-                activeOrders.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(30.0),
-                        child: Center(
-                          child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace')),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: activeOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = activeOrders[index];
-                          final String type = order['type']?.toString() ?? 'BUY';
-                          final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
-                          final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                          final String symbol = order['symbol']?.toString() ?? activeSymbol;
-                          bool isBuy = type.toUpperCase().contains('BUY');
-                          bool orderProfit = profit >= 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF161619).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: isTotalProfit
+                                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-                                width: 1,
+                                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                                width: 1.5,
                               ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        type,
-                                        style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
-                                        const SizedBox(height: 2),
-                                        Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                                      ],
-                                    ),
-                                  ],
+                                const Text(
+                                  'TOTAL OPEN PROFIT',
+                                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8, fontFamily: 'monospace'),
                                 ),
                                 Text(
-                                  '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                  '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
                                     fontFamily: 'monospace',
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 12),
+
+                          activeOrders.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(30.0),
+                                  child: Center(
+                                    child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace')),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: activeOrders.length,
+                                  itemBuilder: (context, index) {
+                                    final order = activeOrders[index];
+                                    final String type = order['type']?.toString() ?? 'BUY';
+                                    final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
+                                    final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
+                                    final String symbol = order['symbol']?.toString() ?? activeSymbol;
+                                    bool isBuy = type.toUpperCase().contains('BUY');
+                                    bool orderProfit = profit >= 0;
+
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF161619).withOpacity(0.9),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  type,
+                                                  style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                                                  const SizedBox(height: 2),
+                                                  Text('Lot: $lot', style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              fontFamily: 'monospace',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ],
                       ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -2277,8 +2313,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
+
+
+
+
 // ==========================================
-// #3 TRADE HISTORY SCREEN
+// #3 HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2630,6 +2670,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
+
+
+
+
 // ==========================================
 // #4 ALERTS SCREEN
 // ==========================================
@@ -2650,6 +2694,26 @@ class _AlertsScreenState extends State<AlertsScreen> {
     super.initState();
     widget.onAlertsRead();
     _listenToAlerts();
+  }
+
+  // ฟังก์ชันช่วยดึง DateTime จากข้อความ (รองรับรูปแบบ [DD.MM.YYYY HH:mm:ss])
+  DateTime? _extractDateTime(String message) {
+    try {
+      final regExp = RegExp(r'\[(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\]');
+      final match = regExp.firstMatch(message);
+      if (match != null) {
+        int day = int.parse(match.group(1)!);
+        int month = int.parse(match.group(2)!);
+        int year = int.parse(match.group(3)!);
+        int hour = int.parse(match.group(4)!);
+        int minute = int.parse(match.group(5)!);
+        int second = int.parse(match.group(6)!);
+        return DateTime(year, month, day, hour, minute, second);
+      }
+    } catch (e) {
+      // ถ้าแปลงไม่สำเร็จให้คืนค่า null
+    }
+    return null;
   }
 
   void _listenToAlerts() {
@@ -2686,6 +2750,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
+                      'time': _extractDateTime(cleanMsg), // เก็บค่าเวลาสำหรับใช้เรียงลำดับ
                     });
                   }
                 }
@@ -2710,12 +2775,24 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     tempList.add({
                       'key': i.toString(),
                       'message': cleanMsg,
+                      'time': _extractDateTime(cleanMsg),
                     });
                   }
                 }
               }
             }
-            alertItems = tempList.reversed.toList();
+
+            // จัดเรียงลำดับ: ให้ข้อความที่มีเวลาล่าสุด (Newest) อยู่บนสุด
+            tempList.sort((a, b) {
+              DateTime? timeA = a['time'];
+              DateTime? timeB = b['time'];
+              if (timeA == null && timeB == null) return 0;
+              if (timeA == null) return 1;
+              if (timeB == null) return -1;
+              return timeB.compareTo(timeA); // มากไปน้อย (ล่าสุดอยู่บนสุด)
+            });
+
+            alertItems = tempList;
           });
         }
       });
@@ -2771,54 +2848,72 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          alertItems.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No trading alerts available',
-                    style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: alertItems.length,
-                  itemBuilder: (context, index) {
-                    var alert = alertItems[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
+          // เพิ่มกรอบสีแดงเรืองแสงครอบ ListView / Center ด้านนอก
+          Container(
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.redAccent, width: 2), // ขอบสีแดงหนา
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.redAccent.withOpacity(0.6),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ), // แสงเรืองแสงสีแดง
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: alertItems.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No trading alerts available',
+                        style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              alert['message'],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                                height: 1.4,
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: alertItems.length,
+                      itemBuilder: (context, index) {
+                        var alert = alertItems[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF161619).withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  alert['message'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
                               ),
-                            ),
+                              GestureDetector(
+                                onTap: () => _clearAlertItem(alert['key']),
+                                child: const Padding(
+                                  padding: EdgeInsets.only(left: 8.0),
+                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                ),
+                              ),
+                            ],
                           ),
-                          GestureDetector(
-                            onTap: () => _clearAlertItem(alert['key']),
-                            child: const Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+            ),
+          ),
         ],
       ),
     );
@@ -2826,8 +2921,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
+
+
+
 // ==========================================
-// #5 COMBINED SETTINGS SCREEN (Fixed & Full Code)
+// #5 SETTINGS SCREEN (Fixed & Full Code)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -3105,12 +3203,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                 ),
                 const SizedBox(height: 8),
+                
+                // ========================================================
+                // เพิ่มกรอบสีแดงขอบหนาเรืองแสงครอบยาวลงมาสุดส่วนพารามิเตอร์บ็อต (รวมปุ่ม Sync)
+                // ========================================================
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
+                    border: Border.all(
+                      color: Colors.redAccent,
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.7),
+                        blurRadius: 14,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3423,22 +3535,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _saveBotParametersToFirebase,
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _saveBotParametersToFirebase,
-                    icon: const Icon(Icons.save, color: Colors.white),
-                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFB300),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
                 
