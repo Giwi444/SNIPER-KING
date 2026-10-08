@@ -969,33 +969,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      '🌹 R   O   S   E 🌹',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 3.0,
-                        shadows: [
-                          Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                    // กรอบครอบหัวข้อเมนู/ชื่อบอท พร้อมสีแดงเรืองแสง (ตามข้อ 2)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.8),
+                            blurRadius: 12.0,
+                            spreadRadius: 2.0,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: const [
+                          Text(
+                            '🌹 R   O   S   E 🌹',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 3.0,
+                              shadows: [
+                                Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'C Y B E R   B O T',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 2.5,
+                              shadows: [
+                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const Text(
-                      'C Y B E R   B O T',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2.5,
-                        shadows: [
-                          Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
@@ -1207,9 +1228,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ..._botLogs.asMap().entries.map((entry) {
-                                    int index = entry.key;
                                     var log = entry.value;
-                                    bool isLatest = (index == 0);
 
                                     return Padding(
                                       padding: const EdgeInsets.only(bottom: 8.0),
@@ -1217,17 +1236,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Expanded(
-                                            child: isLatest
-                                                ? _LogTypewriterText(message: "> ${log['message']}")
-                                                : Text(
-                                                    "> ${log['message']}",
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontFamily: 'monospace',
-                                                      fontSize: 16,
-                                                      height: 1.4,
-                                                    ),
-                                                  ),
+                                            child: Text(
+                                              "> ${log['message']}",
+                                              style: const TextStyle(
+                                                color: Colors.greenAccent,
+                                                fontFamily: 'monospace',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.4,
+                                              ),
+                                            ),
                                           ),
                                           GestureDetector(
                                             onTap: () => _clearLogItem(log['key']),
@@ -1729,48 +1747,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-class _LogTypewriterText extends StatefulWidget {
-  final String message;
-  const _LogTypewriterText({required this.message});
-
-  @override
-  State<_LogTypewriterText> createState() => _LogTypewriterTextState();
-}
-
-class _LogTypewriterTextState extends State<_LogTypewriterText> {
-  String _displayedText = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _startTypewriter();
-  }
-
-  void _startTypewriter() async {
-    for (int i = 0; i <= widget.message.length; i++) {
-      if (!mounted) break;
-      setState(() {
-        _displayedText = widget.message.substring(0, i);
-      });
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _displayedText,
-      style: const TextStyle(
-        color: Colors.greenAccent,
-        fontFamily: 'monospace',
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        height: 1.4,
-      ),
-    );
-  }
-}
-
 // ==========================================
 // #2 ORDERS SCREEN
 // ==========================================
@@ -1922,6 +1898,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // กรอบครอบหัวข้อเมนู พร้อมเรืองแสงสีแดง (ตามข้อ 2)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -1933,13 +1910,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFFFB300),
+                      color: const Color(0xFFFF0000),
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.5),
-                        blurRadius: 14,
+                        color: Colors.red.withOpacity(0.8),
+                        blurRadius: 15,
+                        spreadRadius: 2,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -2405,6 +2383,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   },
                 ),
               ),
+              // กรอบครอบหัวข้อ P/L พร้อมเรืองแสงสีแดง (ตามข้อ 2)
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2417,13 +2396,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: const Color(0xFFFFB300),
+                    color: const Color(0xFFFF0000),
                     width: 2.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.5),
-                      blurRadius: 14,
+                      color: Colors.red.withOpacity(0.8),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -2954,12 +2934,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
+                // กรอบครอบหัวข้อเมนูการตั้งค่า พร้อมเรืองแสงสีแดง (ตามข้อ 2)
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12, width: 1),
+                    border: Border.all(color: const Color(0xFFFF0000), width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.8),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3286,7 +3275,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
@@ -3296,12 +3284,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFB300),
                             foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 6,
                           ),
                           child: const Text(
                             'SAVE & SYNC TO EA',
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1),
                           ),
                         ),
                       ),
