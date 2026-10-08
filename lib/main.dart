@@ -739,8 +739,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (mounted) {
           List<Map<String, dynamic>> tempLogs = [];
           if (data is Map) {
+            // ใช้การเรียงลำดับตาม Key หรือ Timestamp จากมากไปน้อย (ล่าสุดอยู่บนสุด) อย่างแม่นยำ
             var sortedEntries = data.entries.toList()
-              ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+              ..sort((a, b) => b.key.toString().compareTo(a.key.toString()));
             for (var entry in sortedEntries) {
               if (entry.value != null) {
                 String rawMsg = entry.value.toString();
@@ -752,7 +753,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }
             }
           } else if (data is List) {
-            for (int i = 0; i < data.length; i++) {
+            for (int i = data.length - 1; i >= 0; i--) {
               if (data[i] != null) {
                 String rawMsg = data[i].toString();
                 String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
@@ -764,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
           }
           setState(() {
-            _botLogs = tempLogs.reversed.toList();
+            _botLogs = tempLogs;
           });
         }
       });
@@ -2680,7 +2681,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   child: Text('No new notifications', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
                     final item = alertItems[index];
@@ -2690,23 +2691,24 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF161619).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
+                        border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
-                          const SizedBox(width: 12),
+                          const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 18),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               item['message'],
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace', height: 1.3),
                             ),
                           ),
                           GestureDetector(
                             onTap: () => _clearAlertItem(item['key']),
                             child: const Padding(
-                              padding: EdgeInsets.all(4.0),
-                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                              padding: EdgeInsets.only(left: 8.0),
+                              child: Icon(Icons.close, color: Colors.grey, size: 16),
                             ),
                           ),
                         ],
@@ -2720,8 +2722,74 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
+// ==========================================
+// #5 SETTINGS SCREEN
+// ==========================================
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
 
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _pinController = TextEditingController();
+  bool isPinConfigured = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPinStatus();
+  }
+
+  Future<void> _checkPinStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pin = prefs.getString('user_pin');
+    if (mounted) {
+      setState(() {
+        isPinConfigured = pin != null && pin.isNotEmpty;
+      });
+    }
+  }
+
+  Future<void> _resetPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_pin');
+    if (mounted) {
+      setState(() {
+        isPinConfigured = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('รีเซ็ตรหัส PIN เรียบร้อยแล้ว กรุณา restart แอพเพื่อตั้งใหม่'), backgroundColor: Colors.orange),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings & Security', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
 // ==========================================
 // #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
 // ==========================================
@@ -2737,7 +2805,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
-  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
@@ -3313,108 +3381,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white12, width: 1),
                   ),
+                  
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _lotController,
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
-                              decoration: const InputDecoration(
-                                labelText: 'Lot Size',
-                                labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
-                              ),
-                              onChanged: (val) => setState(() => _isEditing = true),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () => _updateGeneralSetting('lot_size', _lotController.text),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            ),
-                            child: const Text('Save Lot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _spreadController,
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
-                              decoration: const InputDecoration(
-                                labelText: 'Max Spread (Points)',
-                                labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
-                              ),
-                              onChanged: (val) => setState(() => _isEditing = true),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () => _updateGeneralSetting('max_spread', _spreadController.text),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            ),
-                            child: const Text('Save Spread', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
+                      const Text('Preferences & Security', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
                       SwitchListTile(
-                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
                         value: enableNotifications,
                         activeColor: const Color(0xFFFFB300),
-                        contentPadding: EdgeInsets.zero,
                         onChanged: (val) {
                           setState(() {
+                            _isEditing = true;
                             enableNotifications = val;
                           });
                           _updateGeneralSetting('notifications', val);
                         },
                       ),
                       SwitchListTile(
-                        title: const Text('Sound Alerts', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        title: const Text('Sound Alerts', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
                         value: useSoundAlerts,
                         activeColor: const Color(0xFFFFB300),
-                        contentPadding: EdgeInsets.zero,
                         onChanged: (val) {
                           setState(() {
+                            _isEditing = true;
                             useSoundAlerts = val;
                           });
                           _updateGeneralSetting('sound_alerts', val);
                         },
                       ),
-                      const Divider(color: Colors.white12, height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _resetPinCode,
-                          icon: const Icon(Icons.lock_reset, color: Colors.redAccent),
-                          label: const Text('RESET APP PIN CODE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.redAccent),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        ),
+                      const Divider(color: Colors.white24),
+                      ListTile(
+                        leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
+                        title: const Text('Reset PIN Code', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        onTap: _resetPinCode,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -3424,16 +3438,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color buttonColorForLot(String mode) {
-    switch (mode) {
-      case 'Fixed':
-        return const Color(0xFF00E676);
-      case 'Step':
-        return const Color(0xFF29B6F6);
-      case 'Double':
-        return const Color(0xFFAB47BC);
-      default:
-        return const Color(0xFFFFB300);
-    }
+    if (mode == 'Fixed') return const Color(0xFF00E5FF);
+    if (mode == 'Step') return const Color(0xFF9C27B0);
+    return const Color(0xFFFF9100);
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -3442,34 +3449,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
         const SizedBox(height: 4),
-        SizedBox(
-          height: 46,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              filled: true,
-              fillColor: const Color(0xFF0B0B0E),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.white12),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.white12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-              ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            onChanged: (val) => setState(() {
+              _isEditing = true;
+            }),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
             ),
-            onChanged: (val) {
-              setState(() {
-                _isEditing = true;
-              });
-            },
           ),
         ),
       ],
