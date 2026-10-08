@@ -38,7 +38,7 @@ class TypewriterText extends StatefulWidget {
     super.key,
     required this.text,
     this.style,
-    this.duration = const Duration(milliseconds: 30),
+    this.duration = const Duration(milliseconds: 50), // ปรับความไวให้ช้าลงเล็กน้อย (พิมพ์ดีดทีละตัว)
   });
 
   @override
@@ -969,7 +969,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // [ข้อ 2] กรอบใหญ่ในเมนู Alerts / หัวข้อ พร้อมเรืองแสงสีแดงสวยงาม
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
@@ -1229,7 +1228,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                   ..._botLogs.asMap().entries.map((entry) {
                                     var log = entry.value;
-                                    bool isLatest = (entry.key == 0); // ข้อความล่าสุดตามข้อ 1
+                                    bool isLatest = (entry.key == 0); // ข้อความล่าสุด
 
                                     return Padding(
                                       padding: const EdgeInsets.only(bottom: 8.0),
@@ -1256,7 +1255,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                         child: TypewriterText(
                                                           text: "> ${log['message']}",
                                                           style: const TextStyle(
-                                                            color: Colors.redAccent,
+                                                            color: Colors.redAccent, // ตัวหนังสือสีแดงเรืองแสงสำหรับข้อความล่าสุด
                                                             fontFamily: 'monospace',
                                                             fontSize: 16,
                                                             fontWeight: FontWeight.bold,
@@ -1272,7 +1271,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 : Text(
                                                     "> ${log['message']}",
                                                     style: const TextStyle(
-                                                      color: Colors.greenAccent,
+                                                      color: Colors.greenAccent, // ข้อความก่อนหน้าใช้สีเขียวและการแสดงผลแบบเดิม
                                                       fontFamily: 'monospace',
                                                       fontSize: 16,
                                                       fontWeight: FontWeight.bold,
@@ -1931,7 +1930,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // [ข้อ 4] กรอบใหญ่ในเมนู Orders ครอบส่วนเนื้อหาพร้อมเรืองแสงสีแดงสวยงาม
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -2416,7 +2414,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   },
                 ),
               ),
-              // [ข้อ 3] กรอบใหญ่ในเมนู History ครอบส่วนเนื้อหาพร้อมเรืองแสงสีแดงสวยงาม
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2690,7 +2687,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // [ข้อ 2] กรอบใหญ่ในเมนู Alerts ครอบส่วนเนื้อหาพร้อมเรืองแสงสีแดงสวยงาม
                 Expanded(
                   child: Container(
                     width: double.infinity,
