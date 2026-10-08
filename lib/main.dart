@@ -2752,7 +2752,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
-  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
   String selectedTf = "M1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
