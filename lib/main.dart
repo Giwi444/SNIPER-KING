@@ -549,8 +549,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (Updated version)
 // ==========================================
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -579,6 +583,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isOrderBubblePressed = false;
   bool isConnected = false;
 
+  // สำหรับเก็บภาพ Screenshot จาก EA ที่ส่งมาเข้าออเดอร์
+  List<Map<String, dynamic>> _orderScreenshots = [];
+  DatabaseReference? _screenshotsRef;
+
   late final AnimationController _bounceController = AnimationController(
     duration: const Duration(seconds: 1),
     vsync: this,
@@ -601,12 +609,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
+  // ควบคุมการเปิด Modal EA Status & bot Logs ด้วยวงกลมบอลลูนแทน
   bool _isLargeLogsModalOpen = false;
-  bool _isAIChatModalOpen = false;
-  final TextEditingController _aiController = TextEditingController();
-  final List<Map<String, String>> _aiChatMessages = [
-    {'sender': 'ai', 'message': 'สวัสดีครับ! ผมคือ Gemini AI ผู้ช่วยวิเคราะห์การเทรดของคุณ มีอะไรให้ช่วยเหลือไหมครับ?'}
-  ];
+  
+  // ควบคุมการเปิด Modal Chart / Screenshots ที่ปุ่ม Chart ทางขวา
+  bool _isChartModalOpen = false;
 
   @override
   void initState() {
@@ -616,13 +623,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToLogs();
     _listenToConnectionStatus();
     _listenToMarketPrices();
+    _listenToScreenshots();
   }
 
   @override
   void dispose() {
     _bounceController.dispose();
     _scannerController.dispose();
-    _aiController.dispose();
     super.dispose();
   }
 
@@ -655,15 +662,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
-        if (data != null && mounted && data is Map) {
-          setState(() {
-            if (data['bid'] != null) {
-              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-            }
-            if (data['ask'] != null) {
-              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-            }
-          });
+        if (data != null && mounted) {
+          if (data is Map) {
+            setState(() {
+              if (data['bid'] != null) {
+                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+              }
+              if (data['ask'] != null) {
+                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+              }
+            });
+          }
         }
       });
 
@@ -757,6 +766,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // รับข้อมูลภาพแคปเจอร์เข้าออเดอร์จาก EA (ตัวอย่างฐานข้อมูล path 'screenshots' หรือ 'order_screenshots')
+  void _listenToScreenshots() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _screenshotsRef = database.ref('order_screenshots');
+      _screenshotsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          List<Map<String, dynamic>> tempShots = [];
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                tempShots.add({
+                  'key': key.toString(),
+                  'imageUrl': value['image_url']?.toString() ?? value['url']?.toString() ?? '',
+                  'ticket': value['ticket']?.toString() ?? '',
+                  'time': value['time']?.toString() ?? '',
+                  'symbol': value['symbol']?.toString() ?? symbol,
+                });
+              }
+            });
+          } else if (data is List) {
+            for (int i = 0; i < data.length; i++) {
+              if (data[i] is Map) {
+                var item = data[i] as Map;
+                tempShots.add({
+                  'key': i.toString(),
+                  'imageUrl': item['image_url']?.toString() ?? item['url']?.toString() ?? '',
+                  'ticket': item['ticket']?.toString() ?? '',
+                  'time': item['time']?.toString() ?? '',
+                  'symbol': item['symbol']?.toString() ?? symbol,
+                });
+              }
+            }
+          }
+          setState(() {
+            _orderScreenshots = tempShots.reversed.toList();
+          });
+        }
+      });
+    } catch (e) {
+      print("Screenshots listen error: $e");
+    }
+  }
+
   void _clearLogItem(String key) {
     try {
       _logsRef?.child(key).remove();
@@ -836,27 +893,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _sendAiMessage() {
-    String text = _aiController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _aiChatMessages.add({'sender': 'user', 'message': text});
-      _aiController.clear();
-      
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          setState(() {
-            _aiChatMessages.add({
-              'sender': 'ai',
-              'message': 'ได้รับคำถามของคุณแล้วครับ: "$text" ระบบวิเคราะห์ตลาดตอนนี้ราคายังคงเคลื่อนไหวในกรอบ แนะนำให้ติดตามแนวรับแนวต้านสำคัญอย่างใกล้ชิดครับ'
-            });
-          });
-        }
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
@@ -902,6 +938,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         height: 250,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.transparent, width: 0),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.red.withOpacity(0.9),
@@ -991,27 +1028,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
+                        // ปุ่มขวาเปลี่ยนชื่อเป็น Chart และเปิด Modal กล่องภาพแคปเจอร์ออเดอร์จาก EA
                         _buildCircularButton(
-                          label: 'AI', 
-                          icon: Icons.smart_toy,
+                          label: 'CHART', 
+                          icon: Icons.bar_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           onPressed: () {
                             setState(() {
-                              _isAIChatModalOpen = true;
+                              _isChartModalOpen = true;
                             });
                           },
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
+
+                    // กล่อง Bid/Ask ยังคงแสดงผลตามเดิมตลอดเวลาที่หน้าจอหลัก (เพิ่ม Spread และตัวเลขใหญ่ขึ้น)
                     _buildBidAskBoxContent(context),
-                    const SizedBox(height: 55),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
           ),
           
+          // วงกลมบอลลูนลอย (Draggable Bubble) เปลี่ยนให้กดเปิด/ปิดกล่อง EA Status & bot Logs แทน
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1043,7 +1084,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onTapUp: (_) {
                     setState(() {
                       _isOrderBubblePressed = false;
-                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
+                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen; // กดเพื่อเปิด/ปิดกล่อง EA Status & bot Logs
                     });
                   },
                   onTapCancel: () {
@@ -1061,6 +1102,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
+          // Modal: EA Status & bot Logs (ควบคุมการเปิด/ปิดโดยวงกลมบอลลูน)
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1215,13 +1257,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
 
-          if (_isAIChatModalOpen)
+          // Modal: กล่องแสดงภาพแคปเจอร์ออเดอร์จาก EA (เปิดเมื่อกดปุ่ม CHART)
+          if (_isChartModalOpen)
             Stack(
               children: [
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _isAIChatModalOpen = false;
+                      _isChartModalOpen = false;
                     });
                   },
                   child: Container(color: Colors.black54),
@@ -1229,20 +1272,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Center(
                   child: Container(
                     width: MediaQuery.of(context).size.width * 0.94,
-                    height: MediaQuery.of(context).size.height * 0.82,
+                    height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF1744), width: 3.0),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.8),
+                          color: Colors.red.withOpacity(0.9),
                           blurRadius: 25,
-                          spreadRadius: 4,
+                          spreadRadius: 5,
                         ),
                       ],
                       color: const Color(0xFF121215),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -1251,12 +1295,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.smart_toy, color: Color(0xFFFF1744), size: 22),
+                                  Icon(Icons.image_outlined, color: Color(0xFFFFB300), size: 20),
                                   SizedBox(width: 8),
                                   Text(
-                                    'GEMINI AI TRADING ASSISTANT',
+                                    'EA ORDER SCREENSHOTS',
                                     style: TextStyle(
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       letterSpacing: 1,
@@ -1268,73 +1312,84 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 icon: const Icon(Icons.close, color: Colors.white),
                                 onPressed: () {
                                   setState(() {
-                                    _isAIChatModalOpen = false;
+                                    _isChartModalOpen = false;
                                   });
                                 },
                               ),
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFFFF1744), height: 1, thickness: 1.5),
-
+                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
                         Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _aiChatMessages.length,
-                            itemBuilder: (context, index) {
-                              var chat = _aiChatMessages[index];
-                              bool isUser = chat['sender'] == 'user';
-                              return Align(
-                                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 6),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                                  decoration: BoxDecoration(
-                                    color: isUser ? const Color(0xFFB71C1C) : const Color(0xFF1E1E24),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isUser ? Colors.redAccent : Colors.white24,
-                                      width: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: _orderScreenshots.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'No order screenshots received yet...',
+                                      style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
                                     ),
+                                  )
+                                : ListView.builder(
+                                    itemCount: _orderScreenshots.length,
+                                    itemBuilder: (context, index) {
+                                      var shot = _orderScreenshots[index];
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 16),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1B1B20),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    'Ticket: ${shot['ticket']} (${shot['symbol']})',
+                                                    style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                                                  ),
+                                                  Text(
+                                                    shot['time'],
+                                                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const Divider(height: 1, color: Colors.white12),
+                                            ClipRRect(
+                                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                                              child: shot['imageUrl'].isNotEmpty
+                                                  ? Image.network(
+                                                      shot['imageUrl'],
+                                                      fit: BoxFit.cover,
+                                                      width: double.infinity,
+                                                      height: 220,
+                                                      errorBuilder: (ctx, err, stack) => Container(
+                                                        height: 150,
+                                                        color: Colors.black,
+                                                        child: const Center(
+                                                          child: Text('Failed to load image', style: TextStyle(color: Colors.redAccent)),
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Container(
+                                                      height: 150,
+                                                      color: Colors.black,
+                                                      child: const Center(
+                                                        child: Text('No Image URL Provided', style: TextStyle(color: Colors.grey)),
+                                                      ),
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  child: Text(
-                                    chat['message'] ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          color: const Color(0xFF18181C),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _aiController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    hintText: 'พิมพ์ข้อความถาม Gemini AI...',
-                                    hintStyle: TextStyle(color: Colors.grey),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                                  ),
-                                  onSubmitted: (_) => _sendAiMessage(),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.send, color: Color(0xFFFF1744)),
-                                onPressed: _sendAiMessage,
-                              ),
-                            ],
                           ),
                         ),
                       ],
@@ -1536,9 +1591,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // กล่อง Bid / Ask ที่แสดงผลตลอดที่หน้าจอหลัก (เพิ่ม Spread และขยายขนาดตัวเลขให้ใหญ่ขึ้น)
   Widget _buildBidAskBoxContent(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double boxWidth = screenWidth - 32;
+
+    // คำนวณค่า Spread (หน่วยเป็นจุดหรือทศนิยมตามเหมาะสม เช่น (Ask - Bid) * 10 หรือแปลงตามสเกลทองคำ)
     double spreadVal = (realTimeAsk > 0 && realTimeBid > 0) ? (realTimeAsk - realTimeBid) * 100 : 0.0;
 
     return Container(
@@ -1560,7 +1618,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF161619),
           borderRadius: BorderRadius.circular(13),
@@ -1582,12 +1640,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
+                // แสดงค่า Spread เพิ่มเติมตรงตำแหน่งหัวข้อกล่อง
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.white24, width: 0.5),
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
                   ),
                   child: Text(
                     'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
@@ -1603,7 +1662,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Column(
                   children: [
                     const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
                       style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
@@ -1614,7 +1673,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Column(
                   children: [
                     const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
                       style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
@@ -1680,9 +1739,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// ==========================================
-// #2 TYPEWRITER WIDGET FOR LATEST LOG
-// ==========================================
 class _LogTypewriterText extends StatefulWidget {
   final String message;
   const _LogTypewriterText({required this.message});
@@ -1693,7 +1749,6 @@ class _LogTypewriterText extends StatefulWidget {
 
 class _LogTypewriterTextState extends State<_LogTypewriterText> {
   String _displayedText = "";
-  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -1701,31 +1756,14 @@ class _LogTypewriterTextState extends State<_LogTypewriterText> {
     _startTypewriter();
   }
 
-  @override
-  void didUpdateWidget(covariant _LogTypewriterText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.message != widget.message) {
-      _displayedText = "";
-      _currentIndex = 0;
-      _startTypewriter();
-    }
-  }
-
-  void _startTypewriter() {
-    Future.doWhile(() async {
-      if (!mounted) return false;
-      await Future.delayed(const Duration(milliseconds: 25));
-      if (!mounted) return false;
-
+  void _startTypewriter() async {
+    for (int i = 0; i <= widget.message.length; i++) {
+      if (!mounted) break;
       setState(() {
-        if (_currentIndex < widget.message.length) {
-          _currentIndex++;
-          _displayedText = widget.message.substring(0, _currentIndex);
-        }
+        _displayedText = widget.message.substring(0, i);
       });
-
-      return _currentIndex < widget.message.length;
-    });
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
   }
 
   @override
@@ -1733,14 +1771,16 @@ class _LogTypewriterTextState extends State<_LogTypewriterText> {
     return Text(
       _displayedText,
       style: const TextStyle(
-        color: Colors.white70,
+        color: Colors.greenAccent,
         fontFamily: 'monospace',
         fontSize: 16,
+        fontWeight: FontWeight.bold,
         height: 1.4,
       ),
     );
   }
 }
+
 
 // ==========================================
 // #2 ORDERS SCREEN
@@ -2586,7 +2626,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 }
               }
             }
-            alertItems = tempList.reversed.toList();
+            
+            tempList.sort((a, b) => b['key'].compareTo(a['key']));
+            alertItems = tempList;
           });
         }
       });
@@ -2618,7 +2660,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alerts & Signals', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Notifications & Alerts', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         actions: [
           if (alertItems.isNotEmpty)
@@ -2644,37 +2686,36 @@ class _AlertsScreenState extends State<AlertsScreen> {
           ),
           alertItems.isEmpty
               ? const Center(
-                  child: Text('No new alerts available', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                  child: Text('No new notifications', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: alertItems.length,
                   itemBuilder: (context, index) {
-                    final alert = alertItems[index];
+                    final item = alertItems[index];
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFF161619).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.5), width: 1),
                       ),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              alert['message'],
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace', height: 1.4),
+                              item['message'],
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => _clearAlertItem(alert['key']),
+                            onTap: () => _clearAlertItem(item['key']),
                             child: const Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Icon(Icons.close, color: Colors.grey, size: 18),
+                              padding: EdgeInsets.all(4.0),
+                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
                             ),
                           ),
                         ],
@@ -2689,7 +2730,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #5 SETTINGS SCREEN
+// #5 COMBINED SETTINGS SCREEN (Fixed Overwrite Issue)
 // ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -2699,29 +2740,176 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool pushNotifications = true;
-  bool autoTradingProtection = true;
-  String selectedTheme = 'Dark Cyber Red';
-  String pinCodeStatus = 'ตั้งค่าแล้ว';
+  String selectedSymbol = 'XAUUSD';
+  String tradingMode = 'Sniper';
+  String lotMode = 'Fixed';
+  
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1", "H4"];
+  String selectedTf = "M1";
+
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
+  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
+  
+  final TextEditingController initialLotController = TextEditingController();
+  final TextEditingController maxRecoveryController = TextEditingController();
+  final TextEditingController maxOrdersController = TextEditingController(); 
+  final TextEditingController swingBarsController = TextEditingController();
+  final TextEditingController slPointsController = TextEditingController();
+  final TextEditingController riskRewardController = TextEditingController();
+
+  final TextEditingController startTimeController = TextEditingController(text: "08:00");
+  final TextEditingController endTimeController = TextEditingController(text: "22:00");
+
+  bool enableDailyTarget = true;
+  final TextEditingController dailyTargetController = TextEditingController();
+  
+  bool enableDailyLoss = false;
+  final TextEditingController dailyLossController = TextEditingController();
+
+  bool enableNotifications = true;
+  bool useSoundAlerts = true;
+  String lotSize = "0.01";
+  String maxSpread = "30";
+
+  final TextEditingController _lotController = TextEditingController();
+  final TextEditingController _spreadController = TextEditingController();
+
+  DatabaseReference? _statusRef;
+  DatabaseReference? _settingsRef;
+
+  bool _isEditing = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadAllSettingsFromFirebase();
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      pushNotifications = prefs.getBool('push_notifications') ?? true;
-      autoTradingProtection = prefs.getBool('auto_protection') ?? true;
-    });
+  @override
+  void dispose() {
+    initialLotController.dispose();
+    maxRecoveryController.dispose();
+    maxOrdersController.dispose();
+    swingBarsController.dispose();
+    slPointsController.dispose();
+    riskRewardController.dispose();
+    startTimeController.dispose();
+    endTimeController.dispose();
+    dailyTargetController.dispose();
+    dailyLossController.dispose();
+    _lotController.dispose();
+    _spreadController.dispose();
+    super.dispose();
   }
 
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
+  void _loadAllSettingsFromFirebase() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _statusRef = database.ref('status');
+      _statusRef?.onValue.listen((DatabaseEvent event) {
+        if (_isEditing) return;
+
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
+            lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedTf = data['timeframe']?.toString() ?? 'M1';
+            
+            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
+            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
+
+            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
+            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
+            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
+            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
+            slPointsController.text = data['sl_points']?.toString() ?? '500';
+            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
+
+            enableDailyTarget = data['enable_daily_target'] ?? true;
+            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+
+            enableDailyLoss = data['enable_daily_loss'] ?? false;
+            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+
+            _isInitialized = true;
+          });
+        }
+      });
+
+      _settingsRef = database.ref('settings');
+      _settingsRef?.onValue.listen((DatabaseEvent event) {
+        if (_isEditing) return;
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            lotSize = data['lot_size']?.toString() ?? '0.01';
+            maxSpread = data['max_spread']?.toString() ?? '30';
+            enableNotifications = data['notifications'] ?? true;
+            useSoundAlerts = data['sound_alerts'] ?? true;
+            
+            _lotController.text = lotSize;
+            _spreadController.text = maxSpread;
+          });
+        }
+      });
+    } catch (e) {
+      print("Load settings error: $e");
+    }
+  }
+
+  void _saveBotParametersToFirebase() {
+    try {
+      _statusRef?.update({
+        'symbol': selectedSymbol,
+        'trading_mode': tradingMode,
+        'lot_mode': lotMode,
+        'timeframe': selectedTf,
+        'start_time_th': startTimeController.text,
+        'end_time_th': endTimeController.text,
+        'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
+        'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
+        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
+        'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
+        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
+        'enable_daily_target': enableDailyTarget,
+        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
+        'enable_daily_loss': enableDailyLoss,
+        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+      });
+
+      setState(() {
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
+          backgroundColor: Color(0xFFFFB300),
+        ),
+      );
+    } catch (e) {
+      print("Save bot parameters error: $e");
+    }
+  }
+
+  void _updateGeneralSetting(String key, dynamic value) {
+    try {
+      _settingsRef?.update({key: value});
+      setState(() {
+        _isEditing = false;
+      });
+    } catch (e) {
+      print("Update general setting error: $e");
+    }
   }
 
   Future<void> _resetPinCode() async {
@@ -2729,22 +2917,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.remove('user_pin');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('รีเซ็ทรหัส PIN สำเร็จ กรุณาเปิดแอปใหม่เพื่อตั้งรหัส PIN ใหม่'), backgroundColor: Colors.amber),
+      const SnackBar(content: Text('รีเซ็ตรหัส PIN สำเร็จ กรุณาตั้งค่าใหม่ในครั้งถัดไป'), backgroundColor: Colors.green),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    double sl = double.tryParse(slPointsController.text) ?? 500;
+    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
+    double calculatedTP = sl * rr;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Parameters Bot', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/p.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
@@ -2753,90 +2946,507 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const Text('GENERAL SETTINGS', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1, fontFamily: 'monospace')),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12, width: 1),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PARAMETERS',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                      subtitle: const Text('รับการแจ้งเตือนสถานะคำสั่งซื้อขาย', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                      value: pushNotifications,
-                      activeColor: const Color(0xFFFFB300),
-                      onChanged: (val) {
-                        setState(() {
-                          pushNotifications = val;
-                        });
-                        _saveSetting('push_notifications', val);
-                      },
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      
+                      Row(
+                        children: symbolOptions.map((sym) {
+                          bool isSelected = selectedSymbol == sym;
+                          Color buttonColor;
+                          if (sym == 'XAUUSD') {
+                            buttonColor = const Color(0xFFFFB300);
+                          } else if (sym == 'BTCUSD') {
+                            buttonColor = const Color(0xFF00C853);
+                          } else {
+                            buttonColor = const Color(0xFFD50000);
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    selectedSymbol = sym;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    sym,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = tradingMode == mode;
+                          Color modeColor;
+                          if (mode == 'All Mode') {
+                            modeColor = const Color(0xFFFFD700);
+                          } else if (mode == 'Liquidity') {
+                            modeColor = const Color(0xFFE91E63);
+                          } else if (mode == 'Breakout') {
+                            modeColor = const Color(0xFF00BCD4);
+                          } else {
+                            modeColor = const Color(0xFFFF5722);
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    tradingMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: lotModeOptions.map((mode) {
+                          bool isSelected = lotMode == mode;
+                          Color modeColor = buttonColorForLot(mode);
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    lotMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 2.2,
+                        ),
+                        itemCount: timeframes.length,
+                        itemBuilder: (context, index) {
+                          String tf = timeframes[index];
+                          bool isSelected = selectedTf == tf;
+                          return ElevatedButton(
+                            onPressed: () => setState(() {
+                              _isEditing = true;
+                              selectedTf = tf;
+                            }),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
+                              foregroundColor: isSelected ? Colors.black : Colors.white70,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              tf,
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white70,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 46,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Text(
+                              '${calculatedTP.toStringAsFixed(1)} Pts',
+                              style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'DAILY TARGET & LOSS CONTROL', 
+                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyTarget,
+                                        activeColor: const Color(0xFF00C853),
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyTarget = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyLoss,
+                                        activeColor: Colors.redAccent,
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyLoss = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveBotParametersToFirebase,
+                    icon: const Icon(Icons.save, color: Colors.white),
+                    label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    const Divider(color: Colors.white12, height: 1),
-                    SwitchListTile(
-                      title: const Text('Auto Trading Protection', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                      subtitle: const Text('ระบบป้องกันความปลอดภัยอัตโนมัติ', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                      value: autoTradingProtection,
-                      activeColor: const Color(0xFFFFB300),
-                      onChanged: (val) {
-                        setState(() {
-                          autoTradingProtection = val;
-                        });
-                        _saveSetting('auto_protection', val);
-                      },
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text('SECURITY', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1, fontFamily: 'monospace')),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12, width: 1),
+                const SizedBox(height: 24),
+
+                const Text(
+                  'GENERAL SETTINGS & PREFERENCES',
+                  style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                 ),
-                child: ListTile(
-                  title: const Text('Reset PIN Code', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                  subtitle: const Text('ล้างรหัส PIN เดิมเพื่อตั้งค่าใหม่', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
-                  trailing: const Icon(Icons.lock_reset, color: Color(0xFFFFB300)),
-                  onTap: _resetPinCode,
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('General Trading Config', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _lotController,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (val) => setState(() => _isEditing = true),
+                        decoration: const InputDecoration(
+                          labelText: 'Default Lot Size',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                        onSubmitted: (val) => _updateGeneralSetting('lot_size', val),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _spreadController,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) => setState(() => _isEditing = true),
+                        decoration: const InputDecoration(
+                          labelText: 'Max Spread Filter',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                        onSubmitted: (val) => _updateGeneralSetting('max_spread', val),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text('ABOUT APP', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1, fontFamily: 'monospace')),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161619).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12, width: 1),
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Preferences & Security', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace')),
+                      SwitchListTile(
+                        title: const Text('Push Notifications', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                        value: enableNotifications,
+                        activeColor: const Color(0xFFFFB300),
+                        onChanged: (val) {
+                          setState(() {
+                            _isEditing = true;
+                            enableNotifications = val;
+                          });
+                          _updateGeneralSetting('notifications', val);
+                        },
+                      ),
+                      SwitchListTile(
+                        title: const Text('Sound Alerts', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                        value: useSoundAlerts,
+                        activeColor: const Color(0xFFFFB300),
+                        onChanged: (val) {
+                          setState(() {
+                            _isEditing = true;
+                            useSoundAlerts = val;
+                          });
+                          _updateGeneralSetting('sound_alerts', val);
+                        },
+                      ),
+                      const Divider(color: Colors.white24),
+                      ListTile(
+                        leading: const Icon(Icons.lock_reset, color: Colors.redAccent),
+                        title: const Text('Reset PIN Code', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        onTap: _resetPINCodeHelper,
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Column(
-                  children: [
-                    ListTile(
-                      title: Text('App Version', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                      trailing: Text('1.0.0 (Sniper King)', style: TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace')),
-                    ),
-                    Divider(color: Colors.white12, height: 1),
-                    ListTile(
-                      title: Text('Developer', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace')),
-                      trailing: Text('Algohost & Rose Cyber', style: TextStyle(color: Colors.amberAccent, fontSize: 12, fontFamily: 'monospace')),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Color buttonColorForLot(String mode) {
+    if (mode == 'Fixed') return const Color(0xFF00E5FF);
+    if (mode == 'Step') return const Color(0xFF9C27B0);
+    return const Color(0xFFFF9100);
+  }
+
+  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            textAlign: TextAlign.start,
+            style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 13),
+            onChanged: (val) {
+              setState(() {
+                _isEditing = true;
+              });
+            },
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _resetPINCodeHelper() async {
+    await _resetPinCode();
   }
 }
