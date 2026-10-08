@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -100,7 +99,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ROSE CYBER ROBOT',
+      title: 'Sniper King',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
@@ -1869,6 +1868,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+
 // ==========================================
 // #2 ORDERS SCREEN
 // ==========================================
@@ -2826,195 +2826,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-// ==========================================
-// #5 COMBINED SETTINGS SCREEN
-// ==========================================
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  String selectedSymbol = 'XAUUSD';
-  String tradingMode = 'Sniper';
-  String lotMode = 'Fixed';
-  
-  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
-  String selectedTf = "M1";
-
-  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
-  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
-  
-  final TextEditingController initialLotController = TextEditingController();
-  final TextEditingController maxRecoveryController = TextEditingController();
-  final TextEditingController maxOrdersController = TextEditingController(); 
-  final TextEditingController swingBarsController = TextEditingController();
-  final TextEditingController slPointsController = TextEditingController();
-  final TextEditingController riskRewardController = TextEditingController();
-
-  final TextEditingController startTimeController = TextEditingController(text: "08:00");
-  final TextEditingController endTimeController = TextEditingController(text: "22:00");
-
-  bool enableDailyTarget = true;
-  final TextEditingController dailyTargetController = TextEditingController();
-  
-  bool enableDailyLoss = false;
-  final TextEditingController dailyLossController = TextEditingController();
-
-  bool isSoundEnabled = true;
-  bool isPushEnabled = true;
-  bool isAutoLotEnabled = false;
-  double riskPercent = 1.0;
-
-  DatabaseReference? _statusRef;
-  DatabaseReference? _settingsRef;
-
-  bool _isEditing = false;
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAllSettingsFromFirebase();
-    _loadLocalPreferences();
-  }
-
-  @override
-  void dispose() {
-    initialLotController.dispose();
-    maxRecoveryController.dispose();
-    maxOrdersController.dispose();
-    swingBarsController.dispose();
-    slPointsController.dispose();
-    riskRewardController.dispose();
-    startTimeController.dispose();
-    endTimeController.dispose();
-    dailyTargetController.dispose();
-    dailyLossController.dispose();
-    super.dispose();
-  }
-
-  void _loadAllSettingsFromFirebase() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _statusRef = database.ref('status');
-      _statusRef?.onValue.listen((DatabaseEvent event) {
-        if (_isEditing) return;
-
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
-            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
-            selectedTf = data['timeframe']?.toString() ?? 'M1';
-            
-            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
-            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
-
-            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
-            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
-            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
-            slPointsController.text = data['sl_points']?.toString() ?? '500';
-            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
-
-            enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
-
-            enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
-
-            _isInitialized = true;
-          });
-        }
-      });
-
-      _settingsRef = database.ref('settings');
-      _settingsRef?.onValue.listen((DatabaseEvent event) {
-        if (_isEditing) return;
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            isSoundEnabled = data['sound_alerts'] ?? true;
-            isPushEnabled = data['notifications'] ?? true;
-          });
-        }
-      });
-    } catch (e) {
-      print("Load settings error: $e");
-    }
-  }
-
-  Future<void> _loadLocalPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      isSoundEnabled = prefs.getBool('pref_sound') ?? true;
-      isPushEnabled = prefs.getBool('pref_push') ?? true;
-      isAutoLotEnabled = prefs.getBool('pref_autolot') ?? false;
-      riskPercent = prefs.getDouble('pref_risk') ?? 1.0;
-    });
-  }
-
-  Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF00E5FF);
-    if (mode == 'Step') return const Color(0xFF9C27B0);
-    return const Color(0xFFFF9100);
-  }
-
-  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            onChanged: (val) => setState(() {
-              _isEditing = true;
-            }),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double sl = double.tryParse(slPointsController.text) ?? 500;
-    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
-    double calculatedTP = sl * rr;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings & Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
-        elevation: 0,
-      ),
-      body: Stack(
 // ==========================================
 // #5 COMBINED SETTINGS SCREEN (Fixed & Full Code)
 // ==========================================
