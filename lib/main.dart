@@ -111,6 +111,9 @@ class LiquiditySweepApp extends StatelessWidget {
   }
 }
 
+
+
+
 // ==========================================
 // 1. MT5 LOGIN WRAPPER
 // ==========================================
@@ -122,10 +125,9 @@ class MT5LoginWrapper extends StatefulWidget {
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  // ฝังค่าตัวอย่างลงในช่อง Text Controller ทันทีตามต้องการ
-  final TextEditingController _loginController = TextEditingController(text: '8111175');
-  final TextEditingController _passwordController = TextEditingController(text: 'example_password');
-  final TextEditingController _serverController = TextEditingController(text: 'ICMarketsSC-Demo');
+  final TextEditingController _loginController = TextEditingController(text: '');
+  final TextEditingController _passwordController = TextEditingController(text: '');
+  final TextEditingController _serverController = TextEditingController(text: ''); 
   
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -160,9 +162,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
-    String server = _serverController.text.trim();
+    // ถ้าผู้ใช้ไม่ได้พิมพ์อะไรในช่อง Server ให้ใช้ค่าตัวอย่างเริ่มต้น 'ICMarketsSC-Demo' อัตโนมัติ
+    String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
 
-    if (login.isEmpty || password.isEmpty || server.isEmpty) {
+    if (login.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
       );
@@ -181,7 +184,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      // ส่งข้อมูลทั้ง 3 ค่าไปให้หลังบ้านตรวจสอบความถูกต้อง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -190,18 +192,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // รอฟังสัญญาณตอบกลับจากหลังบ้านอย่างเข้มงวด
       _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
 
         final status = data['login_status']?.toString();
-        
-        // ดึงค่า Login และ Server ล่าสุดจากหลังบ้านมาตรวจสอบยันซ้ำอีกรอบ
         final verifiedLogin = data['login']?.toString() ?? '';
         final verifiedServer = data['server']?.toString() ?? '';
 
-        // เงื่อนไขผ่าน: สถานะต้องเป็น success และข้อมูล Login กับ Server ตรงกัน
         if (status == 'success' && verifiedLogin == login && verifiedServer == server) {
           await _loginStatusSubscription?.cancel();
           
@@ -218,8 +216,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           await _loginStatusSubscription?.cancel();
 
           if (!mounted) return;
-          
-          // ล้างรหัสผ่านเมื่อข้อมูลไม่ถูกต้อง
           _passwordController.clear();
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -229,16 +225,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             ),
           );
           setState(() {
-            _isLoading = false; // ค้างอยู่ที่หน้าเดิม ห้ามผ่านเด็ดขาด
+            _isLoading = false;
           });
         }
       });
 
-      // กำหนด Timeout ป้องกันแอปค้าง (10 วินาที)
       Future.delayed(const Duration(seconds: 10), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
-          
           _passwordController.clear();
 
           setState(() {
@@ -255,7 +249,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
     } catch (e) {
       if (!mounted) return;
-      
       _passwordController.clear();
 
       setState(() {
@@ -384,27 +377,33 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 25),
+                      
+                      // 1. ช่อง Account Login (ลายน้ำ)
                       TextField(
                         controller: _loginController,
                         keyboardType: TextInputType.number,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'Account Login',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                          hintText: 'Account Login',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      
+                      // 2. ช่อง Investor Password (ลายน้ำ)
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'Investor Password',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                          hintText: 'Investor Password',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -419,17 +418,20 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ลบข้อความตัวอย่างด้านนอกออกแล้ว คงเหลือแต่ TextField ของ Server เท่านั้น
+                      
+                      // 3. ช่อง Broker Server (ทำลายน้ำเป็นตัวอย่างให้เข้าใจง่าย)
                       TextField(
                         controller: _serverController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'Broker Server',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                          hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
+                          hintStyle: TextStyle(color: Colors.redAccent.withOpacity(0.6), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       ),
+                      
                       const SizedBox(height: 25),
                       SizedBox(
                         width: double.infinity,
@@ -456,6 +458,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
+
+
+
 
 // ==========================================
 // 2. PIN AUTH WRAPPER
@@ -688,6 +694,10 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
+
+
+
+
 // ==========================================
 // #0 MAIN NAVIGATION SCREEN
 // ==========================================
@@ -885,6 +895,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
+
+
+
+
 
 // ==========================================
 // #1 HOME SCREEN
@@ -2183,6 +2197,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+
+
+
+
 // ==========================================
 // #2 ORDERS SCREEN
 // ==========================================
@@ -2617,6 +2635,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
+
+
+
+
 // ==========================================
 // #3 HISTORY SCREEN
 // ==========================================
@@ -2992,6 +3014,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
+
+
+
+
 // ==========================================
 // #4 ALERTS SCREEN
 // ==========================================
@@ -3233,6 +3259,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
+
+
+
 // ==========================================
 // #5 SETTINGS SCREEN
 // ==========================================
@@ -3397,15 +3426,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _resetPin() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
-    await prefs.remove('mt5_login');
-    await prefs.remove('mt5_server');
+    await prefs.remove('user_pin'); // ลบเฉพาะรหัส PIN เพื่อให้เด้งไปหน้าสร้าง PIN ใหม่
 
     if (!mounted) return;
 
+    // เด้งไปที่หน้า PinAuthWrapper ทันทีโดยคงสถานะการเชื่อมต่อ MT5 ไว้เดิม
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
+      MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
       (route) => false,
     );
   }
