@@ -3267,6 +3267,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
+
+
+
 // ==========================================
 // #5 SETTINGS SCREEN
 // ==========================================
@@ -3439,6 +3442,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text('รีเซ็ตรหัส PIN และข้อมูล MT5 สำเร็จ กรุณาเปิดแอพใหม่เพื่อตั้งค่าใหม่'),
         backgroundColor: Color(0xFF00C853),
       ),
+    );
+  }
+
+  // ระบบ Log Out ออกจากระบบเพื่อกลับไปหน้ากรอก User/Password เหมือนตอนติดตั้งแอพ
+  Future<void> _logoutToLoginScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_pin');
+    await prefs.remove('mt5_login');
+    await prefs.remove('mt5_server');
+
+    if (!mounted) return;
+
+    // เด้งกลับไปหน้า MT5LoginWrapper (หน้ากรอก User/Password เริ่มต้น) แบบล้างประวัติหน้าจอเก่าทั้งหมด
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
+      (route) => false,
     );
   }
 
@@ -3887,6 +3907,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             onPressed: _resetPin,
                             child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      // เพิ่มปุ่ม Log Out ออกจากระบบตรงนี้
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Log Out (เปลี่ยนบัญชี MT5)', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                SizedBox(height: 2),
+                                Text('ออกจากระบบเพื่อกลับไปหน้าล็อกอิน', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[850],
+                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _logoutToLoginScreen,
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
