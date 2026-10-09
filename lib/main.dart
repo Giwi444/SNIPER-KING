@@ -122,8 +122,9 @@ class MT5LoginWrapper extends StatefulWidget {
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  // ฝังค่าตัวอย่างลงในช่อง Text Controller ทันทีตามต้องการ
+  final TextEditingController _loginController = TextEditingController(text: '8111175');
+  final TextEditingController _passwordController = TextEditingController(text: 'example_password');
   final TextEditingController _serverController = TextEditingController(text: 'ICMarketsSC-Demo');
   
   bool _obscurePassword = true;
@@ -418,28 +419,16 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextField(
-                            controller: _serverController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Broker Server',
-                              labelStyle: const TextStyle(color: Colors.grey),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4.0),
-                            child: Text(
-                              'ตัวอย่าง: ICMarketsSC-Demo',
-                              style: TextStyle(color: Colors.redAccent, fontSize: 11, fontStyle: FontStyle.italic),
-                            ),
-                          ),
-                        ],
+                      // ลบข้อความตัวอย่างด้านนอกออกแล้ว คงเหลือแต่ TextField ของ Server เท่านั้น
+                      TextField(
+                        controller: _serverController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Broker Server',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                        ),
                       ),
                       const SizedBox(height: 25),
                       SizedBox(
@@ -3410,12 +3399,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
     await prefs.remove('mt5_login');
+    await prefs.remove('mt5_server');
+
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('รีเซ็ตรหัส PIN และข้อมูล MT5 สำเร็จ กรุณาเปิดแอพใหม่เพื่อตั้งค่าใหม่'),
-        backgroundColor: Color(0xFF00C853),
-      ),
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
+      (route) => false,
     );
   }
 
