@@ -5,7 +5,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="ROSECYBER"
+        android:label="ROSE_CYBER"
         android:icon="@mipmap/ic_launcher">
         
         <activity
