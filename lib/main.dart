@@ -26,9 +26,6 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
-// ==========================================
-// WIDGET สำหรับเอฟเฟกต์พิมพ์ดีดทีละตัว
-// ==========================================
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle? style;
@@ -99,7 +96,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sniper King',
+      title: 'Sniper King Pro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
@@ -109,14 +106,13 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      // เริ่มต้นด้วยการตรวจสอบการลงชื่อเข้าใช้ MT5 ก่อน
       home: const MT5LoginWrapper(),
     );
   }
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ขั้นตอนที่ 1: ลงชื่อเข้าใช้ MT5 พร้อมระบบแจ้งเตือน)
+// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ MT5 ระดับความปลอดภัยสูง)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -131,11 +127,21 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   final TextEditingController _serverController = TextEditingController(text: 'ICMarkets SC-MT5-Demo');
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
+  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkExistingMT5Login();
+  }
+
+  @override
+  void dispose() {
+    _loginStatusSubscription?.cancel();
+    _loginController.dispose();
+    _passwordController.dispose();
+    _serverController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkExistingMT5Login() async {
@@ -153,10 +159,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim();
 
-    // 1. ตรวจสอบเบื้องต้นว่ากรอกครบไหม
     if (login.isEmpty || password.isEmpty || server.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูล MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -171,7 +176,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // ส่งข้อมูลไปตรวจสอบที่ Firebase / Status
+      await _loginStatusSubscription?.cancel();
+
+      // ส่งข้อมูลคำขอตรวจสอบไปยัง Firebase เพื่อให้ EA บน MT5 ตรวจสอบความถูกต้องกับ Server โบรคเกอร์จริง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -180,52 +187,68 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // รอผลลัพธ์จาก Firebase (หรือทำการตรวจสอบจำลอง)
-      await Future.delayed(const Duration(seconds: 2));
+      // ดักฟังผลการตรวจสอบสถานะแบบ Real-time จาก EA บน MT5
+      _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
+        final status = event.snapshot.value?.toString();
 
-      // ตัวอย่างเงื่อนไขตรวจสอบ (สามารถปรับเปลี่ยนหรือเชื่อมโยงกับค่าที่ EA ส่งกลับมาได้)
-      bool isSuccess = login.length >= 5 && password.length >= 4; 
+        if (status == 'success') {
+          await _loginStatusSubscription?.cancel();
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mt5_login', login);
+          await prefs.setString('mt5_server', server);
 
-      if (!isSuccess) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('บัญชีเทรดหรือรหัสผ่านผิด'),
-            backgroundColor: Color(0xFFD50000),
-          ),
-        );
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+            _isLoggedInMT5 = true;
+          });
+        } else if (status == 'failed') {
+          await _loginStatusSubscription?.cancel();
 
-      // ถ้าถูกต้อง บันทึกข้อมูลลงเครื่อง
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('mt5_login', login);
-      await prefs.setString('mt5_server', server);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('บัญชีเทรดหรือรหัสผ่านผิด'),
+              backgroundColor: Color(0xFFD50000),
+            ),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      });
 
+      // Timeout Guard (10 วินาที หากไม่มีการตอบสนองจาก EA บน MT5)
+      Future.delayed(const Duration(seconds: 10), () {
+        if (_isLoading && mounted) {
+          _loginStatusSubscription?.cancel();
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบว่า EA บน MT5 กำลังเปิดรันอยู่หรือไม่'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      });
+
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isLoggedInMT5 = true;
+        _isLoading = false;
       });
-    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.red),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoggedInMT5) {
-      // เมื่อลงชื่อเข้าใช้ MT5 สำเร็จแล้ว ไปขั้นตอนที่ 2: สร้างรหัส PIN
       return const PinAuthWrapper();
     }
 
@@ -238,7 +261,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
           ),
-          Container(color: Colors.black.withOpacity(0.85)),
+          Container(color: Colors.black.withOpacity(0.88)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -247,46 +270,43 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 50),
+                      const Icon(Icons.security, color: Color(0xFFFFB300), size: 55),
                       const SizedBox(height: 16),
                       const Text(
-                        'CONNECT MT5 ACCOUNT',
+                        'SECURE MT5 LOGIN',
                         style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace', letterSpacing: 1.5),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'กรุณากรอกข้อมูลพอร์ต MetaTrader 5 เพื่อเริ่มต้นใช้งาน',
-                        style: TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace'),
+                        'ระบบตรวจสอบสิทธิ์ความปลอดภัยระดับสูงสำหรับพอร์ตซื้อขาย',
+                        style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace'),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 30),
-                      // 1.1 กรอกบัญชีผู้ใช้
                       TextField(
                         controller: _loginController,
                         keyboardType: TextInputType.number,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'MT5 Account Login (บัญชีผู้ใช้)',
+                          labelText: 'MT5 Account Login (เลขบัญชีเทรด)',
                           labelStyle: const TextStyle(color: Colors.grey),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // 1.2 กรอกรหัสผ่าน
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'MT5 Password (รหัสผ่าน)',
+                          labelText: 'MT5 Master/Investor Password (รหัสผ่าน)',
                           labelStyle: const TextStyle(color: Colors.grey),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // 1.3 กรอกเซิร์ฟเวอร์ + 1.4 ตัวอย่าง Server ใต้ช่องกรอก
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -294,7 +314,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             controller: _serverController,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              labelText: 'Broker Server (เซิร์ฟเวอร์)',
+                              labelText: 'Broker Server (เซิร์ฟเวอร์โบรกเกอร์)',
                               labelStyle: const TextStyle(color: Colors.grey),
                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
@@ -304,7 +324,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           const Padding(
                             padding: EdgeInsets.only(left: 4.0),
                             child: Text(
-                              'ตัวอย่างการกรอก Server: ICMarkets SC-MT5-Demo',
+                              'ตัวอย่าง: ICMarkets SC-MT5-Demo',
                               style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontStyle: FontStyle.italic),
                             ),
                           ),
@@ -322,7 +342,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           ),
                           child: _isLoading 
                               ? const CircularProgressIndicator(color: Colors.black)
-                              : const Text('CONNECT ACCOUNT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                         ),
                       ),
                     ],
@@ -338,7 +358,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 }
 
 // ==========================================
-// 2. PIN AUTH WRAPPER (ขั้นตอนที่ 2: สร้างรหัสผ่าน/PIN ก่อนเข้าใช้งาน)
+// 2. PIN AUTH WRAPPER (ระบบความปลอดภัย PIN Code 6 หลัก)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -447,13 +467,12 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     }
 
     if (isAuthorized) {
-      // ขั้นตอนที่ 3: เมื่อผ่าน PIN แล้ว เข้าสู่ระบบหลักของแอพ
       return const MainNavigationScreen();
     }
 
-    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
     if (!hasStoredPin) {
-      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักใหม่";
+      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
     }
 
     return Scaffold(
@@ -463,13 +482,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
           ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
+          Container(color: Colors.black.withOpacity(0.85)),
           SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -550,13 +565,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -569,36 +577,19 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             }
           },
           customBorder: const CircleBorder(),
-          splashColor: const Color(0xFFFFB300).withOpacity(0.6),
-          highlightColor: const Color(0xFFFFB300).withOpacity(0.4),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/images/ppp.jpg',
-                  fit: BoxFit.cover,
-                  opacity: const AlwaysStoppedAnimation(0.25),
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: Colors.transparent);
-                  },
-                ),
-              ),
-              Center(
-                child: val == 'del'
-                    ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                    : Text(
-                        val,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-              ),
-            ],
+          child: Center(
+            child: val == 'del'
+                ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ),
       ),
     );
   }
 }
+
+// (หมายเหตุ: โครงสร้างหน้า MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ใช้โค้ดเดิมที่คุณมีอยู่ต่อท้ายได้ทันทีครับ)
+
 
 // ==========================================
 // #0 MAIN NAVIGATION SCREEN (หน้าหลักของระบบ)
