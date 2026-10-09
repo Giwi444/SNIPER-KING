@@ -162,7 +162,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
-    // ถ้าผู้ใช้ไม่ได้พิมพ์อะไรในช่อง Server ให้ใช้ค่าตัวอย่างเริ่มต้น 'ICMarketsSC-Demo' อัตโนมัติ
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
 
     if (login.isEmpty || password.isEmpty) {
@@ -184,6 +183,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
+      // ส่งข้อมูลทั้ง 3 ตัวขึ้นไปที่ Firebase พร้อมขอเชื่อมต่อ
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -192,15 +192,43 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
+      // ดักฟังการตอบกลับจาก Firebase พร้อมตรวจสอบความถูกต้องทั้ง 3 ช่อง
       _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
 
         final status = data['login_status']?.toString();
-        final verifiedLogin = data['login']?.toString() ?? '';
-        final verifiedServer = data['server']?.toString() ?? '';
+        
+        // ดึงค่าทั้ง 3 ตัวจาก Firebase มาเช็คเทียบกับที่ผู้ใช้กรอกจริง
+        final firebaseLogin = data['login']?.toString() ?? '';
+        final firebasePassword = data['password']?.toString() ?? '';
+        final firebaseServer = data['server']?.toString() ?? '';
 
-        if (status == 'success' && verifiedLogin == login && verifiedServer == server) {
+        // เงื่อนไขเช็คความถูกต้องครบทั้ง 3 ช่อง (Account, Password, Server ต้องตรงกันทุกตัว)
+        bool isAllMatched = (firebaseLogin == login && 
+                             firebasePassword == password && 
+                             firebaseServer == server);
+
+        if (status == 'success') {
+          if (!isAllMatched) {
+            // ถ้าหลังบ้านบอก success แต่ข้อมูลทั้ง 3 ช่องใน Firebase ไม่ตรงกับที่กรอก (ข้อมูลถูกเปลี่ยนหรือมั่ว)
+            await _loginStatusSubscription?.cancel();
+            if (!mounted) return;
+            _passwordController.clear();
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('ข้อมูลบัญชี, รหัสผ่าน หรือ Server ไม่ถูกต้องตามความเป็นจริง'),
+                backgroundColor: Color(0xFFD50000),
+              ),
+            );
+            setState(() {
+              _isLoading = false;
+            });
+            return;
+          }
+
+          // ถ้าทุกอย่างถูกต้องตรงกันทั้ง 3 ช่องจริง ๆ ถึงยอมให้ผ่านเข้าแอป
           await _loginStatusSubscription?.cancel();
           
           final prefs = await SharedPreferences.getInstance();
@@ -230,6 +258,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         }
       });
 
+      // กำหนด Timeout ป้องกันแอปค้าง (10 วินาที)
       Future.delayed(const Duration(seconds: 10), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
@@ -419,7 +448,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // 3. ช่อง Broker Server (ทำลายน้ำเป็นตัวอย่างให้เข้าใจง่าย)
+                      // 3. ช่อง Broker Server (ลายน้ำตัวอย่าง)
                       TextField(
                         controller: _serverController,
                         style: const TextStyle(color: Colors.white),
@@ -458,6 +487,684 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
+// ==========================================
+// #5 SETTINGS SCREEN
+// ==========================================
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String selectedSymbol = 'XAUUSD';
+  String tradingMode = 'Sniper';
+  String lotMode = 'Fixed';
+  
+  final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
+  String selectedTf = "M1";
+
+  final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
+  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
+  final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
+  
+  final TextEditingController initialLotController = TextEditingController();
+  final TextEditingController maxRecoveryController = TextEditingController();
+  final TextEditingController maxOrdersController = TextEditingController(); 
+  final TextEditingController swingBarsController = TextEditingController();
+  final TextEditingController slPointsController = TextEditingController();
+  final TextEditingController riskRewardController = TextEditingController();
+
+  final TextEditingController startTimeController = TextEditingController(text: "08:00");
+  final TextEditingController endTimeController = TextEditingController(text: "22:00");
+
+  bool enableDailyTarget = true;
+  final TextEditingController dailyTargetController = TextEditingController();
+  
+  bool enableDailyLoss = false;
+  final TextEditingController dailyLossController = TextEditingController();
+
+  bool isSoundEnabled = true;
+  bool isPushEnabled = true;
+  bool isAutoLotEnabled = false;
+  double riskPercent = 1.0;
+  final String currentPinStateStatus = "ตั้งค่ารหัส PIN แล้ว";
+
+  DatabaseReference? _statusRef;
+
+  bool _isEditing = false;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllSettingsFromFirebase();
+    _loadLocalPreferences();
+  }
+
+  @override
+  void dispose() {
+    initialLotController.dispose();
+    maxRecoveryController.dispose();
+    maxOrdersController.dispose();
+    swingBarsController.dispose();
+    slPointsController.dispose();
+    riskRewardController.dispose();
+    startTimeController.dispose();
+    endTimeController.dispose();
+    dailyTargetController.dispose();
+    dailyLossController.dispose();
+    super.dispose();
+  }
+
+  void _loadAllSettingsFromFirebase() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _statusRef = database.ref('status');
+      _statusRef?.onValue.listen((DatabaseEvent event) {
+        if (_isEditing) return;
+
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
+            lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedTf = data['timeframe']?.toString() ?? 'M1';
+            
+            startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
+            endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
+
+            initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
+            maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
+            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
+            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
+            slPointsController.text = data['sl_points']?.toString() ?? '500';
+            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
+
+            enableDailyTarget = data['enable_daily_target'] ?? true;
+            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+
+            enableDailyLoss = data['enable_daily_loss'] ?? false;
+            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+
+            _isInitialized = true;
+          });
+        }
+      });
+    } catch (e) {
+      print("Load settings error: $e");
+    }
+  }
+
+  Future<void> _loadLocalPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      isSoundEnabled = prefs.getBool('pref_sound') ?? true;
+      isPushEnabled = prefs.getBool('pref_push') ?? true;
+      isAutoLotEnabled = prefs.getBool('pref_autolot') ?? false;
+      riskPercent = prefs.getDouble('pref_risk') ?? 1.0;
+    });
+  }
+
+  void _saveBotParametersToFirebase() {
+    try {
+      _statusRef?.update({
+        'symbol': selectedSymbol,
+        'trading_mode': tradingMode,
+        'lot_mode': lotMode,
+        'timeframe': selectedTf,
+        'start_time_th': startTimeController.text,
+        'end_time_th': endTimeController.text,
+        'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
+        'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
+        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
+        'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
+        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
+        'enable_daily_target': enableDailyTarget,
+        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
+        'enable_daily_loss': enableDailyLoss,
+        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+      });
+
+      setState(() {
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
+          backgroundColor: Color(0xFFFF1744),
+        ),
+      );
+    } catch (e) {
+      print("Save bot parameters error: $e");
+    }
+  }
+
+  Future<void> _resetPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_pin'); // ลบเฉพาะรหัส PIN เพื่อให้เด้งไปหน้าสร้าง PIN ใหม่
+
+    if (!mounted) return;
+
+    // เด้งไปที่หน้า PinAuthWrapper ทันทีโดยคงสถานะการเชื่อมต่อ MT5 ไว้เดิม
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _logoutToLoginScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_pin');
+    await prefs.remove('mt5_login');
+    await prefs.remove('mt5_server');
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
+      (route) => false,
+    );
+  }
+
+  Color buttonColorForLot(String mode) {
+    if (mode == 'Fixed') return const Color(0xFF00E5FF);
+    if (mode == 'Step') return const Color(0xFF9C27B0);
+    return const Color(0xFFFF9100);
+  }
+
+  Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            onChanged: (val) => setState(() {
+              _isEditing = true;
+            }),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double sl = double.tryParse(slPointsController.text) ?? 500;
+    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
+    double calculatedTP = sl * rr;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings & Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
+        backgroundColor: const Color(0xFF0B0B0E),
+        elevation: 0,
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.8),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161619).withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.redAccent,
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.7),
+                        blurRadius: 14,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PARAMETERS BOT',
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: symbolOptions.map((sym) {
+                          bool isSelected = selectedSymbol == sym;
+                          Color buttonColor = sym == 'XAUUSD'
+                              ? const Color(0xFFFF1744)
+                              : sym == 'BTCUSD'
+                                  ? const Color(0xFF00C853)
+                                  : const Color(0xFFD50000);
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    selectedSymbol = sym;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    sym,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = tradingMode == mode;
+                          Color modeColor = mode == 'All Mode'
+                              ? const Color(0xFFFF1744)
+                              : mode == 'Liquidity'
+                                  ? const Color(0xFFE91E63)
+                                  : mode == 'Breakout'
+                                      ? const Color(0xFF00BCD4)
+                                      : const Color(0xFFFF5722);
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    tradingMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: lotModeOptions.map((mode) {
+                          bool isSelected = lotMode == mode;
+                          Color modeColor = buttonColorForLot(mode);
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: SizedBox(
+                                height: 45,
+                                child: ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    lotMode = mode;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    elevation: isSelected ? 6 : 0,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 2.2,
+                        ),
+                        itemCount: timeframes.length,
+                        itemBuilder: (context, index) {
+                          String tf = timeframes[index];
+                          bool isSelected = selectedTf == tf;
+                          return ElevatedButton(
+                            onPressed: () => setState(() {
+                              _isEditing = true;
+                              selectedTf = tf;
+                            }),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
+                              foregroundColor: isSelected ? Colors.white : Colors.white70,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFFFF1744) : Colors.white24,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              tf,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.white70,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Max Recovery', maxRecoveryController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 46,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12, width: 1),
+                            ),
+                            child: Text(
+                              '${calculatedTP.toStringAsFixed(1)} Pts',
+                              style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'DAILY TARGET & LOSS CONTROL', 
+                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyTarget,
+                                        activeColor: const Color(0xFF00C853),
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyTarget = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0B0E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Switch(
+                                        value: enableDailyLoss,
+                                        activeColor: Colors.redAccent,
+                                        onChanged: (val) => setState(() {
+                                          _isEditing = true;
+                                          enableDailyLoss = val;
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _saveBotParametersToFirebase,
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF1744),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                      const Divider(color: Colors.white24, height: 24),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'SECURITY & PRIVACY', 
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Reset Security PIN / Login', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                const SizedBox(height: 2),
+                                Text(currentPinStateStatus, style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _resetPin,
+                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Log Out (เปลี่ยนบัญชี MT5)', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                SizedBox(height: 2),
+                                Text('ออกจากระบบเพื่อกลับไปหน้าล็อกอิน', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[850],
+                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _logoutToLoginScreen,
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 
 
