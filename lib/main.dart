@@ -112,7 +112,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ส่งข้อมูลไปที่ระบบหลังบ้าน Firebase ทันที)
+// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ผ่านหลังบ้าน Firebase + ครบถ้วนทุกส่วน)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -129,6 +129,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
+  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
 
   @override
   void initState() {
@@ -138,6 +139,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
   @override
   void dispose() {
+    _loginStatusSubscription?.cancel();
     _loginController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
@@ -161,7 +163,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
     if (login.isEmpty || password.isEmpty || server.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ตให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
+        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
       );
       return;
     }
@@ -171,13 +173,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      // เชื่อมต่อไปยัง Firebase Realtime Database ของระบบหลังบ้าน
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // ส่งข้อมูลเข้าโหนด status เพื่อให้ระบบหลังบ้านนำไปใช้งานต่อทันที
+      await _loginStatusSubscription?.cancel();
+
+      // ส่งข้อมูลไปให้หลังบ้านตรวจสอบความถูกต้อง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -186,20 +189,69 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // บันทึกข้อมูลลง SharedPreferences ไว้ว่าเคยกรอกแล้ว
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('mt5_login', login);
-      await prefs.setString('mt5_server', server);
+      // รอฟังสัญญาณตอบกลับจากหลังบ้าน (แม่กุญแจ)
+      _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
+        final status = event.snapshot.value?.toString();
 
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-        _isLoggedInMT5 = true; // ย้ายไปหน้า PIN Code ทันทีโดยไม่ต้องรอเช็คผล MT5
+        if (status == 'success') {
+          await _loginStatusSubscription?.cancel();
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mt5_login', login);
+          await prefs.setString('mt5_server', server);
+
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+            _isLoggedInMT5 = true; // ข้อมูลถูกต้องผ่านเข้าบ้านได้
+          });
+        } else if (status == 'failed') {
+          await _loginStatusSubscription?.cancel();
+
+          if (!mounted) return;
+          
+          // ล้างรหัสผ่านและช่อง Server ทิ้งทันทีเมื่อข้อมูลไม่ถูกต้อง
+          _passwordController.clear();
+          _serverController.clear();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง'),
+              backgroundColor: Color(0xFFD50000),
+            ),
+          );
+          setState(() {
+            _isLoading = false; // ค้างอยู่ที่หน้าเดิม ห้ามผ่านเด็ดขาด
+          });
+        }
+      });
+
+      // กำหนด Timeout ป้องกันแอปค้าง (10 วินาที)
+      Future.delayed(const Duration(seconds: 10), () {
+        if (_isLoading && mounted) {
+          _loginStatusSubscription?.cancel();
+          
+          _passwordController.clear();
+          _serverController.clear();
+
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server หลังบ้าน'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       });
 
     } catch (e) {
       if (!mounted) return;
+      
+      _passwordController.clear();
+      _serverController.clear();
+
       setState(() {
         _isLoading = false;
       });
@@ -233,6 +285,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // รูปภาพโลโก้
                       Container(
                         width: 200,
                         height: 200,
@@ -263,6 +316,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      // ชื่อบอท ROSE CYBER BOT
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                         decoration: BoxDecoration(
@@ -406,6 +460,239 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+
+// ==========================================
+// 2. PIN AUTH WRAPPER (ระบบความปลอดภัย PIN Code 6 หลัก)
+// ==========================================
+class PinAuthWrapper extends StatefulWidget {
+  const PinAuthWrapper({super.key});
+
+  @override
+  State<PinAuthWrapper> createState() => _PinAuthWrapperState();
+}
+
+class _PinAuthWrapperState extends State<PinAuthWrapper> {
+  bool isAuthorized = false;
+  bool hasStoredPin = false;
+  bool isConfirming = false;
+  bool isLoading = true;
+  String firstEnteredPin = "";
+  String currentPinInput = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPinExists();
+  }
+
+  Future<void> _checkPinExists() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final pin = prefs.getString('user_pin');
+    setState(() {
+      hasStoredPin = pin != null && pin.isNotEmpty;
+      isLoading = false;
+    });
+  }
+
+  Future<void> _saveNewPin(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    await prefs.setString('user_pin', pin);
+  }
+
+  Future<void> _verifyPin(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final storedPin = prefs.getString('user_pin');
+    if (storedPin == pin) {
+      setState(() {
+        isAuthorized = true;
+      });
+    } else {
+      setState(() {
+        currentPinInput = "";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _onNumberTap(String number) {
+    if (currentPinInput.length < 6) {
+      setState(() {
+        currentPinInput += number;
+      });
+
+      if (currentPinInput.length == 6) {
+        if (!hasStoredPin) {
+          if (!isConfirming) {
+            firstEnteredPin = currentPinInput;
+            currentPinInput = "";
+            isConfirming = true;
+          } else {
+            if (firstEnteredPin == currentPinInput) {
+              _saveNewPin(currentPinInput);
+              setState(() {
+                hasStoredPin = true;
+                isAuthorized = true;
+              });
+            } else {
+              setState(() {
+                currentPinInput = "";
+                isConfirming = false;
+                firstEnteredPin = "";
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Colors.red),
+              );
+            }
+          }
+        } else {
+          _verifyPin(currentPinInput);
+        }
+      }
+    }
+  }
+
+  void _onDeleteTap() {
+    if (currentPinInput.isNotEmpty) {
+      setState(() {
+        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (isAuthorized) {
+      return const MainNavigationScreen();
+    }
+
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
+    if (!hasStoredPin) {
+      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
+    }
+
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+          ),
+          Container(color: Colors.black.withOpacity(0.85)),
+          SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, color: Color(0xFFFF1744), size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  titleText,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(6, (index) {
+                    bool isFilled = index < currentPinInput.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isFilled ? const Color(0xFFFF1744) : Colors.transparent,
+                        border: Border.all(color: const Color(0xFFFF1744), width: 2),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 30),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(width: 96),
+                      _buildPinButton('0'),
+                      _buildPinButton('del'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPinButton(String val) {
+    return Container(
+      width: 72,
+      height: 72,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFFD50000), Color(0xFF7A0000)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (val == 'del') {
+              _onDeleteTap();
+            } else {
+              _onNumberTap(val);
+            }
+          },
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: val == 'del'
+                ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+        ),
       ),
     );
   }
