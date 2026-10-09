@@ -180,6 +180,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
+      // ส่งข้อมูลทั้ง 3 ค่าไปให้หลังบ้านตรวจสอบความถูกต้อง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -188,13 +189,19 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
+      // รอฟังสัญญาณตอบกลับจากหลังบ้านอย่างเข้มงวด
       _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
 
         final status = data['login_status']?.toString();
+        
+        // ดึงค่า Login และ Server ล่าสุดจากหลังบ้านมาตรวจสอบยันซ้ำอีกรอบ
+        final verifiedLogin = data['login']?.toString() ?? '';
+        final verifiedServer = data['server']?.toString() ?? '';
 
-        if (status == 'success') {
+        // เงื่อนไขผ่าน: สถานะต้องเป็น success และข้อมูล Login กับ Server ตรงกัน
+        if (status == 'success' && verifiedLogin == login && verifiedServer == server) {
           await _loginStatusSubscription?.cancel();
           
           final prefs = await SharedPreferences.getInstance();
@@ -206,39 +213,39 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             _isLoading = false;
             _isLoggedInMT5 = true;
           });
-        } else if (status == 'failed') {
+        } else if (status == 'failed' || status == 'error') {
           await _loginStatusSubscription?.cancel();
 
           if (!mounted) return;
           
+          // ล้างรหัสผ่านเมื่อข้อมูลไม่ถูกต้อง
           _passwordController.clear();
-          _serverController.clear();
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง'),
+              content: Text('บัญชีเทรด, รหัสผ่าน หรือ Server ไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง'),
               backgroundColor: Color(0xFFD50000),
             ),
           );
           setState(() {
-            _isLoading = false;
+            _isLoading = false; // ค้างอยู่ที่หน้าเดิม ห้ามผ่านเด็ดขาด
           });
         }
       });
 
+      // กำหนด Timeout ป้องกันแอปค้าง (10 วินาที)
       Future.delayed(const Duration(seconds: 10), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
           
           _passwordController.clear();
-          _serverController.clear();
 
           setState(() {
             _isLoading = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server หรือ EA'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -249,7 +256,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       if (!mounted) return;
       
       _passwordController.clear();
-      _serverController.clear();
 
       setState(() {
         _isLoading = false;
