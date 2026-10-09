@@ -112,7 +112,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ MT5 โทนแดง-ดำ)
+// 1. MT5 LOGIN WRAPPER (เชื่อมต่อข้อมูลจาก Firebase อัตโนมัติ)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -122,137 +122,87 @@ class MT5LoginWrapper extends StatefulWidget {
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _serverController = TextEditingController(text: 'ICMarketsSC-Demo');
-  
-  // ตัวแปรสำหรับเปิด/ปิดซ่อนรหัสผ่าน
-  bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _isLoggedInMT5 = false;
-  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
+  late final DatabaseReference _statusRef;
 
   @override
   void initState() {
     super.initState();
-    _checkExistingMT5Login();
+    _initFirebaseConnection();
   }
 
-  @override
-  void dispose() {
-    _loginStatusSubscription?.cancel();
-    _loginController.dispose();
-    _passwordController.dispose();
-    _serverController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    }
-  }
-
-  void _submitMT5Login() async {
-    String login = _loginController.text.trim();
-    String password = _passwordController.text.trim();
-    String server = _serverController.text.trim();
-
-    if (login.isEmpty || password.isEmpty || server.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _initFirebaseConnection() async {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+      
+      _statusRef = database.ref('status');
 
-      await _loginStatusSubscription?.cancel();
+      // ตรวจสอบค่าสถานะจาก Firebase หรือ SharedPreferences ที่เคยเชื่อมต่อไว้
+      final prefs = await SharedPreferences.getInstance();
+      final savedLogin = prefs.getString('mt5_login');
 
-      await database.ref('status').update({
-        'login': login,
-        'password': password,
-        'server': server,
-        'request_login': true,
-        'login_status': 'pending', 
+      // ฟังชันก์ดึงข้อมูลพอร์ตจาก Firebase database โดยตรง (ตามภาพตัวอย่างฐานข้อมูลของคุณ)
+      _statusRef.onValue.listen((event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null) {
+          final loginVal = data['login']?.toString();
+          if (loginVal != null && loginVal.isNotEmpty) {
+            prefs.setString('mt5_login', loginVal);
+            prefs.setString('mt5_server', data['server']?.toString() ?? '');
+          }
+        }
       });
 
-      _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
-        final status = event.snapshot.value?.toString();
-
-        if (status == 'success') {
-          await _loginStatusSubscription?.cancel();
-          
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('mt5_login', login);
-          await prefs.setString('mt5_server', server);
-
-          if (!mounted) return;
+      if (savedLogin != null && savedLogin.isNotEmpty) {
+        setState(() {
+          _isLoggedInMT5 = true;
+          _isLoading = false;
+        });
+      } else {
+        // หากยังไม่มีข้อมูลบันทึกไว้ ให้เช็คจาก Database ถ้ามีค่า login อยู่แล้วให้ผ่านทันที
+        final snapshot = await _statusRef.child('login').get();
+        if (snapshot.exists && snapshot.value != null && snapshot.value.toString().isNotEmpty) {
+          await prefs.setString('mt5_login', snapshot.value.toString());
           setState(() {
-            _isLoading = false;
             _isLoggedInMT5 = true;
+            _isLoading = false;
           });
-        } else if (status == 'failed') {
-          await _loginStatusSubscription?.cancel();
-
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง'),
-              backgroundColor: Color(0xFFD50000),
-            ),
-          );
+        } else {
           setState(() {
             _isLoading = false;
           });
         }
-      });
-
-      Future.delayed(const Duration(seconds: 10), () {
-        if (_isLoading && mounted) {
-          _loginStatusSubscription?.cancel();
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชื่อมต่อกับ Server'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      });
-
+      }
     } catch (e) {
-      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.red),
-      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0B0B0E),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF1744)),
+        ),
+      );
+    }
+
+    // หากตรวจสอบพบว่าระบบเชื่อมต่อกับเว็บ/ฐานข้อมูลเรียบร้อย ข้ามไปหน้า PIN หรือหน้าหลักทันที
     if (_isLoggedInMT5) {
       return const PinAuthWrapper();
     }
 
+    // หน้าจอสำรองกรณีที่ยังไม่มีข้อมูลในระบบ ให้แสดงสถานะกำลังซิงค์ข้อมูลจาก Server
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -263,188 +213,55 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
           Container(color: Colors.black.withOpacity(0.88)),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // ส่วนรูปภาพกล่องเรืองแสงตามตัวอย่าง
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/ppp.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // กล่องชื่อโรบอทสไตล์ Cyber Bot
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619).withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.8),
-                              blurRadius: 12.0,
-                              spreadRadius: 2.0,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: const [
-                            Text(
-                              '🌹 R   O   S   E 🌹',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 3.0,
-                                shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'C Y B E R   B O T',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // ป้าย Powered By Algohost
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                          color: Colors.black.withOpacity(0.6),
-                          boxShadow: [
-                            BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                          ],
-                        ),
-                        child: const Text(
-                          'Powered By Algohost',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      // ช่องกรอก Account Login
-                      TextField(
-                        controller: _loginController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Account Login',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // ช่องกรอก Investor Password พร้อมปุ่มตาซ่อนรหัส
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Investor Password',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.redAccent,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // ช่องกรอก Broker Server
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextField(
-                            controller: _serverController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Broker Server',
-                              labelStyle: const TextStyle(color: Colors.grey),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4.0),
-                            child: Text(
-                              'ตัวอย่าง: ICMarketsSC-Demo',
-                              style: TextStyle(color: Colors.redAccent, fontSize: 11, fontStyle: FontStyle.italic),
-                            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.9),
+                            blurRadius: 22,
+                            spreadRadius: 4,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 25),
-                      // ปุ่มกด Verify & Connect
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitMT5Login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD50000),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.asset(
+                          'assets/images/ppp.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'กำลังเชื่อมต่อกับฐานข้อมูลเว็บ...',
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    const CircularProgressIndicator(color: Color(0xFFFF1744)),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        // กดเพื่อให้ระบบลองดึงค่าใหม่อีกครั้ง
+                        _initFirebaseConnection();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD50000),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('รีเฟรชการเชื่อมต่อ', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -454,6 +271,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
