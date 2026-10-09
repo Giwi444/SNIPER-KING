@@ -112,28 +112,8 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ผ่านหลังบ้าน Firebase + แก้ไขการรับค่า Stream เรียบร้อย)
+// 1. MT5 LOGIN WRAPPER
 // ==========================================
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// สมมติชื่อคลาสหน้าถัดไปของคุณ (สามารถปรับเปลี่ยนตามโปรเจกต์จริงได้ครับ)
-class PinAuthWrapper extends StatelessWidget {
-  const PinAuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('ยินดีต้อนรับเข้าสู่ระบบ (PIN Auth)', style: TextStyle(color: Colors.white)),
-      ),
-    );
-  }
-}
-
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
 
@@ -200,7 +180,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      // ส่งข้อมูลไปให้หลังบ้านตรวจสอบความถูกต้อง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -209,7 +188,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // รอฟังสัญญาณตอบกลับจากหลังบ้าน (ดึงค่าแบบ Map จากโหนด status เพื่อความเสถียรและป้องกัน Type Error)
       _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
@@ -226,14 +204,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           if (!mounted) return;
           setState(() {
             _isLoading = false;
-            _isLoggedInMT5 = true; // ข้อมูลถูกต้องผ่านเข้าบ้านได้
+            _isLoggedInMT5 = true;
           });
         } else if (status == 'failed') {
           await _loginStatusSubscription?.cancel();
 
           if (!mounted) return;
           
-          // ล้างรหัสผ่านและช่อง Server ทิ้งทันทีเมื่อข้อมูลไม่ถูกต้อง
           _passwordController.clear();
           _serverController.clear();
 
@@ -244,12 +221,11 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             ),
           );
           setState(() {
-            _isLoading = false; // ค้างอยู่ที่หน้าเดิม ห้ามผ่านเด็ดขาด
+            _isLoading = false;
           });
         }
       });
 
-      // กำหนด Timeout ป้องกันแอปค้าง (10 วินาที)
       Future.delayed(const Duration(seconds: 10), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
@@ -308,7 +284,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // รูปภาพโลโก้
                       Container(
                         width: 200,
                         height: 200,
@@ -339,7 +314,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ชื่อบอท ROSE CYBER BOT
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                         decoration: BoxDecoration(
@@ -488,11 +462,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 }
 
-
-
-
 // ==========================================
-// 2. PIN AUTH WRAPPER (ระบบความปลอดภัย PIN Code 6 หลัก)
+// 2. PIN AUTH WRAPPER
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -723,7 +694,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// #0 MAIN NAVIGATION SCREEN (หน้าหลักของระบบ)
+// #0 MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -3267,9 +3238,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-
-
-
 // ==========================================
 // #5 SETTINGS SCREEN
 // ==========================================
@@ -3445,7 +3413,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ระบบ Log Out ออกจากระบบเพื่อกลับไปหน้ากรอก User/Password เหมือนตอนติดตั้งแอพ
   Future<void> _logoutToLoginScreen() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
@@ -3454,7 +3421,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // เด้งกลับไปหน้า MT5LoginWrapper (หน้ากรอก User/Password เริ่มต้น) แบบล้างประวัติหน้าจอเก่าทั้งหมด
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
@@ -3911,7 +3877,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      // เพิ่มปุ่ม Log Out ออกจากระบบตรงนี้
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
