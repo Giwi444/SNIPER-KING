@@ -228,7 +228,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชืีอมต่อกับServer'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชื่อมต่อกับServer'),
               backgroundColor: Colors.orange,
             ),
           );
