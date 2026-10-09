@@ -724,7 +724,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   DatabaseReference? _logsRef;
   DatabaseReference? _ordersRef;
 
-  // สำหรับระบบบอลลูนลอย
   Offset _orderBubbleOffset = const Offset(20, 100);
   bool _isOrderBubblePressed = false;
   bool _isLargeLogsModalOpen = false;
@@ -1009,7 +1008,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             children: pages,
           ),
 
-          // บอลลูนลอยที่สามารถแสดงผลและลากขยับได้ทุกหน้า
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1059,7 +1057,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             ),
           ),
 
-          // หน้าต่าง EA Status & bot Logs ที่เปิดขึ้นมาเมื่อกดบอลลูน
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1553,7 +1550,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
 }
 
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (คืนค่าระบบดึงราคา Bid / Ask)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1650,6 +1647,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
         }
       });
+
+      database.ref('status').onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (data != null && mounted && data is Map) {
+          setState(() {
+            if (data['bid'] != null) {
+              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+            }
+            if (data['ask'] != null) {
+              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+            }
+          });
+        }
+      });
     } catch (e) {
       print("Market prices listen error: $e");
     }
@@ -1673,6 +1684,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             profit = (data['profit'] ?? 0.0).toDouble();
             symbol = data['symbol']?.toString() ?? 'XAUUSD';
             timeframe = data['timeframe']?.toString() ?? 'M1';
+            
+            if (data['bid'] != null) {
+              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+            }
+            if (data['ask'] != null) {
+              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+            }
           });
         }
       });
