@@ -126,7 +126,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _serverController = TextEditingController(text: 'ICMarketsSC-Demo');
   
-  // ตัวแปรสำหรับเปิด/ปิดซ่อนรหัสผ่าน
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
@@ -181,6 +180,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
+      // ส่งค่าข้อมูลไปยัง Firebase เพื่อให้ Server ทำการเชื่อมต่อ MT5
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -189,6 +189,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
+      // ฟังการเปลี่ยนแปลงของสถานะล็อกอินจาก Firebase
       _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
         final status = event.snapshot.value?.toString();
 
@@ -209,13 +210,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
           if (!mounted) return;
           
-          // ล้างรหัสผ่านและช่อง Server เมื่อล็อกอินไม่สำเร็จ
+          // ล้างข้อมูลรหัสผ่านและ Server เมื่อล็อกอินไม่สำเร็จ
           _passwordController.clear();
           _serverController.clear();
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง'),
+              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง หรือ Server ไม่ตอบสนอง'),
               backgroundColor: Color(0xFFD50000),
             ),
           );
@@ -225,11 +226,11 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         }
       });
 
-      Future.delayed(const Duration(seconds: 10), () {
+      // ตั้งเวลา Timeout 15 วินาที เผื่อ Server ฝั่งเว็บใช้เวลาประมวลผลนาน
+      Future.delayed(const Duration(seconds: 15), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
           
-          // ล้างข้อมูลเมื่อหมดเวลาเชื่อมต่อ
           _passwordController.clear();
           _serverController.clear();
 
@@ -238,7 +239,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชื่อมต่อกับ Server'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบว่าบอทบน Server กำลังทำงานอยู่'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -421,7 +422,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             decoration: InputDecoration(
                               labelText: 'Broker Server',
                               labelStyle: const TextStyle(color: Colors.grey),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
                               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
                             ),
                           ),
@@ -461,6 +462,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 
