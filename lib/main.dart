@@ -706,7 +706,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// #0 MAIN NAVIGATION SCREEN (แถบเมนูด้านล่างครอบด้วย SafeArea ป้องกันไม่ให้ล้นทับปุ่มมือถือ)
+// #0 MAIN NAVIGATION SCREEN (รวมบอลลูนลอยและหน้าต่าง Logs ควบคุมทุกหน้า)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -715,11 +715,45 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with TickerProviderStateMixin {
   int _currentIndex = 2;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
+  DatabaseReference? _dbRef;
+  DatabaseReference? _logsRef;
+  DatabaseReference? _ordersRef;
+
+  // สำหรับระบบบอลลูนลอย
+  Offset _orderBubbleOffset = const Offset(20, 100);
+  bool _isOrderBubblePressed = false;
+  bool _isLargeLogsModalOpen = false;
+  bool isRunning = false;
+  bool isConnected = false;
+  
+  String symbol = "XAUUSD";
+  String timeframe = "M1";
+  double profit = 0.0;
+  List<Map<String, dynamic>> _botLogs = [];
+  List<Map<dynamic, dynamic>> activeOrders = [];
+
+  late final AnimationController _bounceController = AnimationController(
+    duration: const Duration(seconds: 1),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
+    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+  );
+
+  late final AnimationController _scannerController = AnimationController(
+    duration: const Duration(seconds: 2),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
+  );
 
   @override
   void initState() {
@@ -727,6 +761,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
+    _initFirebaseAndListen();
+    _listenToLogs();
+    _listenToConnectionStatus();
+    _listenToOrdersForDialog();
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    _scannerController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSavedLogin() async {
@@ -790,224 +835,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> pages = [
-      const SettingsScreen(),
-      OrdersScreen(accountLogin: currentLogin),
-      HomeScreen(accountLogin: currentLogin),
-      HistoryScreen(accountLogin: currentLogin),
-      AlertsScreen(onAlertsRead: () {
-        setState(() {
-          unreadAlertsCount = 0;
-        });
-      }),
-    ];
+  void _initFirebaseAndListen() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            border: Border(
-              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.8),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildCustomNavItem(0, Icons.tune, 'Settings'),
-              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
-              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
-              _buildCustomNavItem(3, Icons.history, 'History'),
-              _buildCustomNavItem(
-                4, 
-                Icons.notifications_active, 
-                'Alerts', 
-                badgeCount: unreadAlertsCount,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomNavItem(int index, IconData icon, String label, {int badgeCount = 0}) {
-    bool isSelected = _currentIndex == index;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-          if (index == 4) {
-            unreadAlertsCount = 0;
-          }
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
-            width: isSelected ? 1.5 : 0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.redAccent.withOpacity(0.8),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? Colors.white : Colors.white70,
-                  size: 22,
-                ),
-                if (badgeCount > 0)
-                  Positioned(
-                    right: -6,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// #1 HOME SCREEN
-// ==========================================
-class HomeScreen extends StatefulWidget {
-  final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  bool isRunning = false;
-  DatabaseReference? _dbRef;
-  
-  double balance = 0.0;
-  double equity = 0.0;
-  double profit = 0.0;
-  String symbol = "XAUUSD";
-  String timeframe = "M1";
-
-  List<Map<String, dynamic>> _botLogs = [];
-  DatabaseReference? _logsRef;
-
-  List<Map<dynamic, dynamic>> activeOrders = [];
-  DatabaseReference? _ordersRef;
-
-  List<Map<dynamic, dynamic>> _historyTrades = [];
-  DatabaseReference? _historyRef;
-
-  Offset _orderBubbleOffset = const Offset(20, 100);
-  bool _isOrderBubblePressed = false;
-  bool isConnected = false;
-
-  late final AnimationController _bounceController = AnimationController(
-    duration: const Duration(seconds: 1),
-    vsync: this,
-  )..repeat(reverse: true);
-
-  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
-    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-  );
-
-  late final AnimationController _scannerController = AnimationController(
-    duration: const Duration(seconds: 2),
-    vsync: this,
-  )..repeat(reverse: true);
-
-  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
-  );
-
-  double realTimeBid = 0.0;
-  double realTimeAsk = 0.0;
-  DatabaseReference? _marketRef;
-
-  bool _isLargeLogsModalOpen = false;
-  bool _isChartModalOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initFirebaseAndListen();
-    _listenToOrdersForDialog();
-    _listenToLogs();
-    _listenToConnectionStatus();
-    _listenToMarketPrices();
-    _listenToHistoryForStats();
-  }
-
-  @override
-  void dispose() {
-    _bounceController.dispose();
-    _scannerController.dispose();
-    super.dispose();
+      _dbRef = database.ref('status');
+      _dbRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            isRunning = data['is_running'] ?? false;
+            profit = (data['profit'] ?? 0.0).toDouble();
+            symbol = data['symbol']?.toString() ?? 'XAUUSD';
+            timeframe = data['timeframe']?.toString() ?? 'M1';
+          });
+        }
+      });
+    } catch (e) {
+      print("Database listen error: $e");
+    }
   }
 
   void _listenToConnectionStatus() {
@@ -1026,74 +875,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("Connection listen error: $e");
-    }
-  }
-
-  void _listenToMarketPrices() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      
-      _marketRef = database.ref('market');
-      _marketRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted) {
-          if (data is Map) {
-            setState(() {
-              if (data['bid'] != null) {
-                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-              }
-              if (data['ask'] != null) {
-                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-              }
-            });
-          }
-        }
-      });
-
-      database.ref('status').onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted && data is Map) {
-          setState(() {
-            if (data['bid'] != null) {
-              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-            }
-            if (data['ask'] != null) {
-              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Market prices listen error: $e");
-    }
-  }
-
-  void _initFirebaseAndListen() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _dbRef = database.ref('status');
-      _dbRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            isRunning = data['is_running'] ?? false;
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            profit = (data['profit'] ?? 0.0).toDouble();
-            symbol = data['symbol']?.toString() ?? 'XAUUSD';
-            timeframe = data['timeframe']?.toString() ?? 'M1';
-          });
-        }
-      });
-    } catch (e) {
-      print("Database listen error: $e");
     }
   }
 
@@ -1143,65 +924,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToHistoryForStats() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _historyRef = database.ref('history');
-      _historyRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          List<Map<dynamic, dynamic>> tempHistory = [];
-          if (data is Map) {
-            data.forEach((key, value) {
-              if (value is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(value));
-              } else if (value is List) {
-                for (var item in value) {
-                  if (item is Map) {
-                    tempHistory.add(Map<dynamic, dynamic>.from(item));
-                  }
-                }
-              }
-            });
-          } else if (data is List) {
-            for (var e in data) {
-              if (e is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(e));
-              }
-            }
-          }
-          setState(() {
-            _historyTrades = tempHistory;
-          });
-        }
-      });
-    } catch (e) {
-      print("History stats listen error: $e");
-    }
-  }
-
-  void _clearLogItem(String key) {
-    try {
-      _logsRef?.child(key).remove();
-    } catch (e) {
-      print("Clear log item error: $e");
-    }
-  }
-
-  void _clearAllLogs() {
-    try {
-      _logsRef?.remove();
-      setState(() {
-        _botLogs.clear();
-      });
-    } catch (e) {
-      print("Clear all logs error: $e");
-    }
-  }
-
   void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -1236,33 +958,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _toggleBotStatus(bool status) {
+  void _clearLogItem(String key) {
     try {
-      _dbRef?.update({
-        'is_running': status,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
+      _logsRef?.child(key).remove();
     } catch (e) {
-      print("Toggle bot error: $e");
+      print("Clear log item error: $e");
     }
   }
 
-  void _closeAllOrders() {
+  void _clearAllLogs() {
     try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
+      _logsRef?.remove();
+      setState(() {
+        _botLogs.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
-      );
     } catch (e) {
-      print("Close all error: $e");
+      print("Clear all logs error: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      const SettingsScreen(),
+      OrdersScreen(accountLogin: currentLogin),
+      HomeScreen(accountLogin: currentLogin),
+      HistoryScreen(accountLogin: currentLogin),
+      AlertsScreen(onAlertsRead: () {
+        setState(() {
+          unreadAlertsCount = 0;
+        });
+      }),
+    ];
+
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
@@ -1272,170 +1000,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: const Color(0xFF0B0B0E)),
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            opacity: const AlwaysStoppedAnimation(0.3),
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
+          IndexedStack(
+            index: _currentIndex,
+            children: pages,
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 15),
-                    Center(
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/ppp.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.8),
-                            blurRadius: 12.0,
-                            spreadRadius: 2.0,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: const [
-                          Text(
-                            '🌹 R   O   S   E 🌹',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 3.0,
-                              shadows: [
-                                Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'C Y B E R   B O T',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 2.5,
-                              shadows: [
-                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                        color: Colors.black.withOpacity(0.6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                        ],
-                      ),
-                      child: const Text(
-                        'Powered By Algohost',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildCircularButton(
-                          label: 'CLOSE',
-                          icon: Icons.delete_outline,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: _closeAllOrders,
-                        ),
-                        const SizedBox(width: 20),
-                        _buildCircularButton(
-                          label: isRunning ? 'STOP' : 'START',
-                          icon: isRunning ? Icons.stop : Icons.play_arrow,
-                          colors: isRunning 
-                              ? const [Color(0xFFD50000), Color(0xFF5A0000)] 
-                              : const [Color(0xFFB71C1C), Color(0xFF7A0000)], 
-                          onPressed: () => _toggleBotStatus(!isRunning),
-                          isLarge: true,
-                        ),
-                        const SizedBox(width: 18),
-                        _buildCircularButton(
-                          label: 'STATS', 
-                          icon: Icons.bar_chart,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          onPressed: () {
-                            setState(() {
-                              _isChartModalOpen = true;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _buildBidAskBoxContent(context),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
+
+          // บอลลูนลอยที่สามารถแสดงผลและลากขยับได้ทุกหน้า
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1485,6 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
+          // หน้าต่าง EA Status & bot Logs ที่เปิดขึ้นมาเมื่อกดบอลลูน
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1664,6 +1239,713 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            border: Border(
+              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCustomNavItem(0, Icons.tune, 'Settings'),
+              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+              _buildCustomNavItem(3, Icons.history, 'History'),
+              _buildCustomNavItem(
+                4, 
+                Icons.notifications_active, 
+                'Alerts', 
+                badgeCount: unreadAlertsCount,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSymbolBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/images/ppp.jpg',
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF0000),
+          width: 2.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/ppp.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      color: Colors.black,
+                    ),
+                  ),
+                  AnimatedBuilder(
+                    animation: _scannerAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: _scannerAnimation.value * (200 - 6),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF1744),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent,
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                              BoxShadow(
+                                color: Colors.white,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🌹 ROSE CYBER BOT LIVE STATUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(color: Colors.white24, height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomNavItem(int index, IconData icon, String label, {int badgeCount = 0}) {
+    bool isSelected = _currentIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+          if (index == 4) {
+            unreadAlertsCount = 0;
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: isSelected ? 1.5 : 0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.redAccent.withOpacity(0.8),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white70,
+                  size: 22,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// #1 HOME SCREEN
+// ==========================================
+class HomeScreen extends StatefulWidget {
+  final String accountLogin;
+  const HomeScreen({super.key, required this.accountLogin});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  bool isRunning = false;
+  DatabaseReference? _dbRef;
+  
+  double balance = 0.0;
+  double equity = 0.0;
+  double profit = 0.0;
+  String symbol = "XAUUSD";
+  String timeframe = "M1";
+
+  List<Map<dynamic, dynamic>> activeOrders = [];
+  DatabaseReference? _ordersRef;
+
+  List<Map<dynamic, dynamic>> _historyTrades = [];
+  DatabaseReference? _historyRef;
+
+  bool isConnected = false;
+
+  late final AnimationController _scannerController = AnimationController(
+    duration: const Duration(seconds: 2),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  double realTimeBid = 0.0;
+  double realTimeAsk = 0.0;
+  DatabaseReference? _marketRef;
+
+  bool _isChartModalOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFirebaseAndListen();
+    _listenToOrdersForDialog();
+    _listenToConnectionStatus();
+    _listenToMarketPrices();
+    _listenToHistoryForStats();
+  }
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  void _listenToConnectionStatus() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
+    } catch (e) {
+      print("Connection listen error: $e");
+    }
+  }
+
+  void _listenToMarketPrices() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      
+      _marketRef = database.ref('market');
+      _marketRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (data != null && mounted) {
+          if (data is Map) {
+            setState(() {
+              if (data['bid'] != null) {
+                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+              }
+              if (data['ask'] != null) {
+                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {
+      print("Market prices listen error: $e");
+    }
+  }
+
+  void _initFirebaseAndListen() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _dbRef = database.ref('status');
+      _dbRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            isRunning = data['is_running'] ?? false;
+            balance = (data['balance'] ?? 0.0).toDouble();
+            equity = (data['equity'] ?? 0.0).toDouble();
+            profit = (data['profit'] ?? 0.0).toDouble();
+            symbol = data['symbol']?.toString() ?? 'XAUUSD';
+            timeframe = data['timeframe']?.toString() ?? 'M1';
+          });
+        }
+      });
+    } catch (e) {
+      print("Database listen error: $e");
+    }
+  }
+
+  void _listenToHistoryForStats() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _historyRef = database.ref('history');
+      _historyRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          List<Map<dynamic, dynamic>> tempHistory = [];
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                tempHistory.add(Map<dynamic, dynamic>.from(value));
+              } else if (value is List) {
+                for (var item in value) {
+                  if (item is Map) {
+                    tempHistory.add(Map<dynamic, dynamic>.from(item));
+                  }
+                }
+              }
+            });
+          } else if (data is List) {
+            for (var e in data) {
+              if (e is Map) {
+                tempHistory.add(Map<dynamic, dynamic>.from(e));
+              }
+            }
+          }
+          setState(() {
+            _historyTrades = tempHistory;
+          });
+        }
+      });
+    } catch (e) {
+      print("History stats listen error: $e");
+    }
+  }
+
+  void _listenToOrdersForDialog() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _ordersRef = database.ref('orders');
+      _ordersRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          List<Map<dynamic, dynamic>> newOrders = [];
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(value));
+              }
+            });
+          } else if (data is List) {
+            for (var e in data) {
+              if (e is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(e));
+              }
+            }
+          }
+          setState(() {
+            activeOrders = newOrders;
+          });
+        }
+      });
+    } catch (e) {
+      print("Orders listen error: $e");
+    }
+  }
+
+  void _toggleBotStatus(bool status) {
+    try {
+      _dbRef?.update({
+        'is_running': status,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      print("Toggle bot error: $e");
+    }
+  }
+
+  void _closeAllOrders() {
+    try {
+      _dbRef?.update({
+        'close_all': true,
+        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
+      );
+    } catch (e) {
+      print("Close all error: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(color: const Color(0xFF0B0B0E)),
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            opacity: const AlwaysStoppedAnimation(0.3),
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: const Color(0xFF0B0B0E));
+            },
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 15),
+                    Center(
+                      child: Container(
+                        width: 250,
+                        height: 250,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.9),
+                              blurRadius: 22,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.asset(
+                                'assets/images/ppp.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(color: Colors.black);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161619).withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.8),
+                            blurRadius: 12.0,
+                            spreadRadius: 2.0,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: const [
+                          Text(
+                            '🌹 R   O   S   E 🌹',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 3.0,
+                              shadows: [
+                                Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'C Y B E R   B O T',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 2.5,
+                              shadows: [
+                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                        color: Colors.black.withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                        ],
+                      ),
+                      child: const Text(
+                        'Powered By Algohost',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCircularButton(
+                          label: 'CLOSE',
+                          icon: Icons.delete_outline,
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          onPressed: _closeAllOrders,
+                        ),
+                        const SizedBox(width: 20),
+                        _buildCircularButton(
+                          label: isRunning ? 'STOP' : 'START',
+                          icon: isRunning ? Icons.stop : Icons.play_arrow,
+                          colors: isRunning 
+                              ? const [Color(0xFFD50000), Color(0xFF5A0000)] 
+                              : const [Color(0xFFB71C1C), Color(0xFF7A0000)], 
+                          onPressed: () => _toggleBotStatus(!isRunning),
+                          isLarge: true,
+                        ),
+                        const SizedBox(width: 18),
+                        _buildCircularButton(
+                          label: 'STATS', 
+                          icon: Icons.bar_chart,
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          onPressed: () {
+                            setState(() {
+                              _isChartModalOpen = true;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildBidAskBoxContent(context),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
           if (_isChartModalOpen)
             Stack(
@@ -1895,194 +2177,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace')),
         Text(val, style: TextStyle(color: valColor, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'monospace')),
       ],
-    );
-  }
-
-  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    bool isServerActive = isConnected && isRunning;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF0000),
-          width: 2.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/ppp.jpg',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 200,
-                      color: Colors.black,
-                    ),
-                  ),
-                  AnimatedBuilder(
-                    animation: _scannerAnimation,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: _scannerAnimation.value * (200 - 6),
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF1744),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.redAccent,
-                                blurRadius: 10,
-                                spreadRadius: 3,
-                              ),
-                              BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 3,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🌹 ROSE CYBER BOT LIVE STATUS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                            blurRadius: 6,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
-                      style: TextStyle(
-                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.white24, height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymbolBubbleWidget() {
-    bool isServerActive = isConnected && isRunning;
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF222222), Color(0xFF8A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
-        boxShadow: [
-          BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/images/ppp.jpg',
-              fit: BoxFit.cover,
-              width: 54,
-              height: 54,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.black);
-              },
-            ),
-          ),
-          Positioned(
-            right: -2,
-            top: -2,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -2665,7 +2759,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// #3 HISTORY SCREEN (ปรับโครงสร้างกล่อง Total Realized P/L เป็น Column เพื่อไม่ให้ตัวเลขล้นขอบกล่อง)
+// #3 HISTORY SCREEN
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2892,7 +2986,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
               
-              // กล่องแสดงผล Total Realized P/L ปรับเป็น Column เพื่อป้องกันตัวเลขล้นออกขอบกล่อง
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
