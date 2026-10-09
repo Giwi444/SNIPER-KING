@@ -102,8 +102,8 @@ class LiquiditySweepApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
         cardColor: const Color(0xFF161619),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00C853),
-          secondary: Color(0xFFFFB300),
+          primary: Color(0xFFD50000),
+          secondary: Color(0xFFFF1744),
         ),
       ),
       home: const MT5LoginWrapper(),
@@ -112,7 +112,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ MT5 ระดับความปลอดภัยสูง)
+// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ MT5 โทนแดง-ดำ)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -125,6 +125,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _serverController = TextEditingController(text: 'ICMarkets SC-MT5-Demo');
+  
+  // ตัวแปรสำหรับเปิด/ปิดซ่อนรหัสผ่าน
+  bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
   StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
@@ -161,7 +164,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
     if (login.isEmpty || password.isEmpty || server.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
       );
       return;
     }
@@ -178,7 +181,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      // ส่งข้อมูลคำขอตรวจสอบไปยัง Firebase เพื่อให้ EA บน MT5 ตรวจสอบความถูกต้องกับ Server โบรคเกอร์จริง
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -187,7 +189,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // ดักฟังผลการตรวจสอบสถานะแบบ Real-time จาก EA บน MT5
       _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
         final status = event.snapshot.value?.toString();
 
@@ -219,7 +220,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         }
       });
 
-      // Timeout Guard (10 วินาที หากไม่มีการตอบสนองจาก EA บน MT5)
       Future.delayed(const Duration(seconds: 10), () {
         if (_isLoading && mounted) {
           _loginStatusSubscription?.cancel();
@@ -270,7 +270,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.security, color: Color(0xFFFFB300), size: 55),
+                      const Icon(Icons.security, color: Color(0xFFFF1744), size: 55),
                       const SizedBox(height: 16),
                       const Text(
                         'SECURE MT5 LOGIN',
@@ -291,19 +291,31 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           labelText: 'MT5 Account Login (เลขบัญชีเทรด)',
                           labelStyle: const TextStyle(color: Colors.grey),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      // ช่อง Investor Password พร้อมปุ่มไอคอนรูปดวงตาเปิด-ปิดรหัสผ่าน
                       TextField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'MT5 Master/Investor Password (รหัสผ่าน)',
+                          labelText: 'Investor Password',
                           labelStyle: const TextStyle(color: Colors.grey),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.redAccent,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -317,7 +329,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                               labelText: 'Broker Server (เซิร์ฟเวอร์โบรกเกอร์)',
                               labelStyle: const TextStyle(color: Colors.grey),
                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -325,7 +337,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             padding: EdgeInsets.only(left: 4.0),
                             child: Text(
                               'ตัวอย่าง: ICMarkets SC-MT5-Demo',
-                              style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontStyle: FontStyle.italic),
+                              style: TextStyle(color: Colors.redAccent, fontSize: 11, fontStyle: FontStyle.italic),
                             ),
                           ),
                         ],
@@ -336,13 +348,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submitMT5Login,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
+                            backgroundColor: const Color(0xFFD50000),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.black)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                         ),
                       ),
                     ],
@@ -489,7 +501,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 48),
+                const Icon(Icons.lock_outline, color: Color(0xFFFF1744), size: 48),
                 const SizedBox(height: 16),
                 Text(
                   titleText,
@@ -506,8 +518,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                       height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                        color: isFilled ? const Color(0xFFFF1744) : Colors.transparent,
+                        border: Border.all(color: const Color(0xFFFF1744), width: 2),
                       ),
                     );
                   }),
@@ -558,9 +570,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       width: 72,
       height: 72,
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [Color(0xFFD50000), Color(0xFF7A0000)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -587,9 +599,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
-
-// (หมายเหตุ: โครงสร้างหน้า MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ใช้โค้ดเดิมที่คุณมีอยู่ต่อท้ายได้ทันทีครับ)
-
 
 // ==========================================
 // #0 MAIN NAVIGATION SCREEN (หน้าหลักของระบบ)
@@ -741,7 +750,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.transparent,
             elevation: 0,
-            selectedItemColor: const Color(0xFFFFB300),
+            selectedItemColor: const Color(0xFFFF1744),
             unselectedItemColor: Colors.white70,
             items: [
               const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
@@ -1378,7 +1387,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.terminal, color: Color(0xFFFFB300), size: 20),
+                                  Icon(Icons.terminal, color: Color(0xFFFF1744), size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     'EA STATUS & BOT LOGS',
@@ -1424,7 +1433,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   const SizedBox(height: 16),
                                   const Row(
                                     children: [
-                                      Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                                      Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
                                       SizedBox(width: 6),
                                       Text(
                                         'ACTIVITY LOGS',
@@ -1558,7 +1567,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFFB300), size: 20),
+                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     'DASHBOARD STATS & OVERVIEW',
@@ -1670,7 +1679,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'TOTAL TRADES',
                   value: '$totalTrades',
                   subText: 'Active Orders: ${activeOrders.length}',
-                  color: const Color(0xFFFFB300),
+                  color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
                 ),
               ),
@@ -1703,7 +1712,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 _buildSummaryRow('Bot Engine Status', isRunning ? 'Running' : 'Stopped', isRunning ? const Color(0xFF00C853) : Colors.redAccent),
                 const Divider(color: Colors.white12, height: 16),
-                _buildSummaryRow('Current Symbol / TF', '$symbol ($timeframe)', Colors.amberAccent),
+                _buildSummaryRow('Current Symbol / TF', '$symbol ($timeframe)', Colors.redAccent),
                 const Divider(color: Colors.white12, height: 16),
                 _buildSummaryRow('Active Profit (P/L)', '${profit >= 0 ? "+" : ""}\$${profit.toStringAsFixed(2)}', profit >= 0 ? const Color(0xFF00C853) : Colors.redAccent),
               ],
@@ -1868,7 +1877,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                     Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
                     Text(
                       'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
@@ -1980,7 +1989,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                    const Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
                     const SizedBox(width: 6),
                     Text(
                       symbol,
@@ -1997,7 +2006,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   child: Text(
                     'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
-                    style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                   ),
                 ),
               ],
@@ -2242,7 +2251,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -2268,7 +2277,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 18),
+                              Icon(Icons.account_balance, color: Color(0xFFFF1744), size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'TRADING ACCOUNT INFO',
@@ -2281,11 +2290,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black45,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.amber, width: 1),
+                              border: Border.all(color: Colors.redAccent, width: 1),
                             ),
                             child: Text(
                               activeSymbol,
-                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                             ),
                           ),
                         ],
@@ -2312,7 +2321,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 accountServer,
-                                style: const TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                             ],
                           ),
@@ -2729,10 +2738,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: ChoiceChip(
                         label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
                         selected: isSelected,
-                        selectedColor: const Color(0xFFFFB300),
+                        selectedColor: const Color(0xFFFF1744),
                         backgroundColor: const Color(0xFF161619),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
+                          color: isSelected ? Colors.white : Colors.white70,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           fontFamily: 'monospace',
@@ -2753,7 +2762,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFFFFB300)],
+                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -2861,7 +2870,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             const SizedBox(height: 3),
                                             Text(
                                               '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                              style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontFamily: 'monospace'),
+                                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'monospace'),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
@@ -3103,7 +3112,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.notifications_active, color: Color(0xFFFFB300), size: 20),
+                              const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -3181,7 +3190,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final String currentPinStateStatus = "ตั้งค่ารหัส PIN แล้ว";
 
   DatabaseReference? _statusRef;
-  DatabaseReference? _settingsRef;
 
   bool _isEditing = false;
   bool _isInitialized = false;
@@ -3291,7 +3299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFFFFB300),
+          backgroundColor: Color(0xFFFF1744),
         ),
       );
     } catch (e) {
@@ -3402,7 +3410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
                       
@@ -3412,7 +3420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
                           Color buttonColor = sym == 'XAUUSD'
-                              ? const Color(0xFFFFB300)
+                              ? const Color(0xFFFF1744)
                               : sym == 'BTCUSD'
                                   ? const Color(0xFF00C853)
                                   : const Color(0xFFD50000);
@@ -3457,7 +3465,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
                           Color modeColor = mode == 'All Mode'
-                              ? const Color(0xFFFFD700)
+                              ? const Color(0xFFFF1744)
                               : mode == 'Liquidity'
                                   ? const Color(0xFFE91E63)
                                   : mode == 'Breakout'
@@ -3476,7 +3484,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   }),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
-                                    foregroundColor: isSelected ? Colors.black : Colors.white70,
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
@@ -3485,7 +3493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected && mode == 'All Mode' ? Colors.black : (isSelected ? Colors.white : Colors.white70),
+                                      color: isSelected ? Colors.white : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                     ),
@@ -3560,11 +3568,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               selectedTf = tf;
                             }),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isSelected ? const Color(0xFFFFB300) : const Color(0xFF0B0B0E),
-                              foregroundColor: isSelected ? Colors.black : Colors.white70,
+                              backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
+                              foregroundColor: isSelected ? Colors.white : Colors.white70,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               side: BorderSide(
-                                color: isSelected ? const Color(0xFFFFB300) : Colors.white24,
+                                color: isSelected ? const Color(0xFFFF1744) : Colors.white24,
                                 width: isSelected ? 2 : 1,
                               ),
                               padding: EdgeInsets.zero,
@@ -3572,7 +3580,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Text(
                               tf,
                               style: TextStyle(
-                                color: isSelected ? Colors.black : Colors.white70,
+                                color: isSelected ? Colors.white : Colors.white70,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -3631,7 +3639,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             child: Text(
                               '${calculatedTP.toStringAsFixed(1)} Pts',
-                              style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ),
                         ],
@@ -3643,7 +3651,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
 
@@ -3722,7 +3730,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: const Icon(Icons.save, color: Colors.white),
                           label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
+                            backgroundColor: const Color(0xFFFF1744),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -3734,7 +3742,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         'SECURITY & PRIVACY', 
-                        style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
                       const SizedBox(height: 10),
                       Row(
