@@ -706,7 +706,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// #0 MAIN NAVIGATION SCREEN (พร้อมแถบเมนูด้านล่างแบบวงกลมทึบนูนเรืองแสงสวยงามตามสั่ง)
+// #0 MAIN NAVIGATION SCREEN (แถบเมนูด้านล่างครอบด้วย SafeArea ป้องกันไม่ให้ล้นทับปุ่มมือถือ)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -810,35 +810,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0B0B0E),
-          border: Border(
-            top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            border: Border(
+              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildCustomNavItem(0, Icons.tune, 'Settings'),
-            _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
-            _buildCustomNavItem(2, Icons.home_filled, 'Home'),
-            _buildCustomNavItem(3, Icons.history, 'History'),
-            _buildCustomNavItem(
-              4, 
-              Icons.notifications_active, 
-              'Alerts', 
-              badgeCount: unreadAlertsCount,
-            ),
-          ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCustomNavItem(0, Icons.tune, 'Settings'),
+              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+              _buildCustomNavItem(3, Icons.history, 'History'),
+              _buildCustomNavItem(
+                4, 
+                Icons.notifications_active, 
+                'Alerts', 
+                badgeCount: unreadAlertsCount,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -860,7 +862,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          // วงกลม/ทรงรีทึบสีแดงเข้มเรืองแสงเด่นชัด เมื่อถูกเลือก
           color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
@@ -2664,7 +2665,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 // ==========================================
-// #3 HISTORY SCREEN
+// #3 HISTORY SCREEN (ปรับโครงสร้างกล่อง Total Realized P/L เป็น Column เพื่อไม่ให้ตัวเลขล้นขอบกล่อง)
 // ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -2890,10 +2891,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   },
                 ),
               ),
+              
+              // กล่องแสดงผล Total Realized P/L ปรับเป็น Column เพื่อป้องกันตัวเลขล้นออกขอบกล่อง
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
@@ -2914,17 +2917,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Realized P/L ($selectedFilter)', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                     Text(
-                      '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 18,
+                      'Total Realized P/L ($selectedFilter)',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
                     ),
                   ],
