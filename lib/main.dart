@@ -15,7 +15,7 @@ void main() async {
         appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
         messagingSenderId: "155532929563",
         projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739.firebasestorage.app",
+        storageBucket: "liquidity-b8739-firebasestorage.app",
         databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
       ),
     );
@@ -116,7 +116,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ขั้นตอนที่ 1: ลงชื่อเข้าใช้ MT5 ก่อน)
+// 1. MT5 LOGIN WRAPPER (ขั้นตอนที่ 1: ลงชื่อเข้าใช้ MT5 พร้อมระบบแจ้งเตือน)
 // ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -153,6 +153,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim();
 
+    // 1. ตรวจสอบเบื้องต้นว่ากรอกครบไหม
     if (login.isEmpty || password.isEmpty || server.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกข้อมูล MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
@@ -165,19 +166,44 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('mt5_login', login);
-      await prefs.setString('mt5_server', server);
-
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
+      // ส่งข้อมูลไปตรวจสอบที่ Firebase / Status
       await database.ref('status').update({
         'login': login,
+        'password': password,
         'server': server,
+        'request_login': true,
+        'login_status': 'pending', 
       });
+
+      // รอผลลัพธ์จาก Firebase (หรือทำการตรวจสอบจำลอง)
+      await Future.delayed(const Duration(seconds: 2));
+
+      // ตัวอย่างเงื่อนไขตรวจสอบ (สามารถปรับเปลี่ยนหรือเชื่อมโยงกับค่าที่ EA ส่งกลับมาได้)
+      bool isSuccess = login.length >= 5 && password.length >= 4; 
+
+      if (!isSuccess) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('บัญชีเทรดหรือรหัสผ่านผิด'),
+            backgroundColor: Color(0xFFD50000),
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // ถ้าถูกต้อง บันทึกข้อมูลลงเครื่อง
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mt5_login', login);
+      await prefs.setString('mt5_server', server);
 
       if (!mounted) return;
       setState(() {
@@ -199,7 +225,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoggedInMT5) {
-      // เมื่อลงชื่อเข้าใช้ MT5 สำเร็จแล้ว ให้ไปขั้นตอนที่ 2: สร้างรหัส PIN
+      // เมื่อลงชื่อเข้าใช้ MT5 สำเร็จแล้ว ไปขั้นตอนที่ 2: สร้างรหัส PIN
       return const PinAuthWrapper();
     }
 
@@ -3285,11 +3311,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _resetPin() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
-    await prefs.remove('mt5_login'); // ล้างค่า Login เพื่อให้ทดสอบเริ่มติดตั้งใหม่ได้สะดวก
+    await prefs.remove('mt5_login');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('รีเซ็ตรหัส PIN และข้อมูล MT5 สำเร็จ กรุณาปิดเปิดแอพใหม่เพื่อตั้งค่าใหม่'),
+        content: Text('รีเซ็ตรหัส PIN และข้อมูล MT5 สำเร็จ กรุณาเปิดแอพใหม่เพื่อตั้งค่าใหม่'),
         backgroundColor: Color(0xFF00C853),
       ),
     );
