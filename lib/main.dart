@@ -109,13 +109,210 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFFFB300),
         ),
       ),
-      home: const PinAuthWrapper(),
+      // เริ่มต้นด้วยการตรวจสอบการลงชื่อเข้าใช้ MT5 ก่อน
+      home: const MT5LoginWrapper(),
     );
   }
 }
 
 // ==========================================
-// PIN AUTH WRAPPER
+// 1. MT5 LOGIN WRAPPER (ขั้นตอนที่ 1: ลงชื่อเข้าใช้ MT5 ก่อน)
+// ==========================================
+class MT5LoginWrapper extends StatefulWidget {
+  const MT5LoginWrapper({super.key});
+
+  @override
+  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
+}
+
+class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _serverController = TextEditingController(text: 'ICMarkets SC-MT5-Demo');
+  bool _isLoading = false;
+  bool _isLoggedInMT5 = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingMT5Login();
+  }
+
+  Future<void> _checkExistingMT5Login() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLogin = prefs.getString('mt5_login');
+    if (savedLogin != null && savedLogin.isNotEmpty) {
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    }
+  }
+
+  void _submitMT5Login() async {
+    String login = _loginController.text.trim();
+    String password = _passwordController.text.trim();
+    String server = _serverController.text.trim();
+
+    if (login.isEmpty || password.isEmpty || server.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกข้อมูล MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mt5_login', login);
+      await prefs.setString('mt5_server', server);
+
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      await database.ref('status').update({
+        'login': login,
+        'server': server,
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoggedInMT5) {
+      // เมื่อลงชื่อเข้าใช้ MT5 สำเร็จแล้ว ให้ไปขั้นตอนที่ 2: สร้างรหัส PIN
+      return const PinAuthWrapper();
+    }
+
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+          ),
+          Container(color: Colors.black.withOpacity(0.85)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 50),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'CONNECT MT5 ACCOUNT',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace', letterSpacing: 1.5),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'กรุณากรอกข้อมูลพอร์ต MetaTrader 5 เพื่อเริ่มต้นใช้งาน',
+                        style: TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace'),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 30),
+                      // 1.1 กรอกบัญชีผู้ใช้
+                      TextField(
+                        controller: _loginController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'MT5 Account Login (บัญชีผู้ใช้)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // 1.2 กรอกรหัสผ่าน
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'MT5 Password (รหัสผ่าน)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // 1.3 กรอกเซิร์ฟเวอร์ + 1.4 ตัวอย่าง Server ใต้ช่องกรอก
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _serverController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Broker Server (เซิร์ฟเวอร์)',
+                              labelStyle: const TextStyle(color: Colors.grey),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4.0),
+                            child: Text(
+                              'ตัวอย่างการกรอก Server: ICMarkets SC-MT5-Demo',
+                              style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitMT5Login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB300),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isLoading 
+                              ? const CircularProgressIndicator(color: Colors.black)
+                              : const Text('CONNECT ACCOUNT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 2. PIN AUTH WRAPPER (ขั้นตอนที่ 2: สร้างรหัสผ่าน/PIN ก่อนเข้าใช้งาน)
 // ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -224,8 +421,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     }
 
     if (isAuthorized) {
-      // หลังจากยืนยัน PIN ผ่านแล้ว ให้ตรวจสอบว่าได้ทำการเชื่อมต่อ MT5 หรือยัง (หรือข้ามมาหน้า Login MT5 ก่อน)
-      return const MT5LoginWrapper();
+      // ขั้นตอนที่ 3: เมื่อผ่าน PIN แล้ว เข้าสู่ระบบหลักของแอพ
+      return const MainNavigationScreen();
     }
 
     String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
@@ -378,186 +575,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// MT5 LOGIN WRAPPER (หน้าจอเชื่อมต่อบัญชี MT5)
-// ==========================================
-class MT5LoginWrapper extends StatefulWidget {
-  const MT5LoginWrapper({super.key});
-
-  @override
-  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
-}
-
-class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _serverController = TextEditingController(text: 'Exness-MT5Server');
-  bool _isLoading = false;
-  bool _isLoggedInMT5 = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingMT5Login();
-  }
-
-  Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    }
-  }
-
-  void _submitMT5Login() async {
-    String login = _loginController.text.trim();
-    String password = _passwordController.text.trim();
-    String server = _serverController.text.trim();
-
-    if (login.isEmpty || password.isEmpty || server.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูล MT5 ให้ครบถ้วน'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('mt5_login', login);
-      await prefs.setString('mt5_server', server);
-
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      await database.ref('status').update({
-        'login': login,
-        'server': server,
-      });
-
-      if (!mounted) return;
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoggedInMT5) {
-      return const MainNavigationScreen();
-    }
-
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
-          ),
-          Container(color: Colors.black.withOpacity(0.85)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.account_balance, color: Color(0xFFFFB300), size: 50),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'CONNECT MT5 ACCOUNT',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace', letterSpacing: 1.5),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'กรอกข้อมูลพอร์ต MetaTrader 5 เพื่อเชื่อมต่อบอท',
-                        style: TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace'),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      TextField(
-                        controller: _loginController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'MT5 Account Login',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'MT5 Password',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _serverController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Broker Server',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFB300))),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitMT5Login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFB300),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.black)
-                              : const Text('CONNECT ACCOUNT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// #0 MAIN NAVIGATION SCREEN
+// #0 MAIN NAVIGATION SCREEN (หน้าหลักของระบบ)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -2068,7 +2086,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
-  String accountServer = 'Exness-MT5Server';
+  String accountServer = 'ICMarkets SC-MT5-Demo';
 
   double balance = 0.0;
   double equity = 0.0;
@@ -2097,7 +2115,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           setState(() {
             activeSymbol = data['symbol']?.toString() ?? 'XAUUSD';
             activeTimeframe = data['timeframe']?.toString() ?? 'M1';
-            accountServer = data['server']?.toString() ?? 'Exness-MT5Server';
+            accountServer = data['server']?.toString() ?? 'ICMarkets SC-MT5-Demo';
             
             balance = (data['balance'] ?? 0.0).toDouble();
             equity = (data['equity'] ?? 0.0).toDouble();
@@ -3267,10 +3285,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _resetPin() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
+    await prefs.remove('mt5_login'); // ล้างค่า Login เพื่อให้ทดสอบเริ่มติดตั้งใหม่ได้สะดวก
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('รีเซ็ตรหัส PIN สำเร็จ กรุณาตั้งรหัสผ่านใหม่ในการเข้าใช้งานครั้งถัดไป'),
+        content: Text('รีเซ็ตรหัส PIN และข้อมูล MT5 สำเร็จ กรุณาปิดเปิดแอพใหม่เพื่อตั้งค่าใหม่'),
         backgroundColor: Color(0xFF00C853),
       ),
     );
@@ -3708,7 +3727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Reset Security PIN', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                const Text('Reset Security PIN / Login', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
                                 const SizedBox(height: 2),
                                 Text(currentPinStateStatus, style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
                               ],
@@ -3720,7 +3739,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             ),
                             onPressed: _resetPin,
-                            child: const Text('Reset PIN', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
+                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
