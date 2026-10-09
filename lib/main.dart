@@ -210,7 +210,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('บัญชีเทรดหรือรหัสผ่านผิด'),
+              content: Text('บัญชีเทรดหรือรหัสผ่านไม่ถูกต้อง'),
               backgroundColor: Color(0xFFD50000),
             ),
           );
@@ -228,7 +228,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบว่า EA บน MT5 กำลังเปิดรันอยู่หรือไม่'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชืีอมต่อกับServer'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -278,7 +278,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'ระบบตรวจสอบสิทธิ์ความปลอดภัยระดับสูงสำหรับพอร์ตซื้อขาย',
+                        'ตรวจสอบสิทธิ์ความปลอดภัยของบัญชี',
                         style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace'),
                         textAlign: TextAlign.center,
                       ),
@@ -288,7 +288,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         keyboardType: TextInputType.number,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: 'MT5 Account Login (เลขบัญชีเทรด)',
+                          labelText: 'Account Login',
                           labelStyle: const TextStyle(color: Colors.grey),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
@@ -326,7 +326,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             controller: _serverController,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              labelText: 'Broker Server (เซิร์ฟเวอร์โบรกเกอร์)',
+                              labelText: 'Broker Server',
                               labelStyle: const TextStyle(color: Colors.grey),
                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
                               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744))),
@@ -336,7 +336,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           const Padding(
                             padding: EdgeInsets.only(left: 4.0),
                             child: Text(
-                              'ตัวอย่าง: ICMarkets SC-MT5-Demo',
+                              'ตัวอย่าง: ICMarketsSC-Demo',
                               style: TextStyle(color: Colors.redAccent, fontSize: 11, fontStyle: FontStyle.italic),
                             ),
                           ),
