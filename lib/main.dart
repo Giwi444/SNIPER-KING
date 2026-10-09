@@ -228,7 +228,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชื่อมต่อกับServer'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบการเชื่อมต่อกับ Server'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -264,25 +264,109 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           Container(color: Colors.black.withOpacity(0.88)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               child: Center(
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.security, color: Color(0xFFFF1744), size: 55),
+                      // ส่วนรูปภาพกล่องเรืองแสงตามตัวอย่าง
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.9),
+                              blurRadius: 22,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.asset(
+                                'assets/images/ppp.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(color: Colors.black);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'SECURE MT5 LOGIN',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace', letterSpacing: 1.5),
+                      // กล่องชื่อโรบอทสไตล์ Cyber Bot
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161619).withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.8),
+                              blurRadius: 12.0,
+                              spreadRadius: 2.0,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: const [
+                            Text(
+                              '🌹 R   O   S   E 🌹',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 3.0,
+                                shadows: [
+                                  Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'C Y B E R   B O T',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 2.5,
+                                shadows: [
+                                  Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'ตรวจสอบสิทธิ์ความปลอดภัยของบัญชี',
-                        style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace'),
-                        textAlign: TextAlign.center,
+                      const SizedBox(height: 12),
+                      // ป้าย Powered By Algohost
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                          color: Colors.black.withOpacity(0.6),
+                          boxShadow: [
+                            BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                          ],
+                        ),
+                        child: const Text(
+                          'Powered By Algohost',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 25),
+                      // ช่องกรอก Account Login
                       TextField(
                         controller: _loginController,
                         keyboardType: TextInputType.number,
@@ -295,7 +379,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ช่อง Investor Password พร้อมปุ่มไอคอนรูปดวงตาเปิด-ปิดรหัสผ่าน
+                      // ช่องกรอก Investor Password พร้อมปุ่มตาซ่อนรหัส
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
@@ -319,6 +403,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      // ช่องกรอก Broker Server
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -342,7 +427,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 25),
+                      // ปุ่มกด Verify & Connect
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -368,6 +454,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 // ==========================================
 // 2. PIN AUTH WRAPPER (ระบบความปลอดภัย PIN Code 6 หลัก)
