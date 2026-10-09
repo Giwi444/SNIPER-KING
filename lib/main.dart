@@ -124,7 +124,7 @@ class MT5LoginWrapper extends StatefulWidget {
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _serverController = TextEditingController(text: 'ICMarkets SC-MT5-Demo');
+ //  final TextEditingController _serverController = TextEditingController(text: 'ICMarketsSC-Demo');
   
   // ตัวแปรสำหรับเปิด/ปิดซ่อนรหัสผ่าน
   bool _obscurePassword = true;
