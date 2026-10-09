@@ -112,8 +112,28 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ผ่านหลังบ้าน Firebase + ครบถ้วนทุกส่วน)
+// 1. MT5 LOGIN WRAPPER (ระบบตรวจสอบสิทธิ์ผ่านหลังบ้าน Firebase + แก้ไขการรับค่า Stream เรียบร้อย)
 // ==========================================
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// สมมติชื่อคลาสหน้าถัดไปของคุณ (สามารถปรับเปลี่ยนตามโปรเจกต์จริงได้ครับ)
+class PinAuthWrapper extends StatelessWidget {
+  const PinAuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('ยินดีต้อนรับเข้าสู่ระบบ (PIN Auth)', style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+}
+
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
 
@@ -189,9 +209,12 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      // รอฟังสัญญาณตอบกลับจากหลังบ้าน (แม่กุญแจ)
-      _loginStatusSubscription = database.ref('status/login_status').onValue.listen((event) async {
-        final status = event.snapshot.value?.toString();
+      // รอฟังสัญญาณตอบกลับจากหลังบ้าน (ดึงค่าแบบ Map จากโหนด status เพื่อความเสถียรและป้องกัน Type Error)
+      _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
+        final data = event.snapshot.value;
+        if (data == null || data is! Map) return;
+
+        final status = data['login_status']?.toString();
 
         if (status == 'success') {
           await _loginStatusSubscription?.cancel();
@@ -239,7 +262,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server หลังบ้าน'),
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -464,7 +487,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
-
 
 
 
