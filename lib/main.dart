@@ -3064,7 +3064,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'monospace',
-                                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -3087,9 +3088,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ],
                   ),
-                ),
-              ),
-
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: filteredHistory.isEmpty
@@ -3170,7 +3168,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
