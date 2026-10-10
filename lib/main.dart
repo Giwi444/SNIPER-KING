@@ -6,10 +6,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-////////////////////////////////////////////
-////////////////////////////////////////////
-
-// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (พร้อมจุดสถานะออนไลน์)
 @pragma("vm:entry-point")
 void overlayMain() {
   runApp(
@@ -23,7 +19,6 @@ void overlayMain() {
   );
 }
 
-// ดีไซน์ตัวบอลลูน (แสดงภาพ assets/images/1.jpg ทรงกลม พร้อมจุดเช็คสถานะการเชื่อมต่อ)
 class OverlayBallonWidget extends StatefulWidget {
   const OverlayBallonWidget({super.key});
 
@@ -84,7 +79,7 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        await FlutterOverlayWindow.closeOverlay();[span_5](start_span)[span_5](end_span)
+        await FlutterOverlayWindow.closeOverlay();
       },
       child: Container(
         width: 60,
@@ -162,9 +157,6 @@ Future<void> _showFloatingBalloon() async {
     );
   }
 }
-
-////////////////////////////////////////////
-////////////////////////////////////////////
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -3344,8 +3336,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
