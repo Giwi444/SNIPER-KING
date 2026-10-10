@@ -34,5 +34,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk-v2
+          name: ROSE_CYBER
           path: build/app/outputs/flutter-apk/app-release.apk
