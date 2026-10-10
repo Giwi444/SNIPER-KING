@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart'; // เพิ่มบรรทัดนี้เข้ามา
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 
 ////////////////////////////////////////////
@@ -12,7 +12,26 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart'; // เพ�
 
 // ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (พร้อมจุดสถานะออนไลน์)
 @pragma("vm:entry-point")
-void overlayMain() {
+void overlayMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+          appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+          messagingSenderId: "155532929563",
+          projectId: "liquidity-b8739",
+          storageBucket: "liquidity-b8739-firebasestorage.app",
+          databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+        ),
+      );
+    }
+  } catch (e) {
+    print("Overlay Firebase init error: $e");
+  }
+
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -119,7 +138,6 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
                 },
               ),
             ),
-            // จุดสถานะออนไลน์สีเขียว (หรือสีแดงถ้าหลุดการเชื่อมต่อ) มุมขวาบน
             Positioned(
               right: 0,
               top: 0,
@@ -886,6 +904,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
+  final TextEditingController _modalSearchController = TextEditingController();
+  String _modalSearchQuery = "";
+
   final String _imageA = 'assets/images/ppp.jpg';
   final String _imageB = 'assets/images/1791591138980.jpg';
   bool _showMorphImage = false; 
@@ -934,6 +955,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   void dispose() {
     _bounceController.dispose();
     _scannerController.dispose();
+    _modalSearchController.dispose();
     super.dispose();
   }
 
@@ -1162,6 +1184,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     });
     bool isTotalProfit = totalOrdersProfit >= 0;
 
+    List<Map<String, dynamic>> filteredLogs = _botLogs.where((log) {
+      if (_modalSearchQuery.isEmpty) return true;
+      return log['message'].toString().toLowerCase().contains(_modalSearchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0E),
       body: Stack(
@@ -1291,6 +1318,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           ),
                         ),
                         const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          child: TextField(
+                            controller: _modalSearchController,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            onChanged: (val) {
+                              setState(() {
+                                _modalSearchQuery = val;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'ค้นหา Logs...',
+                              hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                              prefixIcon: const Icon(Icons.search, color: Colors.redAccent, size: 20),
+                              filled: true,
+                              fillColor: const Color(0xFF1B1B20),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
@@ -1316,14 +1367,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  if (_botLogs.isEmpty)
+                                  if (filteredLogs.isEmpty)
                                     const Padding(
                                       padding: EdgeInsets.symmetric(vertical: 20.0),
                                       child: Center(
-                                        child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                        child: Text('No log records found...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                                       ),
                                     ),
-                                  ..._botLogs.asMap().entries.map((entry) {
+                                  ...filteredLogs.asMap().entries.map((entry) {
                                     var log = entry.value;
                                     bool isLatest = (entry.key == 0);
 
@@ -2548,12 +2599,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
   double freeMargin = 0.0;
   double profitLoss = 0.0;
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _listenToOrders();
     _listenToStatusForSymbol();
     _listenToFinancialStatus();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _listenToStatusForSymbol() {
@@ -2652,6 +2712,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
     bool isTotalProfit = totalOrdersProfit >= 0;
 
+    List<Map<dynamic, dynamic>> filteredOrders = activeOrders.where((order) {
+      if (_searchQuery.isEmpty) return true;
+      String symbol = order['symbol']?.toString().toLowerCase() ?? '';
+      String type = order['type']?.toString().toLowerCase() ?? '';
+      String query = _searchQuery.toLowerCase();
+      return symbol.contains(query) || type.contains(query);
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Portfolio', style: TextStyle(fontFamily: 'monospace')),
@@ -2674,6 +2742,38 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: TextField(
+                    controller: _searchController,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหา Order (เช่น XAUUSD, BUY, SELL)...',
+                      hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFFFF1744), size: 20),
+                      filled: true,
+                      fillColor: const Color(0xFF161619).withOpacity(0.9),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0),
+                      ),
+                    ),
+                  ),
+                ),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -2833,19 +2933,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          activeOrders.isEmpty
+                          filteredOrders.isEmpty
                               ? const Padding(
                                   padding: EdgeInsets.all(30.0),
                                   child: Center(
-                                    child: Text('No active orders currently', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace')),
+                                    child: Text('No active orders found', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace')),
                                   ),
                                 )
                               : ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: activeOrders.length,
+                                  itemCount: filteredOrders.length,
                                   itemBuilder: (context, index) {
-                                    final order = activeOrders[index];
+                                    final order = filteredOrders[index];
                                     final String type = order['type']?.toString() ?? 'BUY';
                                     final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                                     final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
@@ -2969,10 +3069,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String selectedFilter = 'วันนี้';
   final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
 
+  final TextEditingController _historySearchController = TextEditingController();
+  String _historySearchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _listenToHistory(widget.accountLogin);
+  }
+
+  @override
+  void dispose() {
+    _historySearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -3031,68 +3140,88 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   List<Map<dynamic, dynamic>> _getFilteredHistory() {
-    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
-
     DateTime now = DateTime.now();
-    return allTradeHistory.where((trade) {
-      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      if (timeStr.isEmpty) return false;
+    List<Map<dynamic, dynamic>> filtered = allTradeHistory.where((trade) {
+      if (selectedFilter != 'ทั้งหมด') {
+        String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+        if (timeStr.isEmpty) return false;
 
-      String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
-      DateTime? tradeDate;
+        String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
+        DateTime? tradeDate;
 
-      try {
-        List<String> parts = formattedTime.split(' ')[0].split('-');
-        if (parts.length == 3) {
-          int? p1 = int.tryParse(parts[0]);
-          int? p2 = int.tryParse(parts[1]);
-          int? p3 = int.tryParse(parts[2]);
+        try {
+          List<String> parts = formattedTime.split(' ')[0].split('-');
+          if (parts.length == 3) {
+            int? p1 = int.tryParse(parts[0]);
+            int? p2 = int.tryParse(parts[1]);
+            int? p3 = int.tryParse(parts[2]);
 
-          if (p1 != null && p2 != null && p3 != null) {
-            if (p1 > 1000) {
-              tradeDate = DateTime(p1, p2, p3);
-            } else {
-              int year = p3;
-              if (year < 100) year += 2000;
-              tradeDate = DateTime(year, p2, p1);
+            if (p1 != null && p2 != null && p3 != null) {
+              if (p1 > 1000) {
+                tradeDate = DateTime(p1, p2, p3);
+              } else {
+                int year = p3;
+                if (year < 100) year += 2000;
+                tradeDate = DateTime(year, p2, p1);
+              }
             }
           }
+        } catch (e) {
+          tradeDate = null;
         }
-      } catch (e) {
-        tradeDate = null;
+
+        tradeDate ??= DateTime.tryParse(formattedTime);
+        if (tradeDate == null && formattedTime.length >= 10) {
+          tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+        }
+
+        if (tradeDate == null) return false;
+
+        if (selectedFilter == 'วันนี้') {
+          if (!(tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day)) {
+            return false;
+          }
+        } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
+          DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+          DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+          if (!(tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate))) {
+            return false;
+          }
+        } else if (selectedFilter == 'เดือนล่าสุด') {
+          if (!(tradeDate.year == now.year && tradeDate.month == now.month)) {
+            return false;
+          }
+        } else if (selectedFilter == '3 เดือนล่าสุด') {
+          DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+          if (!tradeDate.isAfter(threeMonthsAgo)) {
+            return false;
+          }
+        }
       }
 
-      tradeDate ??= DateTime.tryParse(formattedTime);
-      if (tradeDate == null && formattedTime.length >= 10) {
-        tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+      if (_historySearchQuery.isNotEmpty) {
+        String symbol = trade['symbol']?.toString().toLowerCase() ?? '';
+        String type = trade['type']?.toString().toLowerCase() ?? '';
+        String query = _historySearchQuery.toLowerCase();
+        if (!symbol.contains(query) && !type.contains(query)) {
+          return false;
+        }
       }
 
-      if (tradeDate == null) return false;
-
-      if (selectedFilter == 'วันนี้') {
-        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
-      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
-        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
-      } else if (selectedFilter == 'เดือนล่าสุด') {
-        return tradeDate.year == now.year && tradeDate.month == now.month;
-      } else if (selectedFilter == '3 เดือนล่าสุด') {
-        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-        return tradeDate.isAfter(threeMonthsAgo);
-      }
       return true;
     }).toList();
+
+    return filtered;
   }
 
   String _formatDisplayDate(String rawDate) {
     if (rawDate.isEmpty) return '';
     try {
       List<String> spaceSplit = rawDate.split(' ');
-      String datePart = spaceSplit[0];
+      String dateMode = spaceSplit[0];
       String timePart = spaceSplit.length > 1 ? ' ${spaceSplit[1]}' : '';
 
-      String cleanDate = datePart.replaceAll('.', '-').replaceAll('/', '-');
+      String cleanDate = dateMode.replaceAll('.', '-').replaceAll('/', '-');
       List<String> parts = cleanDate.split('-');
       
       if (parts.length == 3) {
@@ -3146,6 +3275,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                child: TextField(
+                  controller: _historySearchController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  onChanged: (val) {
+                    setState(() {
+                      _historySearchQuery = val;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ค้นหาประวัติ (เช่น XAUUSD, BUY)...',
+                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFF1744), size: 20),
+                    filled: true,
+                    fillColor: const Color(0xFF161619).withOpacity(0.9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0),
+                    ),
+                  ),
+                ),
+              ),
               SizedBox(
                 height: 50,
                 child: ListView.builder(
@@ -3255,7 +3416,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     borderRadius: BorderRadius.circular(20),
                     child: filteredHistory.isEmpty
                         ? const Center(
-                            child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                            child: Text('No closed trade history found', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.all(12),
@@ -3331,8 +3492,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -3352,11 +3513,20 @@ class _AlertsScreenState extends State<AlertsScreen> {
   List<Map<String, dynamic>> alertItems = [];
   DatabaseReference? _alertsRef;
 
+  final TextEditingController _alertSearchController = TextEditingController();
+  String _alertSearchQuery = '';
+
   @override
   void initState() {
     super.initState();
     widget.onAlertsRead();
     _listenToAlerts();
+  }
+
+  @override
+  void dispose() {
+    _alertSearchController.dispose();
+    super.dispose();
   }
 
   DateTime? _extractDateTime(String message) {
@@ -3481,6 +3651,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredAlerts = alertItems.where((alert) {
+      if (_alertSearchQuery.isEmpty) return true;
+      return alert['message'].toString().toLowerCase().contains(_alertSearchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
@@ -3507,70 +3682,108 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.redAccent, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.redAccent.withOpacity(0.6),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: alertItems.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No trading alerts available',
-                        style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: alertItems.length,
-                      itemBuilder: (context, index) {
-                        var alert = alertItems[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  alert['message'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'monospace',
-                                    fontSize: 13,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _clearAlertItem(alert['key']),
-                                child: const Padding(
-                                  padding: EdgeInsets.only(left: 8.0),
-                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: _alertSearchController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  onChanged: (val) {
+                    setState(() {
+                      _alertSearchQuery = val;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ค้นหาแจ้งเตือน (เช่น Order, BUY, TP)...',
+                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFF1744), size: 20),
+                    filled: true,
+                    fillColor: const Color(0xFF161619).withOpacity(0.9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                     ),
-            ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.redAccent, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.6),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: filteredAlerts.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No trading alerts found',
+                              style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredAlerts.length,
+                            itemBuilder: (context, index) {
+                              var alert = filteredAlerts[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF161619).withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        alert['message'],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _clearAlertItem(alert['key']),
+                                      child: const Padding(
+                                        padding: EdgeInsets.only(left: 8.0),
+                                        child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
