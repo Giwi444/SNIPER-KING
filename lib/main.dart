@@ -96,7 +96,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ROSE_CYBER BOT',
+      title: 'ROSE_CYBER ROBOT',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
