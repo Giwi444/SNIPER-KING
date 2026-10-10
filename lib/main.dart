@@ -182,7 +182,7 @@ Future<void> _showFloatingBalloon() async {
 
 
 /////////////////////////////////////////////////////////////////////// 3. MAIN FUNCTION & TYPEWRITER TEXT ////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////--
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -295,7 +295,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 /////////////////////////////////////////////////////////////////////// 4. MT5 LOGIN WRAPPER SCREEN //////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -3392,7 +3392,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
@@ -4273,7 +4273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-                                            const SizedBox(height: 14),
+                      const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
