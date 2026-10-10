@@ -10,7 +10,7 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 @pragma("vm:entry-point")
 void overlayMain() {
   runApp(
-    const MaterialApp(
+    MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Material(
         color: Colors.transparent,
@@ -28,14 +28,13 @@ class OverlayBallonWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        // เมื่อกดที่บอลลูน สามารถสั่งปิดหรือทำคำสั่งอื่นๆ ได้
         await FlutterOverlayWindow.closeOverlay();
       },
       child: Container(
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          color: const Color(0xFFD50000), // สีแดงแบบในแอปของคุณ
+          color: const Color(0xFFD50000),
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
@@ -58,7 +57,6 @@ class OverlayBallonWidget extends StatelessWidget {
   }
 }
 
-// ฟังก์ชันสำหรับสั่งเปิดบอลลูนลอยทับแอปอื่น
 Future<void> _showFloatingBalloon() async {
   bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
   if (isGranted == null || !isGranted) {
