@@ -5,8 +5,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+////////////////////////////////////////////
+////////////////////////////////////////////
 
-// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (เปลี่ยนมาใช้รูป 1.jpg)
+// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (พร้อมจุดสถานะออนไลน์)
 @pragma("vm:entry-point")
 void overlayMain() {
   runApp(
@@ -20,9 +22,62 @@ void overlayMain() {
   );
 }
 
-// ดีไซน์ตัวบอลลูน (แสดงภาพ assets/images/1.jpg ทรงกลม)
-class OverlayBallonWidget extends StatelessWidget {
+// ดีไซน์ตัวบอลลูน (แสดงภาพ assets/images/1.jpg ทรงกลม พร้อมจุดเช็คสถานะการเชื่อมต่อ)
+class OverlayBallonWidget extends StatefulWidget {
   const OverlayBallonWidget({super.key});
+
+  @override
+  State<OverlayBallonWidget> createState() => _OverlayBallonWidgetState();
+}
+
+class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
+  bool isConnected = false;
+  StreamSubscription? _connectionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFirebaseAndListenConnection();
+  }
+
+  Future<void> _initFirebaseAndListenConnection() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+            messagingSenderId: "155532929563",
+            projectId: "liquidity-b8739",
+            storageBucket: "liquidity-b8739-firebasestorage.app",
+            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+          ),
+        );
+      }
+
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _connectionSub = database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
+    } catch (e) {
+      print("Overlay connection listen error: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectionSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,26 +90,54 @@ class OverlayBallonWidget extends StatelessWidget {
         height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.redAccent, width: 2),
+          border: Border.all(color: const Color(0xFFD50000), width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
               blurRadius: 8,
               spreadRadius: 2,
             ),
           ],
         ),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/images/1.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: const Color(0xFFD50000),
-                child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
-              );
-            },
-          ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/images/1.jpg',
+                fit: BoxFit.cover,
+                width: 56,
+                height: 56,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xFFD50000),
+                    child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
+                  );
+                },
+              ),
+            ),
+            // จุดสถานะออนไลน์สีเขียว (หรือสีแดงถ้าหลุดการเชื่อมต่อ) มุมขวาบน
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -80,6 +163,8 @@ Future<void> _showFloatingBalloon() async {
   }
 }
 
+////////////////////////////////////////////
+////////////////////////////////////////////
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
