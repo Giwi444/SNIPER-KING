@@ -30,4 +30,5 @@ flutter:
 flutter_launcher_icons:
   image_path: "assets/images/ppp.jpg"
   android: true
-  ios: true
+  ios: false
+
