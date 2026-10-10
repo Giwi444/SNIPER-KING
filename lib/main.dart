@@ -959,10 +959,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
   );
 
-  @override
+      @override
   void initState() {
     super.initState();
-    _showFloatingBalloon(); // ✅ เพิ่มคำสั่งเรียกบอลลูนตรงนี้เพื่อให้ทำงานทันทีที่เข้าหน้าหลัก
     _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
@@ -971,6 +970,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _listenToConnectionStatus();
     _listenToOrdersForDialog();
 
+    // 📌 รอให้หน้าจอเรนเดอร์เสร็จก่อน ค่อยสั่งเปิดบอลลูน Overlay อัตโนมัติ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showFloatingBalloon();
+    });
+
+    // ส่วนของ Animation Controller (ถ้ามี)
     _scannerController.addStatusListener((status) {
       if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
         if (mounted) {
@@ -980,7 +985,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         }
       }
     });
-  }
+  } // <--- วงเล็บปิดของ initState() ตัวจริงจะมีแค่อันนี้อันเดียวครับ
+
 
   @override
   void dispose() {
@@ -1393,7 +1399,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                         '➔ ',
                                                         style: TextStyle(
                                                           color: Colors.redAccent,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                           fontWeight: FontWeight.bold,
                                                           shadows: [
                                                             Shadow(color: Colors.red, blurRadius: 8),
@@ -1402,11 +1408,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                       ),
                                                       Expanded(
                                                         child: TypewriterText(
-                                                          text: "> ${log['message']}",
+                                                          text: "${log['message']}",
                                                           style: const TextStyle(
                                                             color: Colors.redAccent,
                                                             fontFamily: 'monospace',
-                                                            fontSize: 16,
+                                                            fontSize: 14,
                                                             fontWeight: FontWeight.bold,
                                                             height: 1.4,
                                                             shadows: [
@@ -1420,9 +1426,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                 : Text(
                                                     "> ${log['message']}",
                                                     style: const TextStyle(
-                                                      color: Colors.greenAccent,
+                                                      color: Colors.whiteAccent,
                                                       fontFamily: 'monospace',
-                                                      fontSize: 16,
+                                                      fontSize: 14,
                                                       fontWeight: FontWeight.bold,
                                                       height: 1.4,
                                                     ),
