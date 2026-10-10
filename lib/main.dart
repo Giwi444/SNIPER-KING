@@ -1,9 +1,192 @@
-import 'dart:async';
+import 'dart:async';  
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+
+
+////////////////////////////////////////////
+// ฟังก์ชันสำหรับหน้าตาของบอลลูน
+////////////////////////////////////////////
+
+// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (พร้อมจุดสถานะออนไลน์)
+@pragma("vm:entry-point")
+void overlayMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+          appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+          messagingSenderId: "155532929563",
+          projectId: "liquidity-b8739",
+          storageBucket: "liquidity-b8739-firebasestorage.app",
+          databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+        ),
+      );
+    }
+  } catch (e) {
+    print("Overlay Firebase init error: $e");
+  }
+
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Material(
+        color: Colors.transparent,
+        child: OverlayBallonWidget(),
+      ),
+    ),
+  );
+}
+
+// ดีไซน์ตัวบอลลูน (แสดงภาพ assets/images/1.jpg ทรงกลม พร้อมจุดเช็คสถานะการเชื่อมต่อ)
+class OverlayBallonWidget extends StatefulWidget {
+  const OverlayBallonWidget({super.key});
+
+  @override
+  State<OverlayBallonWidget> createState() => _OverlayBallonWidgetState();
+}
+
+class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
+  bool isConnected = false;
+  StreamSubscription? _connectionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFirebaseAndListenConnection();
+  }
+
+  Future<void> _initFirebaseAndListenConnection() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+            messagingSenderId: "155532929563",
+            projectId: "liquidity-b8739",
+            storageBucket: "liquidity-b8739-firebasestorage.app",
+            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+          ),
+        );
+      }
+
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _connectionSub = database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
+    } catch (e) {
+      print("Overlay connection listen error: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectionSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        await FlutterOverlayWindow.closeOverlay();
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFD50000), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/images/1.jpg',
+                fit: BoxFit.cover,
+                width: 56,
+                height: 56,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xFFD50000),
+                    child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showFloatingBalloon() async {
+  bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
+  if (isGranted == null || !isGranted) {
+    bool? requested = await FlutterOverlayWindow.requestPermission();
+    if (requested != true) return;
+  }
+
+  bool isActive = await FlutterOverlayWindow.isActive();
+  if (!isActive) {
+    await FlutterOverlayWindow.showOverlay(
+      height: 80,
+      width: 80,
+      alignment: OverlayAlignment.centerRight,
+      flag: OverlayFlag.defaultFlag,
+      positionGravity: PositionGravity.auto,
+    );
+  }
+}
+
+////////////////////////////////////////////
+////////main screen //////////
+////////////////////////////////////////////
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +198,7 @@ void main() async {
         appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
         messagingSenderId: "155532929563",
         projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739.firebasestorage.app",
+        storageBucket: "liquidity-b8739-firebasestorage.app",
         databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
       ),
     );
@@ -26,9 +209,6 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
-// ==========================================
-// WIDGET สำหรับเอฟเฟกต์พิมพ์ดีดทีละตัว
-// ==========================================
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle? style;
@@ -93,30 +273,396 @@ class _TypewriterTextState extends State<TypewriterText> {
   }
 }
 
+
+///////////////////////////////////////
+//////LiquiditySweepApp//////
+//////////////////////////////////////
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sniper King',
+      title: 'ROSE_CYBER ROBOT',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
         cardColor: const Color(0xFF161619),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00C853),
-          secondary: Color(0xFFFFB300),
+          primary: Color(0xFFD50000),
+          secondary: Color(0xFFFF1744),
         ),
       ),
-      home: const PinAuthWrapper(),
+      home: const MT5LoginWrapper(),
     );
   }
 }
 
-// ==========================================
-// PIN AUTH WRAPPER
-// ==========================================
+
+
+///////////////////////////////////////
+//////MT5LoginWrapper//////
+///////////////////////////////////////
+class MT5LoginWrapper extends StatefulWidget {
+  const MT5LoginWrapper({super.key});
+
+  @override
+  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
+}
+
+class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
+  final TextEditingController _loginController = TextEditingController(text: '');
+  final TextEditingController _passwordController = TextEditingController(text: '');
+  final TextEditingController _serverController = TextEditingController(text: ''); 
+  
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+  bool _isLoggedInMT5 = false;
+  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingMT5Login();
+  }
+
+  @override
+  void dispose() {
+    _loginStatusSubscription?.cancel();
+    _loginController.dispose();
+    _passwordController.dispose();
+    _serverController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkExistingMT5Login() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLogin = prefs.getString('mt5_login');
+    if (savedLogin != null && savedLogin.isNotEmpty) {
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    }
+  }
+
+  void _submitMT5Login() async {
+    String login = _loginController.text.trim();
+    String password = _passwordController.text.trim();
+    String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
+
+    if (login.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      await _loginStatusSubscription?.cancel();
+
+      await database.ref('status').update({
+        'login': login,
+        'password': password,
+        'server': server,
+        'request_login': true,
+        'login_status': 'pending', 
+      });
+
+      _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
+        final data = event.snapshot.value;
+        if (data == null || data is! Map) return;
+
+        final status = data['login_status']?.toString();
+        final firebaseLogin = data['login']?.toString() ?? '';
+        final firebasePassword = data['password']?.toString() ?? '';
+        final firebaseServer = data['server']?.toString() ?? '';
+
+        bool isAllMatched = (firebaseLogin == login && 
+                             firebasePassword == password && 
+                             firebaseServer == server);
+
+        if (status == 'success') {
+          if (!isAllMatched) {
+            await _loginStatusSubscription?.cancel();
+            if (!mounted) return;
+            _passwordController.clear();
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('ข้อมูลบัญชี, รหัสผ่าน หรือ Server ไม่ถูกต้องตามความเป็นจริง'),
+                backgroundColor: Color(0xFFD50000),
+              ),
+            );
+            setState(() {
+              _isLoading = false;
+            });
+            return;
+          }
+
+          await _loginStatusSubscription?.cancel();
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mt5_login', login);
+          await prefs.setString('mt5_server', server);
+
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+            _isLoggedInMT5 = true;
+          });
+        } else if (status == 'failed' || status == 'error') {
+          await _loginStatusSubscription?.cancel();
+
+          if (!mounted) return;
+          _passwordController.clear();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('บัญชีเทรด, รหัสผ่าน หรือ Server ไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง'),
+              backgroundColor: Color(0xFFD50000),
+            ),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      });
+
+      Future.delayed(const Duration(seconds: 10), () {
+        if (_isLoading && mounted) {
+          _loginStatusSubscription?.cancel();
+          _passwordController.clear();
+
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server หรือ EA'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      });
+
+    } catch (e) {
+      if (!mounted) return;
+      _passwordController.clear();
+
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoggedInMT5) {
+      return const PinAuthWrapper();
+    }
+
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/ppp.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+          ),
+          Container(color: Colors.black.withOpacity(0.88)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.9),
+                              blurRadius: 22,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.asset(
+                                'assets/images/ppp.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(color: Colors.black);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161619).withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.8),
+                              blurRadius: 12.0,
+                              spreadRadius: 2.0,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: const [
+                            Text(
+                              '🌹 R   O   S   E 🌹',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 3.0,
+                                shadows: [
+                                  Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'C Y B E R   B O T',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 2.5,
+                                shadows: [
+                                  Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                          color: Colors.black.withOpacity(0.6),
+                          boxShadow: [
+                            BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                          ],
+                        ),
+                        child: const Text(
+                          'Powered By Algohost',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      TextField(
+                        controller: _loginController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Account Login',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Investor Password',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.redAccent,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _serverController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
+                          hintStyle: TextStyle(color: Colors.redAccent.withOpacity(0.6), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitMT5Login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD50000),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isLoading 
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/////////////////////////////////////////
+/////PinAuthWrapper/////
+////////////////////////////////////////
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
 
@@ -227,9 +773,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return const MainNavigationScreen();
     }
 
-    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งาน";
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
     if (!hasStoredPin) {
-      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักใหม่";
+      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
     }
 
     return Scaffold(
@@ -239,18 +785,14 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
           ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
+          Container(color: Colors.black.withOpacity(0.85)),
           SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFFFB300), size: 48),
+                const Icon(Icons.lock_outline, color: Color(0xFFFF1744), size: 48),
                 const SizedBox(height: 16),
                 Text(
                   titleText,
@@ -267,8 +809,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                       height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFFFB300) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                        color: isFilled ? const Color(0xFFFF1744) : Colors.transparent,
+                        border: Border.all(color: const Color(0xFFFF1744), width: 2),
                       ),
                     );
                   }),
@@ -319,20 +861,13 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       width: 72,
       height: 72,
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [Color(0xFFD50000), Color(0xFF7A0000)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -345,30 +880,10 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             }
           },
           customBorder: const CircleBorder(),
-          splashColor: const Color(0xFFFFB300).withOpacity(0.6),
-          highlightColor: const Color(0xFFFFB300).withOpacity(0.4),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/images/ppp.jpg',
-                  fit: BoxFit.cover,
-                  opacity: const AlwaysStoppedAnimation(0.25),
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: Colors.transparent);
-                  },
-                ),
-              ),
-              Center(
-                child: val == 'del'
-                    ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                    : Text(
-                        val,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-              ),
-            ],
+          child: Center(
+            child: val == 'del'
+                ? const Icon(Icons.backspace_outlined, color: Colors.white)
+                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ),
       ),
@@ -376,9 +891,10 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// ==========================================
-// #0 MAIN NAVIGATION SCREEN
-// ==========================================
+
+/////////////////////////////////////////
+/////MainNavigationScreen//////
+////////////////////////////////////////
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -386,17 +902,90 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with TickerProviderStateMixin {
   int _currentIndex = 2;
   String currentLogin = "8111175";
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
+  DatabaseReference? _dbRef;
+  DatabaseReference? _logsRef;
+  DatabaseReference? _ordersRef;
+
+  Offset _orderBubbleOffset = const Offset(20, 100);
+  bool _isOrderBubblePressed = false;
+  bool _isLargeLogsModalOpen = false;
+  bool isRunning = false;
+  bool isConnected = false;
+  
+  String symbol = "XAUUSD";
+  String timeframe = "M1";
+  double profit = 0.0;
+  List<Map<String, dynamic>> _botLogs = [];
+  List<Map<dynamic, dynamic>> activeOrders = [];
+
+  final TextEditingController _modalSearchController = TextEditingController();
+  String _modalSearchQuery = "";
+
+  final String _imageA = 'assets/images/ppp.jpg';
+  final String _imageB = 'assets/images/1791591138980.jpg';
+  bool _showMorphImage = false; 
+
+  late final AnimationController _bounceController = AnimationController(
+    duration: const Duration(seconds: 1),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
+    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+  );
+
+  late final AnimationController _scannerController = AnimationController(
+    duration: const Duration(seconds: 3),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
+  );
 
   @override
   void initState() {
     super.initState();
+    _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
+    _initFirebaseAndListen();
+    _listenToLogs();
+    _listenToConnectionStatus();
+    _listenToOrdersForDialog();
+
+    _scannerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() {
+            _showMorphImage = !_showMorphImage;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    _scannerController.dispose();
+    _modalSearchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSavedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('mt5_login');
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        currentLogin = saved;
+      });
+    }
   }
 
   void _listenToActiveAccount() {
@@ -450,6 +1039,148 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  void _initFirebaseAndListen() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _dbRef = database.ref('status');
+      _dbRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            isRunning = data['is_running'] ?? false;
+            profit = (data['profit'] ?? 0.0).toDouble();
+            symbol = data['symbol']?.toString() ?? 'XAUUSD';
+            timeframe = data['timeframe']?.toString() ?? 'M1';
+          });
+        }
+      });
+    } catch (e) {
+      print("Database listen error: $e");
+    }
+  }
+
+  void _listenToConnectionStatus() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      database.ref('.info/connected').onValue.listen((event) {
+        final connected = event.snapshot.value as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            isConnected = connected;
+          });
+        }
+      });
+    } catch (e) {
+      print("Connection listen error: $e");
+    }
+  }
+
+  void _listenToLogs() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _logsRef = database.ref('logs');
+      _logsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          List<Map<String, dynamic>> tempLogs = [];
+          if (data is Map) {
+            var sortedEntries = data.entries.toList()
+              ..sort((a, b) => b.key.toString().compareTo(a.key.toString()));
+            for (var entry in sortedEntries) {
+              if (entry.value != null) {
+                String rawMsg = entry.value.toString();
+                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                tempLogs.add({
+                  'key': entry.key.toString(),
+                  'message': cleanMsg,
+                });
+              }
+            }
+          } else if (data is List) {
+            for (int i = data.length - 1; i >= 0; i--) {
+              if (data[i] != null) {
+                String rawMsg = data[i].toString();
+                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                tempLogs.add({
+                  'key': i.toString(),
+                  'message': cleanMsg,
+                });
+              }
+            }
+          }
+          setState(() {
+            _botLogs = tempLogs;
+          });
+        }
+      });
+    } catch (e) {
+      print("Logs listen error: $e");
+    }
+  }
+
+  void _listenToOrdersForDialog() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      _ordersRef = database.ref('orders');
+      _ordersRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (mounted) {
+          List<Map<dynamic, dynamic>> newOrders = [];
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(value));
+              }
+            });
+          } else if (data is List) {
+            for (var e in data) {
+              if (e is Map) {
+                newOrders.add(Map<dynamic, dynamic>.from(e));
+              }
+            }
+          }
+          setState(() {
+            activeOrders = newOrders;
+          });
+        }
+      });
+    } catch (e) {
+      print("Orders listen error: $e");
+    }
+  }
+
+  void _clearLogItem(String key) {
+    try {
+      _logsRef?.child(key).remove();
+    } catch (e) {
+      print("Clear log item error: $e");
+    }
+  }
+
+  void _clearAllLogs() {
+    try {
+      _logsRef?.remove();
+      setState(() {
+        _botLogs.clear();
+      });
+    } catch (e) {
+      print("Clear all logs error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -464,96 +1195,309 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }),
     ];
 
+    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    double totalLots = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['lot']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isTotalProfit = totalOrdersProfit >= 0;
+
+    List<Map<String, dynamic>> filteredLogs = _botLogs.where((log) {
+      if (_modalSearchQuery.isEmpty) return true;
+      return log['message'].toString().toLowerCase().contains(_modalSearchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0E),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD50000), Color(0xFF3A0000), Color(0xFF0B0B0E)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: pages,
           ),
-          border: Border(
-            top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+          Positioned(
+            left: _orderBubbleOffset.dx,
+            top: _orderBubbleOffset.dy,
+            child: AnimatedBuilder(
+              animation: _bounceAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _bounceAnimation.value),
+                  child: child,
+                );
+              },
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildSymbolBubbleWidget(),
+                ),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _orderBubbleOffset = details.offset;
+                  });
+                },
+                child: GestureDetector(
+                  onTapDown: (_) {
+                    setState(() {
+                      _isOrderBubblePressed = true;
+                    });
+                  },
+                  onTapUp: (_) {
+                    setState(() {
+                      _isOrderBubblePressed = false;
+                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
+                    });
+                  },
+                  onTapCancel: () {
+                    setState(() {
+                      _isOrderBubblePressed = false;
+                    });
+                  },
+                  child: AnimatedScale(
+                    scale: _isOrderBubblePressed ? 0.85 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    child: _buildSymbolBubbleWidget(),
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+          if (_isLargeLogsModalOpen)
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isLargeLogsModalOpen = false;
+                    });
+                  },
+                  child: Container(color: Colors.black54),
+                ),
+                Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.94,
+                    height: MediaQuery.of(context).size.height * 0.78,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.9),
+                          blurRadius: 25,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                      color: const Color(0xFF121215),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.terminal, color: Color(0xFFFF1744), size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'EA STATUS & BOT LOGS',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  if (_botLogs.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                                      onPressed: _clearAllLogs,
+                                      tooltip: 'Clear All Logs',
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isLargeLogsModalOpen = false;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          child: TextField(
+                            controller: _modalSearchController,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            onChanged: (val) {
+                              setState(() {
+                                _modalSearchQuery = val;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'ค้นหา Logs...',
+                              hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                              prefixIcon: const Icon(Icons.search, color: Colors.redAccent, size: 20),
+                              filled: true,
+                              fillColor: const Color(0xFF1B1B20),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                  const SizedBox(height: 16),
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'ACTIVITY LOGS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (filteredLogs.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                                      child: Center(
+                                        child: Text('No log records found...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                      ),
+                                    ),
+                                  ...filteredLogs.asMap().entries.map((entry) {
+                                    var log = entry.value;
+                                    bool isLatest = (entry.key == 0);
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: isLatest
+                                                ? Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      const Text(
+                                                        '➔ ',
+                                                        style: TextStyle(
+                                                          color: Colors.redAccent,
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.bold,
+                                                          shadows: [
+                                                            Shadow(color: Colors.red, blurRadius: 8),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        child: TypewriterText(
+                                                          text: "> ${log['message']}",
+                                                          style: const TextStyle(
+                                                            color: Colors.redAccent,
+                                                            fontFamily: 'monospace',
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.bold,
+                                                            height: 1.4,
+                                                            shadows: [
+                                                              Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : Text(
+                                                    "> ${log['message']}",
+                                                    style: const TextStyle(
+                                                      color: Colors.greenAccent,
+                                                      fontFamily: 'monospace',
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _clearLogItem(log['key']),
+                                            child: const Padding(
+                                              padding: EdgeInsets.only(left: 8.0),
+                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
         child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Colors.red,
-              width: 3.0,
+            color: const Color(0xFF0B0B0E),
+            border: Border(
+              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(0.8),
-                blurRadius: 12.0,
-                spreadRadius: 2.0,
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
               ),
             ],
           ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-                if (index == 4) {
-                  unreadAlertsCount = 0;
-                }
-              });
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: const Color(0xFFFFB300),
-            unselectedItemColor: Colors.white70,
-            items: [
-              const BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
-              const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
-              const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-              const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-              BottomNavigationBarItem(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.notifications_active),
-                    if (unreadAlertsCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '$unreadAlertsCount',
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                label: 'Alerts',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCustomNavItem(0, Icons.tune, 'Settings'),
+              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+              _buildCustomNavItem(3, Icons.history, 'History'),
+              _buildCustomNavItem(
+                4, 
+                Icons.notifications_active, 
+                'Alerts', 
+                badgeCount: unreadAlertsCount,
               ),
             ],
           ),
@@ -561,11 +1505,320 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     );
   }
+
+  Widget _buildSymbolBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              _showMorphImage ? _imageB : _imageA,
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+    String baseImage = _showMorphImage ? _imageA : _imageB;
+    String morphImage = _showMorphImage ? _imageB : _imageA;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF0000),
+          width: 2.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: AnimatedBuilder(
+                animation: _scannerAnimation,
+                builder: (context, child) {
+                  double scanValue = _scannerAnimation.value * 200;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        baseImage,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        width: double.infinity,
+                        height: 200,
+                      ),
+                      ClipRect(
+                        clipper: ScannerClipper(scanValue),
+                        child: Image.asset(
+                          morphImage,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 200,
+                        ),
+                      ),
+                      Positioned(
+                        top: scanValue - 2,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF1744),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent,
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                              BoxShadow(
+                                color: Colors.white,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🌹 ROSE CYBER BOT LIVE STATUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(color: Colors.white24, height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomNavItem(int index, IconData icon, String label, {int badgeCount = 0}) {
+    bool isSelected = _currentIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+          if (index == 4) {
+            unreadAlertsCount = 0;
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: isSelected ? 1.5 : 0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.redAccent.withOpacity(0.8),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white70,
+                  size: 22,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// ==========================================
-// #1 HOME SCREEN
-// ==========================================
+
+////////////////////////////////////////
+/////ScannerClipper//////
+///////////////////////////////////////
+class ScannerClipper extends CustomClipper<Rect> {
+  final double scanValue;
+  ScannerClipper(this.scanValue);
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTRB(0, 0, size.width, scanValue);
+  }
+
+  @override
+  bool shouldReclip(covariant ScannerClipper oldClipper) {
+    return oldClipper.scanValue != scanValue;
+  }
+}
+
+////////////////////////////////////////
+///// เริ่มแถบเมนูกล่องข้างล่าง///////
+////////////////////////////////////////
+
+
+////////////////////////////////////////
+////1.HomeScreen//////
+////////////////////////////////////////
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -584,42 +1837,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  List<Map<String, dynamic>> _botLogs = [];
-  DatabaseReference? _logsRef;
-
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
 
   List<Map<dynamic, dynamic>> _historyTrades = [];
   DatabaseReference? _historyRef;
 
-  Offset _orderBubbleOffset = const Offset(20, 100);
-  bool _isOrderBubblePressed = false;
   bool isConnected = false;
-
-  late final AnimationController _bounceController = AnimationController(
-    duration: const Duration(seconds: 1),
-    vsync: this,
-  )..repeat(reverse: true);
-
-  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
-    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-  );
 
   late final AnimationController _scannerController = AnimationController(
     duration: const Duration(seconds: 2),
     vsync: this,
   )..repeat(reverse: true);
 
-  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
-  );
-
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
   DatabaseReference? _marketRef;
 
-  bool _isLargeLogsModalOpen = false;
   bool _isChartModalOpen = false;
 
   @override
@@ -627,7 +1861,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _initFirebaseAndListen();
     _listenToOrdersForDialog();
-    _listenToLogs();
     _listenToConnectionStatus();
     _listenToMarketPrices();
     _listenToHistoryForStats();
@@ -635,7 +1868,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _bounceController.dispose();
     _scannerController.dispose();
     super.dispose();
   }
@@ -719,57 +1951,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             profit = (data['profit'] ?? 0.0).toDouble();
             symbol = data['symbol']?.toString() ?? 'XAUUSD';
             timeframe = data['timeframe']?.toString() ?? 'M1';
+            
+            if (data['bid'] != null) {
+              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
+            }
+            if (data['ask'] != null) {
+              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
+            }
           });
         }
       });
     } catch (e) {
       print("Database listen error: $e");
-    }
-  }
-
-  void _listenToLogs() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _logsRef = database.ref('logs');
-      _logsRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (mounted) {
-          List<Map<String, dynamic>> tempLogs = [];
-          if (data is Map) {
-            var sortedEntries = data.entries.toList()
-              ..sort((a, b) => b.key.toString().compareTo(a.key.toString()));
-            for (var entry in sortedEntries) {
-              if (entry.value != null) {
-                String rawMsg = entry.value.toString();
-                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                tempLogs.add({
-                  'key': entry.key.toString(),
-                  'message': cleanMsg,
-                });
-              }
-            }
-          } else if (data is List) {
-            for (int i = data.length - 1; i >= 0; i--) {
-              if (data[i] != null) {
-                String rawMsg = data[i].toString();
-                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                tempLogs.add({
-                  'key': i.toString(),
-                  'message': cleanMsg,
-                });
-              }
-            }
-          }
-          setState(() {
-            _botLogs = tempLogs;
-          });
-        }
-      });
-    } catch (e) {
-      print("Logs listen error: $e");
     }
   }
 
@@ -810,25 +2003,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("History stats listen error: $e");
-    }
-  }
-
-  void _clearLogItem(String key) {
-    try {
-      _logsRef?.child(key).remove();
-    } catch (e) {
-      print("Clear log item error: $e");
-    }
-  }
-
-  void _clearAllLogs() {
-    try {
-      _logsRef?.remove();
-      setState(() {
-        _botLogs.clear();
-      });
-    } catch (e) {
-      print("Clear all logs error: $e");
     }
   }
 
@@ -893,14 +2067,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
-    });
-    double totalLots = activeOrders.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['lot']?.toString() ?? '0.0') ?? 0.0);
-    });
-    bool isTotalProfit = totalOrdersProfit >= 0;
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -1065,236 +2231,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
-          Positioned(
-            left: _orderBubbleOffset.dx,
-            top: _orderBubbleOffset.dy,
-            child: AnimatedBuilder(
-              animation: _bounceAnimation,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, _bounceAnimation.value),
-                  child: child,
-                );
-              },
-              child: Draggable(
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: _buildSymbolBubbleWidget(),
-                ),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
-                  setState(() {
-                    _orderBubbleOffset = details.offset;
-                  });
-                },
-                child: GestureDetector(
-                  onTapDown: (_) {
-                    setState(() {
-                      _isOrderBubblePressed = true;
-                    });
-                  },
-                  onTapUp: (_) {
-                    setState(() {
-                      _isOrderBubblePressed = false;
-                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
-                    });
-                  },
-                  onTapCancel: () {
-                    setState(() {
-                      _isOrderBubblePressed = false;
-                    });
-                  },
-                  child: AnimatedScale(
-                    scale: _isOrderBubblePressed ? 0.85 : 1.0,
-                    duration: const Duration(milliseconds: 100),
-                    child: _buildSymbolBubbleWidget(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          if (_isLargeLogsModalOpen)
-            Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isLargeLogsModalOpen = false;
-                    });
-                  },
-                  child: Container(color: Colors.black54),
-                ),
-                Center(
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.94,
-                    height: MediaQuery.of(context).size.height * 0.78,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.9),
-                          blurRadius: 25,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                      color: const Color(0xFF121215),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.terminal, color: Color(0xFFFFB300), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'EA STATUS & BOT LOGS',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  if (_botLogs.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-                                      onPressed: _clearAllLogs,
-                                      tooltip: 'Clear All Logs',
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isLargeLogsModalOpen = false;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                                  const SizedBox(height: 16),
-                                  const Row(
-                                    children: [
-                                      Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'ACTIVITY LOGS',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (_botLogs.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                                      child: Center(
-                                        child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
-                                      ),
-                                    ),
-                                  ..._botLogs.asMap().entries.map((entry) {
-                                    var log = entry.value;
-                                    bool isLatest = (entry.key == 0);
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: isLatest
-                                                ? Row(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      const Text(
-                                                        '➔ ',
-                                                        style: TextStyle(
-                                                          color: Colors.redAccent,
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.bold,
-                                                          shadows: [
-                                                            Shadow(color: Colors.red, blurRadius: 8),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Expanded(
-                                                        child: TypewriterText(
-                                                          text: "> ${log['message']}",
-                                                          style: const TextStyle(
-                                                            color: Colors.redAccent,
-                                                            fontFamily: 'monospace',
-                                                            fontSize: 16,
-                                                            fontWeight: FontWeight.bold,
-                                                            height: 1.4,
-                                                            shadows: [
-                                                              Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                : Text(
-                                                    "> ${log['message']}",
-                                                    style: const TextStyle(
-                                                      color: Colors.greenAccent,
-                                                      fontFamily: 'monospace',
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.bold,
-                                                      height: 1.4,
-                                                    ),
-                                                  ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () => _clearLogItem(log['key']),
-                                            child: const Padding(
-                                              padding: EdgeInsets.only(left: 8.0),
-                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
           if (_isChartModalOpen)
             Stack(
               children: [
@@ -1332,7 +2268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFFB300), size: 20),
+                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     'DASHBOARD STATS & OVERVIEW',
@@ -1374,7 +2310,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // คำนวณและสร้างเนื้อหาสรุปสถิติภาพรวม (Dashboard Stats) จาก Database (History & Active Orders)
   Widget _buildDashboardStatsContent() {
     int totalTrades = _historyTrades.length;
     int winTrades = 0;
@@ -1383,7 +2318,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     double maxProfit = 0.0;
     double maxLoss = 0.0;
 
-    // คำนวณจากประวัติการเทรดในฐานข้อมูล
     for (var trade in _historyTrades) {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       totalProfitLoss += p;
@@ -1397,16 +2331,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     double winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0.0;
-
-    // คำนวณค่า Drawdown โดยประเมินจากความต่างของ Equity/Balance หรือประวัติการขาดทุนสะสมสูงสุด
     double peak = balance > 0 ? balance : 1000.0;
     double maxDDAmount = 0.0;
     for (var trade in _historyTrades) {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       peak += p;
-      if (peak > maxProfit) {
-        // อัปเดตยอดสะสมสูงสุด
-      }
       double currentDD = peak > 0 ? (maxLoss.abs() / peak) * 100 : 0.0;
       if (currentDD > maxDDAmount) {
         maxDDAmount = currentDD;
@@ -1451,7 +2380,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'TOTAL TRADES',
                   value: '$totalTrades',
                   subText: 'Active Orders: ${activeOrders.length}',
-                  color: const Color(0xFFFFB300),
+                  color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
                 ),
               ),
@@ -1484,7 +2413,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 _buildSummaryRow('Bot Engine Status', isRunning ? 'Running' : 'Stopped', isRunning ? const Color(0xFF00C853) : Colors.redAccent),
                 const Divider(color: Colors.white12, height: 16),
-                _buildSummaryRow('Current Symbol / TF', '$symbol ($timeframe)', Colors.amberAccent),
+                _buildSummaryRow('Current Symbol / TF', '$symbol ($timeframe)', Colors.redAccent),
                 const Divider(color: Colors.white12, height: 16),
                 _buildSummaryRow('Active Profit (P/L)', '${profit >= 0 ? "+" : ""}\$${profit.toStringAsFixed(2)}', profit >= 0 ? const Color(0xFF00C853) : Colors.redAccent),
               ],
@@ -1535,195 +2464,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // เปลี่ยนชื่อหัวข้อที่วงกลมสีขาวและปรับปรุงคำอธิบายสถานะให้สอดคล้องกับความหมายจริง
-  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
-    bool isServerActive = isConnected && isRunning;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF0000),
-          width: 2.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/ppp.jpg',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 200,
-                      color: Colors.black,
-                    ),
-                  ),
-                  AnimatedBuilder(
-                    animation: _scannerAnimation,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: _scannerAnimation.value * (200 - 6),
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF1744),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.redAccent,
-                                blurRadius: 10,
-                                spreadRadius: 3,
-                              ),
-                              BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 3,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🌹 ROSE CYBER BOT LIVE STATUS', // เปลี่ยนชื่อหัวข้อใหม่ให้ตรงกับความหมายของกล่องสถานะ
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                            blurRadius: 6,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
-                      style: TextStyle(
-                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.white24, height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymbolBubbleWidget() {
-    bool isServerActive = isConnected && isRunning;
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF222222), Color(0xFF8A0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
-        boxShadow: [
-          BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/images/ppp.jpg',
-              fit: BoxFit.cover,
-              width: 54,
-              height: 54,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.black);
-              },
-            ),
-          ),
-          Positioned(
-            right: -2,
-            top: -2,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBidAskBoxContent(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double boxWidth = screenWidth - 32;
@@ -1762,7 +2502,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFFFB300), size: 16),
+                    const Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
                     const SizedBox(width: 6),
                     Text(
                       symbol,
@@ -1779,7 +2519,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   child: Text(
                     'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
-                    style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                   ),
                 ),
               ],
@@ -1869,9 +2609,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 
-// ==========================================
-// #2 ORDERS SCREEN
-// ==========================================
+/////////////////////////////////////
+//////2.OrdersScreen////////
+/////////////////////////////////////
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
   const OrdersScreen({super.key, required this.accountLogin});
@@ -2351,10 +3091,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
 
 
-
-// ==========================================
-// #3 TRADE HISTORY SCREEN
-// ==========================================
+///////////////////////////////////////
+/////3.HistoryScreen//////
+//////////////////////////////////////
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
   const HistoryScreen({super.key, required this.accountLogin});
@@ -2370,10 +3109,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String selectedFilter = 'วันนี้';
   final List<String> filterOptions = ['วันนี้', 'สัปดาห์ล่าสุด', 'เดือนล่าสุด', '3 เดือนล่าสุด', 'ทั้งหมด'];
 
+  final TextEditingController _historySearchController = TextEditingController();
+  String _historySearchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _listenToHistory(widget.accountLogin);
+  }
+
+  @override
+  void dispose() {
+    _historySearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -2432,68 +3180,88 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   List<Map<dynamic, dynamic>> _getFilteredHistory() {
-    if (selectedFilter == 'ทั้งหมด') return allTradeHistory;
-
     DateTime now = DateTime.now();
-    return allTradeHistory.where((trade) {
-      String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
-      if (timeStr.isEmpty) return false;
+    List<Map<dynamic, dynamic>> filtered = allTradeHistory.where((trade) {
+      if (selectedFilter != 'ทั้งหมด') {
+        String timeStr = trade['close_time']?.toString() ?? trade['time']?.toString() ?? '';
+        if (timeStr.isEmpty) return false;
 
-      String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
-      DateTime? tradeDate;
+        String formattedTime = timeStr.replaceAll('.', '-').replaceAll('/', '-');
+        DateTime? tradeDate;
 
-      try {
-        List<String> parts = formattedTime.split(' ')[0].split('-');
-        if (parts.length == 3) {
-          int? p1 = int.tryParse(parts[0]);
-          int? p2 = int.tryParse(parts[1]);
-          int? p3 = int.tryParse(parts[2]);
+        try {
+          List<String> parts = formattedTime.split(' ')[0].split('-');
+          if (parts.length == 3) {
+            int? p1 = int.tryParse(parts[0]);
+            int? p2 = int.tryParse(parts[1]);
+            int? p3 = int.tryParse(parts[2]);
 
-          if (p1 != null && p2 != null && p3 != null) {
-            if (p1 > 1000) {
-              tradeDate = DateTime(p1, p2, p3);
-            } else {
-              int year = p3;
-              if (year < 100) year += 2000;
-              tradeDate = DateTime(year, p2, p1);
+            if (p1 != null && p2 != null && p3 != null) {
+              if (p1 > 1000) {
+                tradeDate = DateTime(p1, p2, p3);
+              } else {
+                int year = p3;
+                if (year < 100) year += 2000;
+                tradeDate = DateTime(year, p2, p1);
+              }
             }
           }
+        } catch (e) {
+          tradeDate = null;
         }
-      } catch (e) {
-        tradeDate = null;
+
+        tradeDate ??= DateTime.tryParse(formattedTime);
+        if (tradeDate == null && formattedTime.length >= 10) {
+          tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+        }
+
+        if (tradeDate == null) return false;
+
+        if (selectedFilter == 'วันนี้') {
+          if (!(tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day)) {
+            return false;
+          }
+        } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
+          DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+          DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+          if (!(tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate))) {
+            return false;
+          }
+        } else if (selectedFilter == 'เดือนล่าสุด') {
+          if (!(tradeDate.year == now.year && tradeDate.month == now.month)) {
+            return false;
+          }
+        } else if (selectedFilter == '3 เดือนล่าสุด') {
+          DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+          if (!tradeDate.isAfter(threeMonthsAgo)) {
+            return false;
+          }
+        }
       }
 
-      tradeDate ??= DateTime.tryParse(formattedTime);
-      if (tradeDate == null && formattedTime.length >= 10) {
-        tradeDate = DateTime.tryParse(formattedTime.substring(0, 10));
+      if (_historySearchQuery.isNotEmpty) {
+        String symbol = trade['symbol']?.toString().toLowerCase() ?? '';
+        String type = trade['type']?.toString().toLowerCase() ?? '';
+        String query = _historySearchQuery.toLowerCase();
+        if (!symbol.contains(query) && !type.contains(query)) {
+          return false;
+        }
       }
 
-      if (tradeDate == null) return false;
-
-      if (selectedFilter == 'วันนี้') {
-        return tradeDate.year == now.year && tradeDate.month == now.month && tradeDate.day == now.day;
-      } else if (selectedFilter == 'สัปดาห์ล่าสุด') {
-        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        DateTime startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-        return tradeDate.isAfter(startDate) || tradeDate.isAtSameMomentAs(startDate);
-      } else if (selectedFilter == 'เดือนล่าสุด') {
-        return tradeDate.year == now.year && tradeDate.month == now.month;
-      } else if (selectedFilter == '3 เดือนล่าสุด') {
-        DateTime threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-        return tradeDate.isAfter(threeMonthsAgo);
-      }
       return true;
     }).toList();
+
+    return filtered;
   }
 
   String _formatDisplayDate(String rawDate) {
     if (rawDate.isEmpty) return '';
     try {
       List<String> spaceSplit = rawDate.split(' ');
-      String datePart = spaceSplit[0];
+      String dateMode = spaceSplit[0];
       String timePart = spaceSplit.length > 1 ? ' ${spaceSplit[1]}' : '';
 
-      String cleanDate = datePart.replaceAll('.', '-').replaceAll('/', '-');
+      String cleanDate = dateMode.replaceAll('.', '-').replaceAll('/', '-');
       List<String> parts = cleanDate.split('-');
       
       if (parts.length == 3) {
@@ -2547,6 +3315,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                child: TextField(
+                  controller: _historySearchController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  onChanged: (val) {
+                    setState(() {
+                      _historySearchQuery = val;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ค้นหาประวัติ (เช่น XAUUSD, BUY)...',
+                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFF1744), size: 20),
+                    filled: true,
+                    fillColor: const Color(0xFF161619).withOpacity(0.9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0),
+                    ),
+                  ),
+                ),
+              ),
               SizedBox(
                 height: 50,
                 child: ListView.builder(
@@ -2656,7 +3456,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     borderRadius: BorderRadius.circular(20),
                     child: filteredHistory.isEmpty
                         ? const Center(
-                            child: Text('No closed trade history for this account', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                            child: Text('No closed trade history found', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.all(12),
@@ -2732,8 +3532,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -2742,11 +3542,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 
-
-
-// ==========================================
-// #4 ALERTS SCREEN
-// ==========================================
+///////////////////////////////////////
+/////4.AlertsScreen//////
+///////////////////////////////////////
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
   const AlertsScreen({super.key, required this.onAlertsRead});
@@ -2759,11 +3557,20 @@ class _AlertsScreenState extends State<AlertsScreen> {
   List<Map<String, dynamic>> alertItems = [];
   DatabaseReference? _alertsRef;
 
+  final TextEditingController _alertSearchController = TextEditingController();
+  String _alertSearchQuery = '';
+
   @override
   void initState() {
     super.initState();
     widget.onAlertsRead();
     _listenToAlerts();
+  }
+
+  @override
+  void dispose() {
+    _alertSearchController.dispose();
+    super.dispose();
   }
 
   DateTime? _extractDateTime(String message) {
@@ -2888,6 +3695,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredAlerts = alertItems.where((alert) {
+      if (_alertSearchQuery.isEmpty) return true;
+      return alert['message'].toString().toLowerCase().contains(_alertSearchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
@@ -2914,70 +3726,108 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             color: Colors.black.withOpacity(0.8),
           ),
-          Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.redAccent, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.redAccent.withOpacity(0.6),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: alertItems.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No trading alerts available',
-                        style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: alertItems.length,
-                      itemBuilder: (context, index) {
-                        var alert = alertItems[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  alert['message'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'monospace',
-                                    fontSize: 13,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _clearAlertItem(alert['key']),
-                                child: const Padding(
-                                  padding: EdgeInsets.only(left: 8.0),
-                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: _alertSearchController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  onChanged: (val) {
+                    setState(() {
+                      _alertSearchQuery = val;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ค้นหาแจ้งเตือน (เช่น Order, BUY, TP)...',
+                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFF1744), size: 20),
+                    filled: true,
+                    fillColor: const Color(0xFF161619).withOpacity(0.9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                     ),
-            ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.redAccent, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.6),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: filteredAlerts.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No trading alerts found',
+                              style: TextStyle(color: Colors.grey, fontFamily: 'monospace', fontSize: 13),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredAlerts.length,
+                            itemBuilder: (context, index) {
+                              var alert = filteredAlerts[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF161619).withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        alert['message'],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _clearAlertItem(alert['key']),
+                                      child: const Padding(
+                                        padding: EdgeInsets.only(left: 8.0),
+                                        child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -2986,9 +3836,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-// ==========================================
-// #5 COMBINED SETTINGS SCREEN (Fixed & Full Code)
-// ==========================================
+//////////////////////////////////////
+//////5.SettingsScreen/////
+/////////////////////////////////////
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
 class _SettingsScreenState extends State<SettingsScreen> {
   String selectedSymbol = 'XAUUSD';
   String tradingMode = 'Sniper';
