@@ -2399,7 +2399,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
-  String accountServer = 'ICMarkets SC-MT5-Demo';
+  String accountServer = 'ICMarketsSC-Demo';
 
   double balance = 0.0;
   double equity = 0.0;
@@ -2513,7 +2513,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Portfolio', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
@@ -3685,7 +3685,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings & Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings Bot' ameters'ameters' Parameters', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
