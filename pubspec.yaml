@@ -13,7 +13,7 @@ dependencies:
   firebase_database: ^11.3.0
   shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
-  flutter_overlay_window: ^0.5.0 # แก้ไขเป็น ^0.5.0 เรียบร้อยแล้ว
+  flutter_overlay_window: ^0.5.0
 
 dev_dependencies:
   flutter_test:
@@ -36,7 +36,3 @@ flutter_launcher_icons:
   image_path: "assets/images/ppp.jpg"
   android: true
   ios: true
-
-  dev_dependencies:
-  flutter_launcher_icons: "^0.13.1"
-
