@@ -355,7 +355,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       _isLoading = true;
     });
 
-    try {
+        try {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: const FirebaseOptions(
@@ -367,7 +367,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
           ),
         );
+      } else {
+        Firebase.app(); // ถ้ามีอยู่แล้วให้เรียกใช้ตัวเดิมทันที
       }
+
 
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
