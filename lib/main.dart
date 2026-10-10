@@ -1424,15 +1424,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                     ],
                                                   )
                                                 : Text(
-                                                    "> ${log['message']}",
-                                                    style: const TextStyle(
-                                                      color: Colors.whiteAccent,
-                                                      fontFamily: 'monospace',
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.bold,
-                                                      height: 1.4,
-                                                    ),
-                                                  ),
+  "> ${log['message']}",
+  style: const TextStyle(
+    color: Colors.white, // เปลี่ยนเป็นสีขาวที่นี่ครับ
+    fontFamily: 'monospace',
+    fontSize: 14,
+    fontWeight: FontWeight.bold,
+    height: 1.4,
+  ),
+),
+
+
+
                                           ),
                                           GestureDetector(
                                             onTap: () => _clearLogItem(log['key']),
