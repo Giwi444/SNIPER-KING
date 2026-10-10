@@ -2198,69 +2198,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    // 📌 เพิ่มปุ่มทดสอบเปิดบอลลูน Overlay ตรงนี้
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
-                            if (isGranted == null || !isGranted) {
-                              await FlutterOverlayWindow.requestPermission();
-                              return;
-                            }
-
-                            bool isActive = await FlutterOverlayWindow.isActive();
-                            if (!isActive) {
-                              await FlutterOverlayWindow.showOverlay(
-                                height: 100,
-                                width: 100,
-                                alignment: OverlayAlignment.centerRight,
-                                flag: OverlayFlag.clickThrough,
-                                positionGravity: PositionGravity.none,
-                              );
-
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('เปิดบอลลูนสำเร็จ! ลองพับแอปออกไปดูหน้าจอหลัก'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('บอลลูนเปิดทำงานอยู่แล้ว'),
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            print("Error opening overlay: $e");
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('เกิดข้อผิดพลาด: $e'), backgroundColor: Colors.red),
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.bubble_chart, color: Colors.white),
-                        label: const Text(
-                          'ทดสอบเปิดบอลลูน Overlay',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD50000),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          side: const BorderSide(color: Colors.redAccent, width: 1.5),
-                        ),
-                      ),
-                    ),
+                    
 
                     const SizedBox(height: 20),
                     _buildBidAskBoxContent(context),
