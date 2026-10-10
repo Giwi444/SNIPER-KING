@@ -962,7 +962,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   @override
   void initState() {
     super.initState();
-    _showFloatingBalloon();
+    _showFloatingBalloon(); // ✅ เพิ่มคำสั่งเรียกบอลลูนตรงนี้เพื่อให้ทำงานทันทีที่เข้าหน้าหลัก
     _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
@@ -1788,6 +1788,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 /////////////////////////////////////////////////////////////////////// 7. HOME SCREEN ////////////////////
