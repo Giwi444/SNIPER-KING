@@ -346,8 +346,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: const [
+                        child: const Column(
+                          children: [
                             Text(
                               '🌹 R   O   S   E 🌹',
                               textAlign: TextAlign.center,
@@ -706,7 +706,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// #0 MAIN NAVIGATION SCREEN (รวมบอลลูนลอยและหน้าต่าง Logs ควบคุมทุกหน้า)
+// #0 MAIN NAVIGATION SCREEN
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -736,11 +736,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  // รูปภาพทั้งสองร่าง
   final String _imageA = 'assets/images/ppp.jpg';
   final String _imageB = 'assets/images/1791591138980.jpg';
-
-  // สถานะการสลับร่าง (สลับไปมาระหว่างภาพ A และ B ทุกๆ รอบการสแกน)
   bool _showMorphImage = false; 
 
   late final AnimationController _bounceController = AnimationController(
@@ -772,12 +769,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _listenToConnectionStatus();
     _listenToOrdersForDialog();
 
-    // ฟังจังหวะการวิ่งของเส้นสแกน เพื่อสลับภาพร่างใหม่เมื่อเส้นวิ่งสุดขอบ
     _scannerController.addStatusListener((status) {
       if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
         if (mounted) {
           setState(() {
-            _showMorphImage = !_showMorphImage; // สลับภาพร่างเมื่อสแกนสุดขอบ
+            _showMorphImage = !_showMorphImage;
           });
         }
       }
@@ -1377,7 +1373,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                   return Stack(
                     fit: StackFit.expand,
                     children: [
-                      // ภาพพื้นฐาน (ร่างเก่า)
                       Image.asset(
                         baseImage,
                         fit: BoxFit.cover,
@@ -1385,7 +1380,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         width: double.infinity,
                         height: 200,
                       ),
-                      // ภาพร่างใหม่ที่จะค่อยๆ เผยออกมาตามแนวเส้นสแกนที่วิ่งผ่าน
                       ClipRect(
                         clipper: ScannerClipper(scanValue),
                         child: Image.asset(
@@ -1396,15 +1390,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           height: 200,
                         ),
                       ),
-                      // เส้นเลเซอร์สแกน
                       Positioned(
                         top: scanValue - 2,
                         left: 0,
                         right: 0,
                         child: Container(
                           height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF1744),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF1744),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.redAccent,
@@ -1581,14 +1574,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 }
 
-// Custom Clipper สำหรับทำเอฟเฟกต์แปลงร่างตามเส้นสแกนเลเซอร์
 class ScannerClipper extends CustomClipper<Rect> {
   final double scanValue;
   ScannerClipper(this.scanValue);
 
   @override
   Rect getClip(Size size) {
-    // ให้เผยภาพใหม่เฉพาะส่วนที่เส้นเลเซอร์วิ่งผ่านลงมาแล้ว
     return Rect.fromLTRB(0, 0, size.width, scanValue);
   }
 
@@ -1924,8 +1915,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: Column(
-                        children: const [
+                      child: const Column(
+                        children: [
                           Text(
                             '🌹 R   O   S   E 🌹',
                             textAlign: TextAlign.center,
