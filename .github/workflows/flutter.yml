@@ -22,11 +22,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Android Structure if missing
+      - name: Clean and Recreate Android Platform
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android
-          fi
+          rm -rf android
+          flutter create . --platforms=android
 
       - name: Install dependencies
         run: flutter pub get
