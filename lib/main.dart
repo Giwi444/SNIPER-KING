@@ -2214,12 +2214,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             bool isActive = await FlutterOverlayWindow.isActive();
                             if (!isActive) {
                               await FlutterOverlayWindow.showOverlay(
-                                height: 80,
-                                width: 80,
+                                height: 100,
+                                width: 100,
                                 alignment: OverlayAlignment.centerRight,
-                                flag: OverlayFlag.defaultFlag,
-                                positionGravity: PositionGravity.auto,
+                                flag: OverlayFlag.clickThrough,
+                                positionGravity: PositionGravity.none,
                               );
+
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
