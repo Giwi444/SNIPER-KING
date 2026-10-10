@@ -22,6 +22,12 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Create Android Structure if missing
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 
