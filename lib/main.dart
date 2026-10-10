@@ -736,6 +736,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
+  // รายการรูปภาพสำหรับสลับในแถบสแกน (ใช้ชื่อไฟล์ 1791591138980.jpg ตาม GitHub)
+  final List<String> _scannerImages = [
+    'assets/images/ppp.jpg',
+    'assets/images/1791591138980.jpg',
+  ];
+  int _currentImageIndex = 0;
+  Timer? _imageSwitchTimer;
+
   late final AnimationController _bounceController = AnimationController(
     duration: const Duration(seconds: 1),
     vsync: this,
@@ -764,12 +772,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _listenToLogs();
     _listenToConnectionStatus();
     _listenToOrdersForDialog();
+    
+    // เริ่มต้นระบบสลับภาพทุกๆ 4 วินาที
+    _imageSwitchTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentImageIndex = (_currentImageIndex + 1) % _scannerImages.length;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _bounceController.dispose();
     _scannerController.dispose();
+    _imageSwitchTimer?.cancel();
     super.dispose();
   }
 
@@ -1301,7 +1319,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         children: [
           ClipOval(
             child: Image.asset(
-              'assets/images/ppp.jpg',
+              _scannerImages[_currentImageIndex],
               fit: BoxFit.cover,
               width: 54,
               height: 54,
@@ -1330,6 +1348,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
 
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
+    String activeImage = _scannerImages[_currentImageIndex];
 
     return Container(
       width: double.infinity,
@@ -1353,13 +1372,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    'assets/images/ppp.jpg',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 800),
+                    child: Image.asset(
+                      activeImage,
+                      key: ValueKey<String>(activeImage),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      width: double.infinity,
                       height: 200,
-                      color: Colors.black,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                   AnimatedBuilder(
@@ -1550,7 +1575,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
 }
 
 // ==========================================
-// #1 HOME SCREEN (คืนค่าระบบดึงราคา Bid / Ask)
+// #1 HOME SCREEN
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
