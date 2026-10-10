@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น
+
+// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น (เปลี่ยนมาใช้รูป 1.jpg)
 @pragma("vm:entry-point")
 void overlayMain() {
   runApp(
-    MaterialApp(
+    const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Material(
         color: Colors.transparent,
@@ -20,7 +20,7 @@ void overlayMain() {
   );
 }
 
-// ดีไซน์ตัวบอลลูน (วงกลมสีแดงมีไอคอน)
+// ดีไซน์ตัวบอลลูน (แสดงภาพ assets/images/1.jpg ทรงกลม)
 class OverlayBallonWidget extends StatelessWidget {
   const OverlayBallonWidget({super.key});
 
@@ -34,22 +34,26 @@ class OverlayBallonWidget extends StatelessWidget {
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          color: const Color(0xFFD50000),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
+          border: Border.all(color: Colors.redAccent, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withOpacity(0.5),
               blurRadius: 8,
               spreadRadius: 2,
             ),
           ],
         ),
-        child: const Center(
-          child: Icon(
-            Icons.show_chart,
-            color: Colors.white,
-            size: 30,
+        child: ClipOval(
+          child: Image.asset(
+            'assets/images/1.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: const Color(0xFFD50000),
+                child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
+              );
+            },
           ),
         ),
       ),
@@ -75,6 +79,7 @@ Future<void> _showFloatingBalloon() async {
     );
   }
 }
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -3239,7 +3244,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
