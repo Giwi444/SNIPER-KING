@@ -1,38 +1,33 @@
-name: Build Flutter APK
+Name: rose
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
 
-on:
-  push:
-    branches: [ main ]
+environment:
+  sdk: '>=3.0.0 <4.0.0'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.12.0
+  firebase_database: ^11.3.0
+  shared_preferences: ^2.2.2
+  cupertino_icons: ^1.0.8
+  flutter_overlay_window: ^0.5.0
 
-    steps:
-      - uses: actions/checkout@v4
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: "^0.13.1"
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+flutter:
+  uses-material-design: true
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Generate Fresh Android Project
-        run: flutter create . --platforms=android
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ROSE_CYBER
-          path: build/app/outputs/flutter-apk/app-release.apk
+  assets: 
+    - assets/images/ppp.jpg
+    - assets/images/1791591138980.jpg
+flutter_launcher_icons:
+  image_path: "assets/images/ppp.jpg"
+  android: true
+  ios: true
