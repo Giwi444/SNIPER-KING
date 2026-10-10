@@ -3685,7 +3685,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings Bot' ameters'ameters' Parameters', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
