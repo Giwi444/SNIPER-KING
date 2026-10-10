@@ -937,7 +937,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  final String _imageA = 'assets/images/ppp.jpg';
+  final String _imageA = 'assets/images/1.jpg';
   final String _imageB = 'assets/images/1791591138980.jpg';
   bool _showMorphImage = false; 
 
