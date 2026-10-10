@@ -4,6 +4,79 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+
+// ฟังก์ชันสำหรับหน้าตาของบอลลูนที่จะลอยทับหน้าจออื่น
+@pragma("vm:entry-point")
+void overlayMain() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Material(
+        color: Colors.transparent,
+        child: OverlayBallonWidget(),
+      ),
+    ),
+  );
+}
+
+// ดีไซน์ตัวบอลลูน (วงกลมสีแดงมีไอคอน)
+class OverlayBallonWidget extends StatelessWidget {
+  const OverlayBallonWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        // เมื่อกดที่บอลลูน สามารถสั่งปิดหรือทำคำสั่งอื่นๆ ได้
+        await FlutterOverlayWindow.closeOverlay();
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: const Color(0xFFD50000), // สีแดงแบบในแอปของคุณ
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.show_chart,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ฟังก์ชันสำหรับสั่งเปิดบอลลูนลอยทับแอปอื่น
+Future<void> _showFloatingBalloon() async {
+  bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
+  if (isGranted == null || !isGranted) {
+    bool? requested = await FlutterOverlayWindow.requestPermission();
+    if (requested != true) return;
+  }
+
+  bool isActive = await FlutterOverlayWindow.isActive();
+  if (!isActive) {
+    await FlutterOverlayWindow.showOverlay(
+      height: 80,
+      width: 80,
+      alignment: OverlayAlignment.centerRight,
+      flag: OverlayFlag.defaultFlag,
+      positionGravity: PositionGravity.auto,
+    );
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -3168,7 +3241,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
