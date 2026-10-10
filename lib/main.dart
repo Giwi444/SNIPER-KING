@@ -111,9 +111,6 @@ class LiquiditySweepApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 1. MT5 LOGIN WRAPPER
-// ==========================================
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
 
@@ -395,7 +392,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 25),
-                      
                       TextField(
                         controller: _loginController,
                         keyboardType: TextInputType.number,
@@ -409,7 +405,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
@@ -434,7 +429,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
                       TextField(
                         controller: _serverController,
                         style: const TextStyle(color: Colors.white),
@@ -446,7 +440,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       ),
-                      
                       const SizedBox(height: 25),
                       SizedBox(
                         width: double.infinity,
@@ -474,9 +467,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 }
 
-// ==========================================
-// 2. PIN AUTH WRAPPER
-// ==========================================
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
 
@@ -705,9 +695,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// ==========================================
-// #0 MAIN NAVIGATION SCREEN
-// ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -1021,7 +1008,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             index: _currentIndex,
             children: pages,
           ),
-
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1070,7 +1056,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ),
           ),
-
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1589,9 +1574,6 @@ class ScannerClipper extends CustomClipper<Rect> {
   }
 }
 
-// ==========================================
-// #1 HOME SCREEN
-// ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -2004,7 +1986,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-
           if (_isChartModalOpen)
             Stack(
               children: [
@@ -2382,9 +2363,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// ==========================================
-// #2 ORDERS SCREEN
-// ==========================================
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
   const OrdersScreen({super.key, required this.accountLogin});
@@ -2618,7 +2596,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
@@ -2656,7 +2633,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(18),
@@ -2694,7 +2670,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-
                           activeOrders.isEmpty
                               ? const Padding(
                                   padding: EdgeInsets.all(30.0),
@@ -2816,9 +2791,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-// ==========================================
-// #3 HISTORY SCREEN
-// ==========================================
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
   const HistoryScreen({super.key, required this.accountLogin});
@@ -3043,7 +3015,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   },
                 ),
               ),
-              
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -3100,7 +3071,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
               ),
-              
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -3199,7 +3169,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ],
       ),
@@ -3207,9 +3177,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-// ==========================================
-// #4 ALERTS SCREEN
-// ==========================================
 class AlertsScreen extends StatefulWidget {
   final VoidCallback onAlertsRead;
   const AlertsScreen({super.key, required this.onAlertsRead});
@@ -3448,9 +3415,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-// ==========================================
-// #5 SETTINGS SCREEN
-// ==========================================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -3731,7 +3695,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
-                      
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
                       Row(
@@ -3775,7 +3738,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }).toList(),
                       ),
-
                       const SizedBox(height: 16),
                       const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
@@ -3822,7 +3784,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }).toList(),
                       ),
-
                       const SizedBox(height: 16),
                       const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
@@ -3863,7 +3824,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }).toList(),
                       ),
-
                       const SizedBox(height: 16),
                       const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                       const SizedBox(height: 8),
@@ -3906,7 +3866,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         },
                       ),
-
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -3940,7 +3899,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -3962,17 +3920,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
-
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
                         style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
-
                       Row(
                         children: [
                           Expanded(
@@ -4054,7 +4009,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
                       const Divider(color: Colors.white24, height: 24),
                       const SizedBox(height: 8),
