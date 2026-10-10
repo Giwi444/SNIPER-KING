@@ -736,13 +736,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  // รายการรูปภาพสำหรับสลับในแถบสแกน (ใช้ชื่อไฟล์ 1791591138980.jpg ตาม GitHub)
-  final List<String> _scannerImages = [
-    'assets/images/ppp.jpg',
-    'assets/images/1791591138980.jpg',
-  ];
-  int _currentImageIndex = 0;
-  Timer? _imageSwitchTimer;
+  // รูปภาพทั้งสองร่าง
+  final String _imageA = 'assets/images/ppp.jpg';
+  final String _imageB = 'assets/images/1791591138980.jpg';
+
+  // สถานะการสลับร่าง (สลับไปมาระหว่างภาพ A และ B ทุกๆ รอบการสแกน)
+  bool _showMorphImage = false; 
 
   late final AnimationController _bounceController = AnimationController(
     duration: const Duration(seconds: 1),
@@ -754,7 +753,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   );
 
   late final AnimationController _scannerController = AnimationController(
-    duration: const Duration(seconds: 2),
+    duration: const Duration(seconds: 3),
     vsync: this,
   )..repeat(reverse: true);
 
@@ -772,13 +771,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _listenToLogs();
     _listenToConnectionStatus();
     _listenToOrdersForDialog();
-    
-    // เริ่มต้นระบบสลับภาพทุกๆ 4 วินาที
-    _imageSwitchTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (mounted) {
-        setState(() {
-          _currentImageIndex = (_currentImageIndex + 1) % _scannerImages.length;
-        });
+
+    // ฟังจังหวะการวิ่งของเส้นสแกน เพื่อสลับภาพร่างใหม่เมื่อเส้นวิ่งสุดขอบ
+    _scannerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() {
+            _showMorphImage = !_showMorphImage; // สลับภาพร่างเมื่อสแกนสุดขอบ
+          });
+        }
       }
     });
   }
@@ -787,7 +788,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   void dispose() {
     _bounceController.dispose();
     _scannerController.dispose();
-    _imageSwitchTimer?.cancel();
     super.dispose();
   }
 
@@ -1319,7 +1319,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         children: [
           ClipOval(
             child: Image.asset(
-              _scannerImages[_currentImageIndex],
+              _showMorphImage ? _imageB : _imageA,
               fit: BoxFit.cover,
               width: 54,
               height: 54,
@@ -1348,7 +1348,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
 
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
-    String activeImage = _scannerImages[_currentImageIndex];
+    String baseImage = _showMorphImage ? _imageA : _imageB;
+    String morphImage = _showMorphImage ? _imageB : _imageA;
 
     return Container(
       width: double.infinity,
@@ -1369,29 +1370,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               height: 200,
               width: double.infinity,
               color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 800),
-                    child: Image.asset(
-                      activeImage,
-                      key: ValueKey<String>(activeImage),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      width: double.infinity,
-                      height: 200,
-                      errorBuilder: (context, error, stackTrace) => Container(
+              child: AnimatedBuilder(
+                animation: _scannerAnimation,
+                builder: (context, child) {
+                  double scanValue = _scannerAnimation.value * 200;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // ภาพพื้นฐาน (ร่างเก่า)
+                      Image.asset(
+                        baseImage,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        width: double.infinity,
                         height: 200,
-                        color: Colors.black,
                       ),
-                    ),
-                  ),
-                  AnimatedBuilder(
-                    animation: _scannerAnimation,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: _scannerAnimation.value * (200 - 6),
+                      // ภาพร่างใหม่ที่จะค่อยๆ เผยออกมาตามแนวเส้นสแกนที่วิ่งผ่าน
+                      ClipRect(
+                        clipper: ScannerClipper(scanValue),
+                        child: Image.asset(
+                          morphImage,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 200,
+                        ),
+                      ),
+                      // เส้นเลเซอร์สแกน
+                      Positioned(
+                        top: scanValue - 2,
                         left: 0,
                         right: 0,
                         child: Container(
@@ -1412,10 +1419,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -1571,6 +1578,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         ),
       ),
     );
+  }
+}
+
+// Custom Clipper สำหรับทำเอฟเฟกต์แปลงร่างตามเส้นสแกนเลเซอร์
+class ScannerClipper extends CustomClipper<Rect> {
+  final double scanValue;
+  ScannerClipper(this.scanValue);
+
+  @override
+  Rect getClip(Size size) {
+    // ให้เผยภาพใหม่เฉพาะส่วนที่เส้นเลเซอร์วิ่งผ่านลงมาแล้ว
+    return Rect.fromLTRB(0, 0, size.width, scanValue);
+  }
+
+  @override
+  bool shouldReclip(covariant ScannerClipper oldClipper) {
+    return oldClipper.scanValue != scanValue;
   }
 }
 
@@ -3183,7 +3207,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: 8),
             ],
           ),
