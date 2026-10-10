@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 ////////////////////////////////////////////
 ////////////////////////////////////////////
@@ -84,7 +84,7 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        await FlutterOverlayWindow.closeOverlay();
+        await FlutterOverlayWindow.closeOverlay();[span_5](start_span)[span_5](end_span)
       },
       child: Container(
         width: 60,
@@ -118,7 +118,6 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
                 },
               ),
             ),
-            // จุดสถานะออนไลน์สีเขียว (หรือสีแดงถ้าหลุดการเชื่อมต่อ) มุมขวาบน
             Positioned(
               right: 0,
               top: 0,
@@ -189,7 +188,6 @@ void main() async {
 
   runApp(const LiquiditySweepApp());
 }
-
 
 class TypewriterText extends StatefulWidget {
   final String text;
@@ -276,8 +274,6 @@ class LiquiditySweepApp extends StatelessWidget {
   }
 }
 
-
-
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
 
@@ -337,7 +333,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      // ✅ เพิ่มการเช็คและ Initialize Firebase ตรงนี้ให้ปลอดภัยก่อนใช้งาน
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: const FirebaseOptions(
@@ -455,200 +450,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       );
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoggedInMT5) {
-      return const PinAuthWrapper();
-    }
-
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
-          ),
-          Container(color: Colors.black.withOpacity(0.88)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/ppp.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161619).withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.8),
-                              blurRadius: 12.0,
-                              spreadRadius: 2.0,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: const [
-                            Text(
-                              '🌹 R   O   S   E 🌹',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 3.0,
-                                shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'C Y B E R   B O T',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                          color: Colors.black.withOpacity(0.6),
-                          boxShadow: [
-                            BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                          ],
-                        ),
-                        child: const Text(
-                          'Powered By Algohost',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      TextField(
-                        controller: _loginController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Account Login',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Investor Password',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.redAccent,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _serverController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
-                          hintStyle: TextStyle(color: Colors.redAccent.withOpacity(0.6), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitMT5Login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD50000),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -4451,4 +4252,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-}.
+}
