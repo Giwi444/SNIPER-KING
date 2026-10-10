@@ -1,4 +1,4 @@
-name: Build Flutter APK
+Name: Build Flutter APK
 
 on:
   push:
@@ -21,11 +21,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
-      - name: Recreate Android Project (V2)
-        run: |
-          rm -rf android
-          flutter create . --platforms=android
 
       - name: Install dependencies
         run: flutter pub get
