@@ -1,12 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- สิทธิ์แสดงทับแอปอื่น -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    
-    <!-- เพิ่มสิทธิ์การแจ้งเตือนและ Foreground Service ตรงนี้ -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
     <application
         android:name="${applicationName}"
         android:label="ROSE CYBER"
@@ -34,11 +25,9 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Service ของ flutter_overlay_window -->
+        <!-- Service ของ flutter_overlay_window ที่แก้ไขให้ถูกต้องแล้ว -->
         <service
-            android:name="flutter.overlay.window.FlutterOverlayWindow"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+            android:exported="false" />
 
     </application>
-</manifest>
