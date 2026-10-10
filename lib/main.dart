@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 /////////////////////////////////////////////////////////////////////// 2. OVERLAY BALLOON WIDGET //////////
@@ -150,21 +151,32 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
 }
 
 Future<void> _showFloatingBalloon() async {
-  bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
-  if (isGranted == null || !isGranted) {
-    bool? requested = await FlutterOverlayWindow.requestPermission();
-    if (requested != true) return;
-  }
+  try {
+    // 1. ขอสิทธิ์แจ้งเตือน (สำหรับ Android 13+)
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
 
-  bool isActive = await FlutterOverlayWindow.isActive();
-  if (!isActive) {
-    await FlutterOverlayWindow.showOverlay(
-      height: 80,
-      width: 80,
-      alignment: OverlayAlignment.centerRight,
-      flag: OverlayFlag.defaultFlag,
-      positionGravity: PositionGravity.auto,
-    );
+    // 2. ตรวจสอบสิทธิ์แสดงผลทับแอปอื่น (Overlay Permission)
+    bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
+    if (isGranted == null || !isGranted) {
+      bool? requested = await FlutterOverlayWindow.requestPermission();
+      if (requested != true) return;
+    }
+
+    // 3. สั่งแสดงบอลลูนเมื่อได้รับสิทธิ์เรียบร้อย
+    bool isActive = await FlutterOverlayWindow.isActive();
+    if (!isActive) {
+      await FlutterOverlayWindow.showOverlay(
+        height: 80,
+        width: 80,
+        alignment: OverlayAlignment.centerRight,
+        flag: OverlayFlag.defaultFlag,
+        positionGravity: PositionGravity.auto,
+      );
+    }
+  } catch (e) {
+    print("Show floating balloon error: $e");
   }
 }
 
@@ -408,6 +420,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('mt5_login', login);
           await prefs.setString('mt5_server', server);
+
+          await _showFloatingBalloon();
 
           if (!mounted) return;
           setState(() {
@@ -700,6 +714,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (!mounted) return;
     final storedPin = prefs.getString('user_pin');
     if (storedPin == pin) {
+      await _showFloatingBalloon();
       setState(() {
         isAuthorized = true;
       });
@@ -728,6 +743,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           } else {
             if (firstEnteredPin == currentPinInput) {
               _saveNewPin(currentPinInput);
+              _showFloatingBalloon();
               setState(() {
                 hasStoredPin = true;
                 isAuthorized = true;
@@ -943,6 +959,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   @override
   void initState() {
     super.initState();
+    _showFloatingBalloon();
     _loadSavedLogin();
     _listenToActiveAccount();
     _listenToAlertsCount();
@@ -3375,7 +3392,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
