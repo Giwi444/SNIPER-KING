@@ -22,6 +22,11 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Clean & Upgrade Android Platform
+        run: |
+          rm -rf android
+          flutter create . --platforms=android
+
       - name: Install dependencies
         run: flutter pub get
 
