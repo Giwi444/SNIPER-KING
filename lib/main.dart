@@ -343,8 +343,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             ),
                           ],
                         ),
-                        child: const Column(
-                          children: [
+                        child: Column(
+                          children: const [
                             Text(
                               '🌹 R   O   S   E 🌹',
                               textAlign: TextAlign.center,
@@ -1897,8 +1897,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: const Column(
-                        children: [
+                      child: Column(
+                        children: const [
                           Text(
                             '🌹 R   O   S   E 🌹',
                             textAlign: TextAlign.center,
