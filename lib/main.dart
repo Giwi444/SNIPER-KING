@@ -3189,43 +3189,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
             color: Colors.black.withOpacity(0.8),
           ),
           Column(
-  children: [
-    SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        itemCount: filterOptions.length,
-        itemBuilder: (context, index) {
-          String filter = filterOptions[index];
-          bool isSelected = selectedFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
-              selected: isSelected,
-              selectedColor: const Color(0xFFFF1744),
-              backgroundColor: const Color(0xFF161619),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                fontFamily: 'monospace',
+            children: [
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: filterOptions.length,
+                  itemBuilder: (context, index) {
+                    String filter = filterOptions[index];
+                    bool isSelected = selectedFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFF1744),
+                        backgroundColor: const Color(0xFF161619),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                        onSelected: (bool selected) {
+                          setState(() {
+                            selectedFilter = filter;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-              onSelected: (bool selected) {
-                setState(() {
-                  selectedFilter = filter;
-                });
-              },
-            ),
-          );
-        },
-      ),
-    ), // ปิด SizedBox ให้เรียบร้อย
-    // โค้ดส่วนถัดไปใน Column...
-  ], // ปิด children ของ Column ตรงนี้
-) // ปิด Column
-
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -3379,14 +3375,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
 
 
 /////////////////////////////////////////////////////////////////////// 10. ALERTS SCREEN ////////////////////
