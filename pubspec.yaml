@@ -28,7 +28,7 @@ flutter:
     - assets/images/ppp.jpg
     - assets/images/1791591138980.jpg
 flutter_launcher_icons:
-  image_path: "assets/images/assets/images/1.jpg"
+  image_path: "assets/images/1.jpg"
   android: true
   ios: false
 
