@@ -2473,7 +2473,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Portfolio', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
@@ -3645,7 +3645,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings & Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings Bot ', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
