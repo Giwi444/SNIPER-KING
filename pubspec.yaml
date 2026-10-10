@@ -33,6 +33,10 @@ flutter:
     - assets/images/IMG_20260922_200506.jpg
 
 flutter_launcher_icons:
-  image_path: "assets/images/p.jpg"
+  image_path: "assets/images/ppp.jpg"
   android: true
   ios: true
+
+  dev_dependencies:
+  flutter_launcher_icons: "^0.13.1"
+
