@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 1. เพิ่มสิทธิ์แสดงทับแอปอื่น ตรงนี้ -->
+    <!-- สิทธิ์แสดงทับแอปอื่น -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
+    <!-- เพิ่มสิทธิ์การแจ้งเตือนและ Foreground Service ตรงนี้ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name="${applicationName}"
@@ -30,7 +34,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- 2. เพิ่ม Service ของ flutter_overlay_window ไว้ข้างใน <application> ตรงนี้ -->
+        <!-- Service ของ flutter_overlay_window -->
         <service
             android:name="flutter.overlay.window.FlutterOverlayWindow"
             android:exported="false"
