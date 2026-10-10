@@ -119,7 +119,6 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
                 },
               ),
             ),
-            // จุดสถานะออนไลน์สีเขียว (หรือสีแดงถ้าหลุดการเชื่อมต่อ) มุมขวาบน
             Positioned(
               right: 0,
               top: 0,
@@ -190,7 +189,6 @@ void main() async {
 
   runApp(const LiquiditySweepApp());
 }
-
 
 class TypewriterText extends StatefulWidget {
   final String text;
