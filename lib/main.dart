@@ -1,4 +1,4 @@
-import 'dart:async';  
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -96,7 +96,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ROSE_CYBER ROBOT',
+      title: 'Sniper King Pro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0B0B0E),
@@ -346,8 +346,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             ),
                           ],
                         ),
-                        child: const Column(
-                          children: [
+                        child: Column(
+                          children: const [
                             Text(
                               '🌹 R   O   S   E 🌹',
                               textAlign: TextAlign.center,
@@ -706,7 +706,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 // ==========================================
-// #0 MAIN NAVIGATION SCREEN
+// #0 MAIN NAVIGATION SCREEN (รวมบอลลูนลอยและหน้าต่าง Logs ควบคุมทุกหน้า)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -736,10 +736,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  final String _imageA = 'assets/images/ppp.jpg';
-  final String _imageB = 'assets/images/1791591138980.jpg';
-  bool _showMorphImage = false; 
-
   late final AnimationController _bounceController = AnimationController(
     duration: const Duration(seconds: 1),
     vsync: this,
@@ -750,7 +746,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   );
 
   late final AnimationController _scannerController = AnimationController(
-    duration: const Duration(seconds: 3),
+    duration: const Duration(seconds: 2),
     vsync: this,
   )..repeat(reverse: true);
 
@@ -768,16 +764,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _listenToLogs();
     _listenToConnectionStatus();
     _listenToOrdersForDialog();
-
-    _scannerController.addStatusListener((status) {
-      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
-        if (mounted) {
-          setState(() {
-            _showMorphImage = !_showMorphImage;
-          });
-        }
-      }
-    });
   }
 
   @override
@@ -1315,7 +1301,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         children: [
           ClipOval(
             child: Image.asset(
-              _showMorphImage ? _imageB : _imageA,
+              'assets/images/ppp.jpg',
               fit: BoxFit.cover,
               width: 54,
               height: 54,
@@ -1344,8 +1330,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
 
   Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
     bool isServerActive = isConnected && isRunning;
-    String baseImage = _showMorphImage ? _imageA : _imageB;
-    String morphImage = _showMorphImage ? _imageB : _imageA;
 
     return Container(
       width: double.infinity,
@@ -1366,38 +1350,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               height: 200,
               width: double.infinity,
               color: Colors.black,
-              child: AnimatedBuilder(
-                animation: _scannerAnimation,
-                builder: (context, child) {
-                  double scanValue = _scannerAnimation.value * 200;
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        baseImage,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        width: double.infinity,
-                        height: 200,
-                      ),
-                      ClipRect(
-                        clipper: ScannerClipper(scanValue),
-                        child: Image.asset(
-                          morphImage,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 200,
-                        ),
-                      ),
-                      Positioned(
-                        top: scanValue - 2,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/ppp.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      color: Colors.black,
+                    ),
+                  ),
+                  AnimatedBuilder(
+                    animation: _scannerAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: _scannerAnimation.value * (200 - 6),
                         left: 0,
                         right: 0,
                         child: Container(
                           height: 4,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF1744),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF1744),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.redAccent,
@@ -1412,10 +1387,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -1574,23 +1549,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 }
 
-class ScannerClipper extends CustomClipper<Rect> {
-  final double scanValue;
-  ScannerClipper(this.scanValue);
-
-  @override
-  Rect getClip(Size size) {
-    return Rect.fromLTRB(0, 0, size.width, scanValue);
-  }
-
-  @override
-  bool shouldReclip(covariant ScannerClipper oldClipper) {
-    return oldClipper.scanValue != scanValue;
-  }
-}
-
 // ==========================================
-// #1 HOME SCREEN
+// #1 HOME SCREEN (คืนค่าระบบดึงราคา Bid / Ask)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1915,8 +1875,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: const Column(
-                        children: [
+                      child: Column(
+                        children: const [
                           Text(
                             '🌹 R   O   S   E 🌹',
                             textAlign: TextAlign.center,
@@ -2399,7 +2359,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   DatabaseReference? _dbRef;
   String activeSymbol = 'XAUUSD';
   String activeTimeframe = 'M1';
-  String accountServer = 'ICMarketsSC-Demo';
+  String accountServer = 'ICMarkets SC-MT5-Demo';
 
   double balance = 0.0;
   double equity = 0.0;
@@ -2513,7 +2473,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Portfolio', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Active Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
@@ -3198,8 +3158,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ],
       ),
@@ -3684,7 +3645,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings & Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
