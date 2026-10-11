@@ -1887,7 +1887,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       
-      _marketRef = database.ref('accounts/${widget.accountLogin}/market');
+      _marketRef = database.ref('market');
       _marketRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted) {
@@ -1904,7 +1904,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-      database.ref('accounts/${widget.accountLogin}/status').onValue.listen((DatabaseEvent event) {
+      database.ref('status').onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted && data is Map) {
           setState(() {
@@ -1929,7 +1929,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _dbRef = database.ref('accounts/${widget.accountLogin}/status');
+      _dbRef = database.ref('status');
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -1961,7 +1961,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _historyRef = database.ref('accounts/${widget.accountLogin}/history');
+      _historyRef = database.ref('history');
       _historyRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -2001,7 +2001,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _ordersRef = database.ref('accounts/${widget.accountLogin}/orders');
+      _ordersRef = database.ref('orders');
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -2035,11 +2035,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'is_running': status,
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
-      // อัปเดตสำรองไปที่ Root ด้วย
-      FirebaseDatabase.instance.ref('status').update({
-        'is_running': status,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
     } catch (e) {
       print("Toggle bot error: $e");
     }
@@ -2048,10 +2043,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _closeAllOrders() {
     try {
       _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      FirebaseDatabase.instance.ref('status').update({
         'close_all': true,
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
@@ -2188,7 +2179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                                        const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -2221,6 +2212,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
+                    
+
                     const SizedBox(height: 20),
                     _buildBidAskBoxContent(context),
                     const SizedBox(height: 40),
@@ -2646,7 +2639,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _dbRef = database.ref('accounts/${widget.accountLogin}/status');
+      _dbRef = database.ref('status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -2674,7 +2667,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      database.ref('accounts/${widget.accountLogin}/status').onValue.listen((DatabaseEvent event) {
+      database.ref('status').onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
@@ -2701,7 +2694,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _ordersRef = database.ref('accounts/${widget.accountLogin}/orders');
+      _ordersRef = database.ref('orders');
 
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
