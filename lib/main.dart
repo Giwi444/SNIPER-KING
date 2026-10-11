@@ -663,7 +663,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
-} 
+} // <--- ปีกกาปิดของคลาส _MT5LoginWrapperState ที่ถูกต้องครบถ้วน
 
 
 
@@ -1671,33 +1671,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                 ),
                 const SizedBox(height: 10),
                 const Divider(color: Colors.white24, height: 8),
-                // ปรับแก้วิเจ็ตด้านล่างให้ไม่ชนกันและแสดงผลสวยงามเต็มพื้นที่
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text('Orders: $orderCount', 
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text('Lots: ${totalLots.toStringAsFixed(2)}', 
-                        style: const TextStyle(color: Colors.white70, fontSize: 11),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -1833,7 +1817,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double balance = 0.0;
   double equity = 0.0;
   double profit = 0.0;
-  String symbol = "BTCUSD";
+  String symbol = "XAUUSD";
   String timeframe = "M1";
 
   List<Map<dynamic, dynamic>> activeOrders = [];
@@ -2141,8 +2125,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: const Column(
-                        children: [
+                      child: Column(
+                        children: const [
                           Text(
                             '🌹 R   O   S   E 🌹',
                             textAlign: TextAlign.center,
@@ -2189,7 +2173,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                                        const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -2608,6 +2592,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+
 
 
 /////////////////////////////////////////////////////////////////////// 8. ORDERS SCREEN ////////////////////
@@ -3419,7 +3405,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
@@ -3477,6 +3463,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
+      // ดึงจากพาส 'alerts' หลักตรงตามที่บอทส่งเข้า Firebase
       _alertsRef = database.ref('alerts');
 
       _alertsRef?.onValue.listen((DatabaseEvent event) {
