@@ -1,5 +1,6 @@
-/////////////////////////////////////////////////////////////////////// 1. IMPORTS & OVERLAY CONFIG ////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการเชื่อมต่อเซิร์ฟเวอร์
+// ==========================================
 
 import 'dart:async';  
 import 'package:flutter/material.dart';
@@ -11,8 +12,9 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 
-/////////////////////////////////////////////////////////////////////// 2. OVERLAY BALLOON WIDGET //////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดบอลลูนทับอิพอื่น
+// ==========================================
 
 @pragma("vm:entry-point")
 void overlayMain() {
@@ -175,8 +177,9 @@ Future<void> _showFloatingBalloon() async {
 }
 
 
-/////////////////////////////////////////////////////////////////////// 3. MAIN FUNCTION & TYPEWRITER TEXT ////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////--
+// ==========================================
+// โหมดเม้นหลัก
+// ==========================================
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -266,6 +269,10 @@ class _TypewriterTextState extends State<TypewriterText> {
   }
 }
 
+// ==========================================
+// โหมดเริ่มต้นแอพ
+// ==========================================
+
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
@@ -288,8 +295,9 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 
-/////////////////////////////////////////////////////////////////////// 4. MT5 LOGIN WRAPPER SCREEN //////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการเข้าใช้งานครั้งแรก
+// ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
@@ -668,8 +676,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 
-/////////////////////////////////////////////////////////////////////// 5. PIN AUTH WRAPPER SCREEN //////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการสร้างรหัสป้องกัน
+// ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -902,8 +911,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 }
 
 
-/////////////////////////////////////////////////////////////////////// 6. MAIN NAVIGATION SCREEN //////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดควบคุมแดชบอร์ด
+// ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -964,7 +974,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       _initFirebaseAndListen();
       _listenToLogs();
       _listenToConnectionStatus();
-      _listenToOrdersForDialog();
+      _listenToOrdersForDialog(); // จะทำงานตามค่า currentLogin ปัจจุบัน
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1014,7 +1024,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
           _listenToAlertsCount();
           _initFirebaseAndListen();
           _listenToLogs();
-          _listenToOrdersForDialog();
+          _listenToOrdersForDialog(); // รีเฟรช Orders ตาม Login ใหม่
         }
       });
     } catch (e) {
@@ -1144,13 +1154,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
+  // 👉 แก้ไขจุดนี้ให้ชี้ไปที่ accounts -> [currentLogin] -> orders ตามโครงสร้าง Database
   void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _ordersRef = database.ref('orders');
+      _ordersRef = database.ref('accounts/$currentLogin/orders');
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -1781,6 +1792,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 }
 
+// ==========================================
+// โหมดสแกนเนอร์
+// ==========================================
+
 class ScannerClipper extends CustomClipper<Rect> {
   final double scanValue;
   ScannerClipper(this.scanValue);
@@ -1799,9 +1814,10 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 
-/////////////////////////////////////////////////////////////////////// 7. HOME SCREEN ////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// ==========================================
+// โหมดHomeScreen
+// ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -2596,8 +2612,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 
 
-/////////////////////////////////////////////////////////////////////// 8. ORDERS SCREEN ////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดรายงานออเดอร์
+// ==========================================
 
 class OrdersScreen extends StatefulWidget {
   final String accountLogin;
@@ -3025,8 +3042,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
 
 
-/////////////////////////////////////////////////////////////////////// 9. HISTORY SCREEN ////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการบันทึกประจำวัน
+// ==========================================
 
 class HistoryScreen extends StatefulWidget {
   final String accountLogin;
@@ -3416,8 +3434,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 
-/////////////////////////////////////////////////////////////////////// 10. ALERTS SCREEN ////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการแจ้งเตือนข้อความ
+// ==========================================
 
 class AlertsScreen extends StatefulWidget {
   final String accountLogin;
@@ -3660,8 +3679,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-/////////////////////////////////////////////////////////////////////// 11. SETTINGS SCREEN ////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ==========================================
+// โหมดการตั้งค่าพารามิเตอร์
+// ==========================================
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
