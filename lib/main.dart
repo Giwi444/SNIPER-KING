@@ -373,16 +373,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      // ส่งคำขอเข้าสู่ระบบไปที่พอร์ตบัญชีนั้นๆ โดยตรง
-      await database.ref('accounts/$login/status').update({
-        'login': login,
-        'password': password,
-        'server': server,
-        'request_login': true,
-        'login_status': 'pending', 
-      });
-
-      // ส่งสำรองไปที่ Root Status ด้วย (เผื่อ EA เก่ายังอ่านค่าจากจุดนี้)
       await database.ref('status').update({
         'login': login,
         'password': password,
@@ -391,7 +381,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      _loginStatusSubscription = database.ref('accounts/$login/status').onValue.listen((event) async {
+      _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
 
@@ -673,7 +663,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
-}
+} // <--- ปีกกาปิดของคลาส _MT5LoginWrapperState ที่ถูกต้องครบถ้วน
+
 
 
 
