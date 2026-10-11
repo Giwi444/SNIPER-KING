@@ -304,6 +304,41 @@ class MT5LoginWrapper extends StatefulWidget {
   State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
 }
 
+class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
+  final TextEditingController _loginController = TextEditingController(text: '');
+  final TextEditingController _passwordController = TextEditingController(text: '');
+  final TextEditingController _serverController = TextEditingController(text: ''); 
+  
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+  bool _isLoggedInMT5 = false;
+  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingMT5Login();
+  }
+
+  @override
+  void dispose() {
+    _loginStatusSubscription?.cancel();
+    _loginController.dispose();
+    _passwordController.dispose();
+    _serverController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkExistingMT5Login() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLogin = prefs.getString('mt5_login');
+    if (savedLogin != null && savedLogin.isNotEmpty) {
+      setState(() {
+        _isLoggedInMT5 = true;
+      });
+    }
+  }
+
   void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
@@ -321,7 +356,6 @@ class MT5LoginWrapper extends StatefulWidget {
     });
 
     try {
-      // 📌 แก้ไขจุดนี้: ป้องกันการเกิด Error ซ้ำซ้อนโดยการเช็ค Firebase.apps
       FirebaseApp app;
       if (Firebase.apps.isEmpty) {
         app = await Firebase.initializeApp(
@@ -635,7 +669,7 @@ class MT5LoginWrapper extends StatefulWidget {
       ),
     );
   }
-}
+} // <--- ปีกกาปิดของคลาส _MT5LoginWrapperState ที่ถูกต้องครบถ้วน
 
 
 
