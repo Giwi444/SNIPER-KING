@@ -2694,7 +2694,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _ordersRef = database.ref('orders');
+      // 🛠️ แก้ไขให้ดึงข้อมูลจาก Path บัญชีเฉพาะตามที่บอท EA ส่งออกไป
+      _ordersRef = database.ref('accounts/${widget.accountLogin}/orders');
 
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
