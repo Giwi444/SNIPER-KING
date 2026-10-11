@@ -304,41 +304,6 @@ class MT5LoginWrapper extends StatefulWidget {
   State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
 }
 
-class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController(text: '');
-  final TextEditingController _passwordController = TextEditingController(text: '');
-  final TextEditingController _serverController = TextEditingController(text: ''); 
-  
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-  bool _isLoggedInMT5 = false;
-  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingMT5Login();
-  }
-
-  @override
-  void dispose() {
-    _loginStatusSubscription?.cancel();
-    _loginController.dispose();
-    _passwordController.dispose();
-    _serverController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    }
-  }
-
   void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
@@ -356,9 +321,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      // 📌 ตรวจสอบและป้องกันการเรียก Firebase.initializeApp ซ้ำซ้อน
+      // 📌 แก้ไขจุดนี้: ป้องกันการเกิด Error ซ้ำซ้อนโดยการเช็ค Firebase.apps
+      FirebaseApp app;
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
+        app = await Firebase.initializeApp(
           options: const FirebaseOptions(
             apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
             appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
@@ -368,10 +334,12 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
           ),
         );
+      } else {
+        app = Firebase.app();
       }
 
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
