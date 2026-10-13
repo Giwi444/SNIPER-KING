@@ -3564,7 +3564,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 // ==========================================
-// โหมดการแจ้งเตือนข้อความ
+// โหมดการแจ้งเตือนข้อความ (กรองเฉพาะ 7 หัวข้อสำคัญ)
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3604,6 +3604,19 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return null;
   }
 
+  // ฟังก์ชันเช็คเงื่อนไข 7 ข้อสำคัญเท่านั้น ส่วนอื่นปัดตกไป Log
+  bool _isAllowedAlert(String upperMsg) {
+    bool isFirstOrder = upperMsg.contains('SMART BUY') || upperMsg.contains('SMART SELL') || upperMsg.contains('FIRST') || (upperMsg.contains('OPEN') && !upperMsg.contains('RECOVERY'));
+    bool isRecovery = upperMsg.contains('RECOVERY');
+    bool isProfitClose = upperMsg.contains('PROFIT') || upperMsg.contains('TP') || upperMsg.contains('CLOSE WIN');
+    bool isLossClose = upperMsg.contains('LOSS') && !upperMsg.contains('DAILY LOSS'); // ป้องกันชนกับข้อ 6
+    bool isDailyTarget = upperMsg.contains('DAILY TARGET') || upperMsg.contains('TARGET REACHED');
+    bool isDailyLoss = upperMsg.contains('DAILY LOSS') || upperMsg.contains('MAX LOSS');
+    bool isCloseTime = upperMsg.contains('TIME') || upperMsg.contains('EXCEED') || upperMsg.contains('SESSION');
+
+    return isFirstOrder || isRecovery || isProfitClose || isLossClose || isDailyTarget || isDailyLoss || isCloseTime;
+  }
+
   void _listenToAlerts() {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -3611,7 +3624,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // ดึงจากพาส 'alerts' หลักตรงตามที่บอทส่งเข้า Firebase
       _alertsRef = database.ref('alerts');
 
       _alertsRef?.onValue.listen((DatabaseEvent event) {
@@ -3624,18 +3636,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 if (value != null) {
                   String rawMsg = value.toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                  
                   String upperMsg = cleanMsg.toUpperCase();
-                  if (upperMsg.contains('ORDER') || 
-                      upperMsg.contains('BUY') || 
-                      upperMsg.contains('SELL') || 
-                      upperMsg.contains('POSITION') ||
-                      upperMsg.contains('PROFIT') || 
-                      upperMsg.contains('LOSS') ||
-                      upperMsg.contains('OPEN') ||
-                      upperMsg.contains('CLOSE') ||
-                      upperMsg.contains('TP') ||
-                      upperMsg.contains('SL')) {
+                  
+                  // กรองเฉพาะ 7 ข้อสำคัญเท่านั้น
+                  if (_isAllowedAlert(upperMsg)) {
                     tempList.add({
                       'key': key.toString(),
                       'message': cleanMsg,
@@ -3649,18 +3653,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 if (data[i] != null) {
                   String rawMsg = data[i].toString();
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
-                  
                   String upperMsg = cleanMsg.toUpperCase();
-                  if (upperMsg.contains('ORDER') || 
-                      upperMsg.contains('BUY') || 
-                      upperMsg.contains('SELL') || 
-                      upperMsg.contains('POSITION') ||
-                      upperMsg.contains('PROFIT') || 
-                      upperMsg.contains('LOSS') ||
-                      upperMsg.contains('OPEN') ||
-                      upperMsg.contains('CLOSE') ||
-                      upperMsg.contains('TP') ||
-                      upperMsg.contains('SL')) {
+                  
+                  // กรองเฉพาะ 7 ข้อสำคัญเท่านั้น
+                  if (_isAllowedAlert(upperMsg)) {
                     tempList.add({
                       'key': i.toString(),
                       'message': cleanMsg,
@@ -3806,6 +3802,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
+
+
 
 
 // ==========================================
