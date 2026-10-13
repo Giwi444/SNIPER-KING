@@ -3170,7 +3170,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
 
 // ==========================================
-// โหมดการบันทึกประจำวัน
+// โหมดการบันทึกประจำวัน (HistoryScreen) - ปรับพื้นหลังมืดสบายตา
 // ==========================================
 
 class HistoryScreen extends StatefulWidget {
@@ -3209,7 +3209,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // แก้ไข Path ให้ดึงประวัติแยกตามบัญชีเทรดของใครของมัน (accounts/{login}/history)
       _historyRef = database.ref('accounts/$login/history');
 
       _historyRef?.onValue.listen((DatabaseEvent event) {
@@ -3347,6 +3346,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E), // เปลี่ยนพื้นหลังให้มืดทึบเหมือนหน้า Orders
       appBar: AppBar(
         title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
@@ -3354,15 +3354,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // ปรับแสงภาพพื้นหลังให้มืดสนิท ไม่ให้แสบตา
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
+            opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.black.withOpacity(0.92), // ปรับความมืดทับให้เข้มขึ้น
           ),
           Column(
             children: [
@@ -3458,18 +3460,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
+                    color: const Color(0xFF121215), // พื้นหลังกล่องรายการให้ทึบสบายตา
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: Colors.redAccent,
-                      width: 2.5,
+                      color: Colors.redAccent.withOpacity(0.6),
+                      width: 1.5,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.7),
-                        blurRadius: 14,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -3499,7 +3495,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF161619).withOpacity(0.9),
+                                  color: const Color(0xFF161619),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(color: Colors.white12, width: 1),
                                 ),
@@ -3564,7 +3560,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 // ==========================================
-// โหมดการแจ้งเตือนข้อความ (กรองเฉพาะ 7 หัวข้อสำคัญ)
+// โหมดการแจ้งเตือนข้อความ (AlertsScreen) - ปรับพื้นหลังมืดสบายตา
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3604,12 +3600,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return null;
   }
 
-  // ฟังก์ชันเช็คเงื่อนไข 7 ข้อสำคัญเท่านั้น ส่วนอื่นปัดตกไป Log
   bool _isAllowedAlert(String upperMsg) {
     bool isFirstOrder = upperMsg.contains('SMART BUY') || upperMsg.contains('SMART SELL') || upperMsg.contains('FIRST') || (upperMsg.contains('OPEN') && !upperMsg.contains('RECOVERY'));
     bool isRecovery = upperMsg.contains('RECOVERY');
     bool isProfitClose = upperMsg.contains('PROFIT') || upperMsg.contains('TP') || upperMsg.contains('CLOSE WIN');
-    bool isLossClose = upperMsg.contains('LOSS') && !upperMsg.contains('DAILY LOSS'); // ป้องกันชนกับข้อ 6
+    bool isLossClose = upperMsg.contains('LOSS') && !upperMsg.contains('DAILY LOSS');
     bool isDailyTarget = upperMsg.contains('DAILY TARGET') || upperMsg.contains('TARGET REACHED');
     bool isDailyLoss = upperMsg.contains('DAILY LOSS') || upperMsg.contains('MAX LOSS');
     bool isCloseTime = upperMsg.contains('TIME') || upperMsg.contains('EXCEED') || upperMsg.contains('SESSION');
@@ -3638,7 +3633,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   String upperMsg = cleanMsg.toUpperCase();
                   
-                  // กรองเฉพาะ 7 ข้อสำคัญเท่านั้น
                   if (_isAllowedAlert(upperMsg)) {
                     tempList.add({
                       'key': key.toString(),
@@ -3655,7 +3649,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
                   String upperMsg = cleanMsg.toUpperCase();
                   
-                  // กรองเฉพาะ 7 ข้อสำคัญเท่านั้น
                   if (_isAllowedAlert(upperMsg)) {
                     tempList.add({
                       'key': i.toString(),
@@ -3707,6 +3700,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E), // เปลี่ยนพื้นหลังให้มืดทึบเหมือนหน้า Orders
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
@@ -3725,25 +3719,20 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
+            opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
               return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.black.withOpacity(0.92), // ปรับความมืดทับให้เข้มขึ้น สบายตา ไม่แสบตา
           ),
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
+              color: const Color(0xFF121215), // พื้นหลังกล่องคอนเทนเนอร์ทึบ
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.redAccent, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.redAccent.withOpacity(0.6),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
+              border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.5),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
@@ -3763,9 +3752,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF161619).withOpacity(0.9),
+                            color: const Color(0xFF161619),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1),
+                            border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3802,6 +3791,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 
 
