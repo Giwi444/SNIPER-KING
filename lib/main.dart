@@ -1814,7 +1814,6 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 
-
 // ==========================================
 // โหมดHomeScreen
 // ==========================================
@@ -2240,7 +2239,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           if (_isChartModalOpen)
             Stack(
-              alignment: Alignment.center, // จัดตำแหน่งกล่องให้อยู่กึ่งกลางหน้าจอพอดี ไม่บังรูปโปรไฟล์ด้านบน
+              alignment: Alignment.center,
               children: [
                 GestureDetector(
                   onTap: () {
@@ -2253,7 +2252,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Center(
                   child: Container(
                     width: MediaQuery.of(context).size.width * 0.92,
-                    height: MediaQuery.of(context).size.height * 0.38, // ลดความสูงลงให้กระชับ ไม่ลอยไปบังรูปโปรไฟล์
+                    height: MediaQuery.of(context).size.height * 0.62, // ขยายความสูงให้พอดีกับกรอบ Win Rate ใหม่
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
@@ -2339,6 +2338,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     double winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0.0;
+    double lossRate = 100.0 - winRate;
     double peak = balance > 0 ? balance : 1000.0;
     double maxDDAmount = 0.0;
     for (var trade in _historyTrades) {
@@ -2403,6 +2403,148 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          
+          // ==========================================
+          // กรอบ WIN RATE & TRADES ตามแบบดีไซน์ใหม่
+          // ==========================================
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F0F12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFF1744), width: 2.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.5),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'WIN RATE & TRADES',
+                  style: TextStyle(
+                    color: const Color(0xFFFF5252),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    shadows: [
+                      Shadow(color: Colors.redAccent.withOpacity(0.8), blurRadius: 8),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF16161A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1.2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          'WIN RATE PERCENT',
+                          style: TextStyle(
+                            color: Color(0xFFFF5252),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'GREEN NEON',
+                                style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                              Text(
+                                'WIN RATE: ${winRate.toStringAsFixed(1)}%',
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'RED NEON',
+                                style: TextStyle(color: Color(0xFFFF5252), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                              Text(
+                                'LOSS RATE: ${lossRate.toStringAsFixed(1)}%',
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          height: 14,
+                          width: double.infinity,
+                          color: const Color(0xFFD50000).withOpacity(0.4),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: (winRate / 100).clamp(0.0, 1.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00C853),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF00C853).withOpacity(0.9),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.2),
+                          color: Colors.black.withOpacity(0.5),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Based on $winTrades Win / $lossTrades Loss Trades',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -2589,7 +2731,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
-
 
 
 
