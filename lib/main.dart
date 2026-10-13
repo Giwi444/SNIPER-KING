@@ -1814,7 +1814,6 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 
-
 // ==========================================
 // โหมดHomeScreen
 // ==========================================
@@ -1862,7 +1861,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToOrdersForDialog();
     _listenToConnectionStatus();
     _listenToMarketPrices();
-    _listenToHistoryForStats();
+    // ส่งค่า widget.accountLogin เข้าไปเพื่อดึงประวัติเฉพาะบัญชีนี้
+    _listenToHistoryForStats(widget.accountLogin);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountLogin != widget.accountLogin) {
+      _listenToHistoryForStats(widget.accountLogin);
+    }
   }
 
   @override
@@ -1965,13 +1973,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToHistoryForStats() {
+  // แก้ไข Path ให้ดึงประวัติแยกตามบัญชี (accounts/{login}/history)
+  void _listenToHistoryForStats(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _historyRef = database.ref('history');
+      _historyRef = database.ref('accounts/$login/history');
       _historyRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -2189,7 +2198,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                                        const SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -2222,8 +2231,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    
-
                     const SizedBox(height: 20),
                     _buildBidAskBoxContent(context),
                     const SizedBox(height: 40),
@@ -2608,6 +2615,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 
 
