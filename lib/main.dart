@@ -3698,6 +3698,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
   String selectedTf = "M1";
 
+  // เพิ่มพารามิเตอร์ Trend Filter
+  bool enableTrendFilter = true;
+  String selectedTrendTf = "H1";
+
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
   final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
@@ -3782,6 +3786,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             lotMode = data['lot_mode']?.toString() ?? 'Double';
             selectedTf = data['timeframe']?.toString() ?? 'M1';
             
+            enableTrendFilter = data['enable_trend_filter'] ?? true;
+            selectedTrendTf = data['trend_timeframe']?.toString() ?? 'H1';
+
             startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
             endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
 
@@ -3825,6 +3832,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
         'timeframe': selectedTf,
+        'enable_trend_filter': enableTrendFilter,
+        'trend_timeframe': selectedTrendTf,
         'start_time_th': startTimeController.text,
         'end_time_th': endTimeController.text,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
@@ -4149,6 +4158,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 8),
+
+                      // ==========================================
+                      // พารามิเตอร์ TREND FILTER (เพิ่มใหม่ตามสั่ง)
+                      // ==========================================
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF00838F).withOpacity(0.5), width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Trend Filter (DC Middle/Upper/Lower)', style: TextStyle(color: Color(0xFF00ACC1), fontSize: 11, fontWeight: FontWeight.bold)),
+                                Switch(
+                                  value: enableTrendFilter,
+                                  activeColor: const Color(0xFF00838F),
+                                  onChanged: (val) => setState(() {
+                                    _isEditing = true;
+                                    enableTrendFilter = val;
+                                  }),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text('Trend Filter Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const SizedBox(height: 8),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                                childAspectRatio: 2.2,
+                              ),
+                              itemCount: timeframes.length,
+                              itemBuilder: (context, index) {
+                                String tf = timeframes[index];
+                                bool isSelected = selectedTrendTf == tf;
+                                return ElevatedButton(
+                                  onPressed: () => setState(() {
+                                    _isEditing = true;
+                                    selectedTrendTf = tf;
+                                  }),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isSelected ? const Color(0xFF00838F) : const Color(0xFF161619),
+                                    foregroundColor: isSelected ? Colors.white : Colors.white70,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    side: BorderSide(
+                                      color: isSelected ? const Color(0xFF00838F) : Colors.white24,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    tf,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // ==========================================
+
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
