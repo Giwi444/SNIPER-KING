@@ -2619,7 +2619,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 
 
-
 // ==========================================
 // โหมดรายงานออเดอร์
 // ==========================================
@@ -2649,8 +2648,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
-    _listenToOrders();
+    _listenToOrders(widget.accountLogin);
     _listenToStatusForSymbol();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrdersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountLogin != widget.accountLogin) {
+      _listenToOrders(widget.accountLogin);
+    }
   }
 
   void _listenToStatusForSymbol() {
@@ -2681,24 +2688,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToOrders() {
+  // แก้ไข Path ให้ดึงออเดอร์จากโหนดบัญชีปัจจุบันโดยตรง (accounts/{login}/orders)
+  void _listenToOrders(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      database.ref('accounts/${widget.accountLogin}/orders').onValue.listen((event) {
+      _ordersRef = database.ref('accounts/$login/orders');
+      _ordersRef?.onValue.listen((event) {
         final data = event.snapshot.value;
-        if (data != null && mounted) {
+        if (mounted) {
           _parseOrdersData(data);
-        } else {
-          database.ref('orders').onValue.listen((fallbackEvent) {
-            final fallbackData = fallbackEvent.snapshot.value;
-            if (mounted) {
-              _parseOrdersData(fallbackData);
-            }
-          });
         }
       });
     } catch (e) {
@@ -3046,6 +3048,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
+
 
 
 
