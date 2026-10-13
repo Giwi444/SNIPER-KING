@@ -1861,7 +1861,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToOrdersForDialog();
     _listenToConnectionStatus();
     _listenToMarketPrices();
-    // ส่งค่า widget.accountLogin เข้าไปเพื่อดึงประวัติเฉพาะบัญชีนี้
     _listenToHistoryForStats(widget.accountLogin);
   }
 
@@ -1973,7 +1972,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  // แก้ไข Path ให้ดึงประวัติแยกตามบัญชี (accounts/{login}/history)
   void _listenToHistoryForStats(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -2252,11 +2250,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.94,
-                    height: MediaQuery.of(context).size.height * 0.78,
+                    width: MediaQuery.of(context).size.width * 0.92,
+                    height: MediaQuery.of(context).size.height * 0.65, // ปรับความสูงลดลงให้กระชับพอดี
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.red.withOpacity(0.9),
@@ -2276,12 +2274,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 20),
+                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 18),
                                   SizedBox(width: 8),
                                   Text(
-                                    'DASHBOARD STATS & OVERVIEW',
+                                    'DASHBOARD STATS',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       letterSpacing: 1,
@@ -2290,7 +2288,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close, color: Colors.white),
+                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
                                 onPressed: () {
                                   setState(() {
                                     _isChartModalOpen = false;
@@ -2300,7 +2298,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
+                        const Divider(color: Color(0xFFFF0000), height: 1, thickness: 2),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
@@ -2387,7 +2385,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: _buildStatCard(
                   title: 'TOTAL TRADES',
                   value: '$totalTrades',
-                  subText: 'Active Orders: ${activeOrders.length}',
+                  subText: 'Closed History Records',
                   color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
                 ),
@@ -2404,29 +2402,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'SYSTEM PERFORMANCE SUMMARY',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1, fontFamily: 'monospace'),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B1B20),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              children: [
-                _buildSummaryRow('Bot Engine Status', isRunning ? 'Running' : 'Stopped', isRunning ? const Color(0xFF00C853) : Colors.redAccent),
-                const Divider(color: Colors.white12, height: 16),
-                _buildSummaryRow('Current Symbol / TF', '$symbol ($timeframe)', Colors.redAccent),
-                const Divider(color: Colors.white12, height: 16),
-                _buildSummaryRow('Active Profit (P/L)', '${profit >= 0 ? "+" : ""}\$${profit.toStringAsFixed(2)}', profit >= 0 ? const Color(0xFF00C853) : Colors.redAccent),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -2434,7 +2409,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildStatCard({required String title, required String value, required String subText, required Color color, required IconData icon}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1B20),
         borderRadius: BorderRadius.circular(14),
@@ -2449,26 +2424,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-              Icon(icon, color: color, size: 18),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+              Icon(icon, color: color, size: 16),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+          const SizedBox(height: 8),
+          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
           const SizedBox(height: 4),
-          Text(subText, style: const TextStyle(color: Colors.white54, fontSize: 10, fontFamily: 'monospace')),
+          Text(subText, style: const TextStyle(color: Colors.white54, fontSize: 9, fontFamily: 'monospace')),
         ],
       ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String val, Color valColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace')),
-        Text(val, style: TextStyle(color: valColor, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'monospace')),
-      ],
     );
   }
 
@@ -2615,6 +2580,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 
 
