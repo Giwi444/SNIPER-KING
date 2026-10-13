@@ -3082,7 +3082,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _historyRef = database.ref('history');
+      // แก้ไข Path ให้ดึงประวัติแยกตามบัญชีเทรดของใครของมัน (accounts/{login}/history)
+      _historyRef = database.ref('accounts/$login/history');
 
       _historyRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
@@ -3431,6 +3432,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
+
 
 
 
