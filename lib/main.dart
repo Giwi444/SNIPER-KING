@@ -1814,6 +1814,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 
+
 // ==========================================
 // โหมดHomeScreen
 // ==========================================
@@ -2239,6 +2240,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           if (_isChartModalOpen)
             Stack(
+              alignment: Alignment.center, // จัดตำแหน่งกล่องให้อยู่กึ่งกลางหน้าจอพอดี ไม่บังรูปโปรไฟล์ด้านบน
               children: [
                 GestureDetector(
                   onTap: () {
@@ -2251,7 +2253,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Center(
                   child: Container(
                     width: MediaQuery.of(context).size.width * 0.92,
-                    height: MediaQuery.of(context).size.height * 0.65, // ปรับความสูงลดลงให้กระชับพอดี
+                    height: MediaQuery.of(context).size.height * 0.38, // ลดความสูงลงให้กระชับ ไม่ลอยไปบังรูปโปรไฟล์
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
@@ -2268,7 +2270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -2301,7 +2303,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const Divider(color: Color(0xFFFF0000), height: 1, thickness: 2),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(14.0),
                             child: _buildDashboardStatsContent(),
                           ),
                         ),
@@ -2366,7 +2368,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   icon: Icons.pie_chart,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildStatCard(
                   title: 'MAX DRAWDOWN',
@@ -2378,19 +2380,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
                   title: 'TOTAL TRADES',
                   value: '$totalTrades',
-                  subText: 'Closed History Records',
+                  subText: '',
                   color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildStatCard(
                   title: 'NET PROFIT',
@@ -2409,7 +2411,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildStatCard({required String title, required String value, required String subText, required Color color, required IconData icon}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1B20),
         borderRadius: BorderRadius.circular(14),
@@ -2420,6 +2422,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2428,9 +2431,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Icon(icon, color: color, size: 16),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
           const SizedBox(height: 4),
+          Center(
+            child: Text(
+              value, 
+              style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(subText, style: const TextStyle(color: Colors.white54, fontSize: 9, fontFamily: 'monospace')),
         ],
       ),
