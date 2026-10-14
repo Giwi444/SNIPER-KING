@@ -3967,7 +3967,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters & Time Config Synced & Saved to EA Successfully[span_0](start_span)[span_0](end_span)!'),
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
           backgroundColor: Color(0xFFFF1744),
         ),
       );
@@ -4050,7 +4050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),[span_1](start_span)[span_1](end_span)
+        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -4315,7 +4315,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          // ข้อ 1: ลบกล่อง Swing Bars ออก แล้วนำกล่อง SL Points มาแทนที่ตรงนี้
                           Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
                           const SizedBox(width: 10),
                           Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
@@ -4324,10 +4323,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          // ข้อ 2: ขยับกล่อง Risk Reward มาแทนกล่อง SL Points เดิม
                           Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          // เว้นว่างช่องคู่กันไว้ หรือใส่กล่องเวลา / ช่องว่างเพื่อความสมดุล
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4363,11 +4360,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
                           const SizedBox(width: 10),
-                          const Expanded(child: SizedBox()), // ช่องว่างปรับให้สมดุลแถว
+                          const Expanded(child: SizedBox()),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // ข้อ 3: นำกล่อง Calculated TP มาวางตำแหน่งแทน Risk Reward เดิม
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
