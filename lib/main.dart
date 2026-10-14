@@ -2736,7 +2736,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 
 // ==========================================
-// โหมดรายงานออเดอร์
+// โหมดรายงานออเดอร์ (แก้ไขดึงค่าราคาเปิดให้ตรงกับ MQL5)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -2804,7 +2804,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  // แก้ไข Path ให้ดึงออเดอร์จากโหนดบัญชีปัจจุบันโดยตรง (accounts/{login}/orders)
   void _listenToOrders(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
@@ -3059,7 +3058,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     final String type = order['type']?.toString() ?? 'BUY';
                                     final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                                     final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                                    final double priceOpen = double.tryParse(order['price_open']?.toString() ?? '0.0') ?? 0.0;
+                                    
+                                    // แก้ไขจาก 'price_open' เป็น 'price' ให้ตรงกับโครงสร้างข้อมูลใน Firebase Realtime Database
+                                    final double priceOpen = double.tryParse(order['price']?.toString() ?? '0.0') ?? 0.0;
+                                    
                                     final String symbol = order['symbol']?.toString() ?? activeSymbol;
                                     bool isBuy = type.toUpperCase().contains('BUY');
                                     bool orderProfit = profit >= 0;
@@ -3164,7 +3166,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
-
 
 
 
