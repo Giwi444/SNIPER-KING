@@ -3795,8 +3795,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
-
-
 // ==========================================
 // โหมดการตั้งค่าพารามิเตอร์
 // ==========================================
@@ -3814,11 +3812,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
+  
+  // ใช้ selectedTf เป็นตัวเลือก Timeframe หลัก (ย้ายมาอยู่ในกล่อง Trend Filter)
   String selectedTf = "M1";
 
-  // เพิ่มพารามิเตอร์ Trend Filter
+  // พารามิเตอร์ Trend Filter และสวิตช์เปิด/ปิด Daily Filter
   bool enableTrendFilter = true;
-  String selectedTrendTf = "H1";
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
   final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
@@ -3905,7 +3904,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             selectedTf = data['timeframe']?.toString() ?? 'M1';
             
             enableTrendFilter = data['enable_trend_filter'] ?? true;
-            selectedTrendTf = data['trend_timeframe']?.toString() ?? 'H1';
 
             startTimeController.text = data['start_time_th']?.toString() ?? '08:00';
             endTimeController.text = data['end_time_th']?.toString() ?? '22:00';
@@ -3949,9 +3947,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'symbol': selectedSymbol,
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
-        'timeframe': selectedTf,
-        'enable_trend_filter': enableTrendFilter,
-        'trend_timeframe': selectedTrendTf,
+        'timeframe': selectedTf, // ส่งค่า Timeframe หลักที่เลือกในกล่อง Trend Filter
+        'enable_trend_filter': enableTrendFilter, // สวิตช์เปิด/ปิด Daily Filter
         'start_time_th': startTimeController.text,
         'end_time_th': endTimeController.text,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
@@ -4234,60 +4231,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }).toList(),
                       ),
                       const SizedBox(height: 16),
-                      const Text('Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      const SizedBox(height: 8),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 2.2,
-                        ),
-                        itemCount: timeframes.length,
-                        itemBuilder: (context, index) {
-                          String tf = timeframes[index];
-                          bool isSelected = selectedTf == tf;
-                          return ElevatedButton(
-                            onPressed: () => setState(() {
-                              _isEditing = true;
-                              selectedTf = tf;
-                            }),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
-                              foregroundColor: isSelected ? Colors.white : Colors.white70,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              side: BorderSide(
-                                color: isSelected ? const Color(0xFFFF1744) : Colors.white24,
-                                width: isSelected ? 2 : 1,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: Text(
-                              tf,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white70,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // พารามิเตอร์ TREND FILTER (เพิ่มใหม่ตามสั่ง)
+                      // รวมกล่อง Trend Filter และ Timeframe เข้าด้วยกัน (ขอบแดง พื้นดำ)
                       // ==========================================
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF00838F).withOpacity(0.5), width: 1),
+                          color: const Color(0xFF0B0B0E), // พื้นกล่องสีดำ
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFF1744), width: 1.5), // ขอบสีแดง
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4295,10 +4250,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Trend Filter (DC Middle/Upper/Lower)', style: TextStyle(color: Color(0xFF00ACC1), fontSize: 11, fontWeight: FontWeight.bold)),
+                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFFF1744), fontSize: 12, fontWeight: FontWeight.bold)),
                                 Switch(
                                   value: enableTrendFilter,
-                                  activeColor: const Color(0xFF00838F),
+                                  activeColor: const Color(0xFFFF1744),
                                   onChanged: (val) => setState(() {
                                     _isEditing = true;
                                     enableTrendFilter = val;
@@ -4306,8 +4261,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            const Text('Trend Filter Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const SizedBox(height: 10),
+                            const Text('Trading Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
                             const SizedBox(height: 8),
                             GridView.builder(
                               shrinkWrap: true,
@@ -4321,18 +4276,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               itemCount: timeframes.length,
                               itemBuilder: (context, index) {
                                 String tf = timeframes[index];
-                                bool isSelected = selectedTrendTf == tf;
+                                bool isSelected = selectedTf == tf;
                                 return ElevatedButton(
                                   onPressed: () => setState(() {
                                     _isEditing = true;
-                                    selectedTrendTf = tf;
+                                    selectedTf = tf;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF00838F) : const Color(0xFF161619),
+                                    // ขอบกล่องแดง พื้นดำ ถ้าเลือกแล้วเป็นสีแดงทึบ
+                                    backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(
-                                      color: isSelected ? const Color(0xFF00838F) : Colors.white24,
+                                      color: const Color(0xFFFF1744),
                                       width: isSelected ? 2 : 1,
                                     ),
                                     padding: EdgeInsets.zero,
