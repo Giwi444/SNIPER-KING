@@ -3826,7 +3826,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController initialLotController = TextEditingController();
   final TextEditingController maxRecoveryController = TextEditingController();
   final TextEditingController maxOrdersController = TextEditingController(); 
-  final TextEditingController swingBarsController = TextEditingController();
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
 
@@ -3863,7 +3862,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     initialLotController.dispose();
     maxRecoveryController.dispose();
     maxOrdersController.dispose();
-    swingBarsController.dispose();
     slPointsController.dispose();
     riskRewardController.dispose();
     startTimeController.dispose();
@@ -3911,7 +3909,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
             maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
-            swingBarsController.text = data['swing_bars']?.toString() ?? '30';
             slPointsController.text = data['sl_points']?.toString() ?? '500';
             riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
 
@@ -3947,14 +3944,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'symbol': selectedSymbol,
         'trading_mode': tradingMode,
         'lot_mode': lotMode,
-        'timeframe': selectedTf, // ส่งค่า Timeframe หลักที่เลือกในกล่อง Trend Filter
-        'enable_trend_filter': enableTrendFilter, // สวิตช์เปิด/ปิด Daily Filter
+        'timeframe': selectedTf,
+        'enable_trend_filter': enableTrendFilter,
         'start_time_th': startTimeController.text,
         'end_time_th': endTimeController.text,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
         'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
-        'swing_bars': int.tryParse(swingBarsController.text) ?? 30,
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
         'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
         'enable_daily_target': enableDailyTarget,
@@ -3971,7 +3967,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
+          content: Text('Parameters & Time Config Synced & Saved to EA Successfully[span_0](start_span)[span_0](end_span)!'),
           backgroundColor: Color(0xFFFF1744),
         ),
       );
@@ -4054,7 +4050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
+        title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),[span_1](start_span)[span_1](end_span)
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
@@ -4235,14 +4231,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // รวมกล่อง Trend Filter และ Timeframe เข้าด้วยกัน (ขอบแดง พื้นดำ)
+                      // รวมกล่อง Trend Filter และ Timeframe เข้าด้วยกัน
                       // ==========================================
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E), // พื้นกล่องสีดำ
+                          color: const Color(0xFF0B0B0E),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFFF1744), width: 1.5), // ขอบสีแดง
+                          border: Border.all(color: const Color(0xFFFF1744), width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4283,7 +4279,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     selectedTf = tf;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    // ขอบกล่องแดง พื้นดำ ถ้าเลือกแล้วเป็นสีแดงทึบ
                                     backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -4320,28 +4315,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
+                          // ข้อ 1: ลบกล่อง Swing Bars ออก แล้วนำกล่อง SL Points มาแทนที่ตรงนี้
                           Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('Swing Bars', swingBarsController, TextInputType.number)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
                           Expanded(child: _buildControllerInputField('SL Points', slPointsController, TextInputType.number)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildControllerInputField('Start Time (เวลาไทย)', startTimeController, TextInputType.text)),
+                          // ข้อ 2: ขยับกล่อง Risk Reward มาแทนกล่อง SL Points เดิม
+                          Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                          // เว้นว่างช่องคู่กันไว้ หรือใส่กล่องเวลา / ช่องว่างเพื่อความสมดุล
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Start Time (เวลาไทย)', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0B0B0E),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white12, width: 1),
+                                  ),
+                                  child: TextField(
+                                    controller: startTimeController,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                    onChanged: (val) => setState(() { _isEditing = true; }),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _buildControllerInputField('End Time (เวลาไทย)', endTimeController, TextInputType.text)),
+                          const SizedBox(width: 10),
+                          const Expanded(child: SizedBox()), // ช่องว่างปรับให้สมดุลแถว
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // ข้อ 3: นำกล่อง Calculated TP มาวางตำแหน่งแทน Risk Reward เดิม
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
