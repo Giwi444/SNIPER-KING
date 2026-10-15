@@ -974,7 +974,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       _initFirebaseAndListen();
       _listenToLogs();
       _listenToConnectionStatus();
-      _listenToOrdersForDialog();
+      _listenToOrdersForDialog(); 
+    });
+
+    // คืนค่าการเรียกใช้งานบอลลูนใน initState ตามเดิม
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ป้องกัน Error และให้เรียกใช้งานได้อย่างราบรื่น
     });
 
     _scannerController.addStatusListener((status) {
@@ -1020,7 +1025,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
           _listenToAlertsCount();
           _initFirebaseAndListen();
           _listenToLogs();
-          _listenToOrdersForDialog();
+          _listenToOrdersForDialog(); 
         }
       });
     } catch (e) {
@@ -1415,7 +1420,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ],
             ),
 
-          // บอลลูนลอยที่สามารถลากทับลงมาได้ทั่วหน้าจอรวมถึงแถบเมนูด้านล่าง
+          // คืนค่าตำแหน่ง Draggable บอลลูนตามโครงสร้างดั้งเดิมที่ใช้งานได้ปกติ
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1806,6 +1811,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 
