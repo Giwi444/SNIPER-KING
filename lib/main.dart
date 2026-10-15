@@ -296,7 +296,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// โหมดการเข้าใช้งานครั้งแรก
+// โหมดการเข้าใช้งานครั้งแรก (ตรวจสอบบัญชีจาก Firebase โดยตรง)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -314,7 +314,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
-  StreamSubscription<DatabaseEvent>? _loginStatusSubscription;
 
   @override
   void initState() {
@@ -324,7 +323,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
   @override
   void dispose() {
-    _loginStatusSubscription?.cancel();
     _loginController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
@@ -346,9 +344,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
 
-    if (login.isEmpty || password.isEmpty) {
+    if (login.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
+        const SnackBar(content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
       );
       return;
     }
@@ -358,120 +356,42 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      FirebaseApp app;
-      if (Firebase.apps.isEmpty) {
-        app = await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-          ),
-        );
-      } else {
-        app = Firebase.app();
-      }
-
+      final app = Firebase.app();
       final database = FirebaseDatabase.instanceFor(
         app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      await _loginStatusSubscription?.cancel();
+      // 👉 ตรวจสอบว่ามีโหนดพอร์ตนี้อยู่ใน Firebase หรือไม่ (เช่น accounts/235305975)
+      final accountRef = database.ref('accounts/$login');
+      final snapshot = await accountRef.get();
 
-      final statusRef = database.ref('accounts/$login/status');
+      if (snapshot.exists) {
+        // หากพบพอร์ตในระบบ ให้บันทึกข้อมูลและเข้าแอปได้ทันที
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mt5_login', login);
+        await prefs.setString('mt5_server', server);
 
-      await statusRef.update({
-        'login': login,
-        'password': password,
-        'server': server,
-        'request_login': true,
-        'login_status': 'pending', 
-      });
-
-      _loginStatusSubscription = statusRef.onValue.listen((event) async {
-        final data = event.snapshot.value;
-        if (data == null || data is! Map) return;
-
-        final status = data['login_status']?.toString();
-        final firebaseLogin = data['login']?.toString() ?? '';
-        final firebasePassword = data['password']?.toString() ?? '';
-        final firebaseServer = data['server']?.toString() ?? '';
-
-        bool isAllMatched = (firebaseLogin == login && 
-                             firebasePassword == password && 
-                             firebaseServer == server);
-
-        if (status == 'success') {
-          if (!isAllMatched) {
-            await _loginStatusSubscription?.cancel();
-            if (!mounted) return;
-            _passwordController.clear();
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('ข้อมูลบัญชี, รหัสผ่าน หรือ Server ไม่ถูกต้องตามความเป็นจริง'),
-                backgroundColor: Color(0xFFD50000),
-              ),
-            );
-            setState(() {
-              _isLoading = false;
-            });
-            return;
-          }
-
-          await _loginStatusSubscription?.cancel();
-          
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('mt5_login', login);
-          await prefs.setString('mt5_server', server);
-
-          if (!mounted) return;
-          setState(() {
-            _isLoading = false;
-            _isLoggedInMT5 = true;
-          });
-        } else if (status == 'failed' || status == 'error') {
-          await _loginStatusSubscription?.cancel();
-
-          if (!mounted) return;
-          _passwordController.clear();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('บัญชีเทรด, รหัสผ่าน หรือ Server ไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง'),
-              backgroundColor: Color(0xFFD50000),
-            ),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      });
-
-      Future.delayed(const Duration(seconds: 10), () {
-        if (_isLoading && mounted) {
-          _loginStatusSubscription?.cancel();
-          _passwordController.clear();
-
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('หมดเวลาเชื่อมต่อ: กรุณาตรวจสอบสถานะ Server หรือ EA'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      });
-
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _isLoggedInMT5 = true;
+        });
+      } else {
+        // หากไม่พบเลขพอร์ตนี้ใน Firebase
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ไม่พบหมายเลขบัญชีนี้ในระบบ Firebase'),
+            backgroundColor: Color(0xFFD50000),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      _passwordController.clear();
-
       setState(() {
         _isLoading = false;
       });
@@ -672,6 +592,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 
