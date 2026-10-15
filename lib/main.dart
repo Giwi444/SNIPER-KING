@@ -381,7 +381,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      await database.ref('status').update({
+      // 👉 ปรับเส้นทางให้บันทึกและเช็กสถานะผ่านโหนด accounts/$login/status โดยตรง
+      final statusRef = database.ref('accounts/$login/status');
+
+      await statusRef.update({
         'login': login,
         'password': password,
         'server': server,
@@ -389,7 +392,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         'login_status': 'pending', 
       });
 
-      _loginStatusSubscription = database.ref('status').onValue.listen((event) async {
+      _loginStatusSubscription = statusRef.onValue.listen((event) async {
         final data = event.snapshot.value;
         if (data == null || data is! Map) return;
 
@@ -425,8 +428,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('mt5_login', login);
           await prefs.setString('mt5_server', server);
-
-          await _showFloatingBalloon();
 
           if (!mounted) return;
           setState(() {
@@ -671,7 +672,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
-} // <--- ปีกกาปิดของคลาส _MT5LoginWrapperState ที่ถูกต้องครบถ้วน
+}
 
 
 
