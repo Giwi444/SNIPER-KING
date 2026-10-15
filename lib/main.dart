@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 
 // ==========================================
-// โหมดบอลลูนทับอิพอื่น
+// โหมดบอลลูนทับแอปอื่น
 // ==========================================
 
 @pragma("vm:entry-point")
@@ -178,7 +178,7 @@ Future<void> _showFloatingBalloon() async {
 
 
 // ==========================================
-// โหมดเม้นหลัก
+// โหมดเมนหลัก
 // ==========================================
 
 void main() async {
@@ -362,12 +362,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 👉 ตรวจสอบว่ามีโหนดพอร์ตนี้อยู่ใน Firebase หรือไม่ (เช่น accounts/235305975)
       final accountRef = database.ref('accounts/$login');
       final snapshot = await accountRef.get();
 
       if (snapshot.exists) {
-        // หากพบพอร์ตในระบบ ให้บันทึกข้อมูลและเข้าแอปได้ทันที
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mt5_login', login);
         await prefs.setString('mt5_server', server);
@@ -378,7 +376,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           _isLoggedInMT5 = true;
         });
       } else {
-        // หากไม่พบเลขพอร์ตนี้ใน Firebase
         if (!mounted) return;
         setState(() {
           _isLoading = false;
@@ -592,9 +589,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
-
-
-
 
 
 // ==========================================
@@ -845,7 +839,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> with TickerProviderStateMixin {
   int _currentIndex = 2;
-  String currentLogin = "53049695"; 
+  String currentLogin = "235305975"; 
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
   DatabaseReference? _dbRef;
@@ -989,7 +983,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _dbRef = database.ref('status');
+      // 👉 แก้ไขให้ดึงสถานะจากโฟลเดอร์บัญชีปัจจุบันโดยตรง
+      _dbRef = database.ref('accounts/$currentLogin/status');
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -1031,7 +1026,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      // 👉 ปรับ Path ให้ดึง logs จากโหนดบัญชีเทรดปัจจุบันโดยตรง
       _logsRef = database.ref('accounts/$currentLogin/logs');
       _logsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
@@ -1732,12 +1726,8 @@ class ScannerClipper extends CustomClipper<Rect> {
 }
 
 
-
-
-
-
 // ==========================================
-// โหมด HomeScreen (แก้ไขดึง Bid/Ask ตามบัญชีเทรด)
+// โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1826,7 +1816,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 👉 ปรับ Path ให้ดึงข้อมูล Bid, Ask และ Status จากบัญชีเทรดโดยตรง
       _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2029,8 +2018,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: Column(
-                        children: const [
+                      child: const Column(
+                        children: [
                           Text(
                             '🌹 R   O   S   E 🌹',
                             textAlign: TextAlign.center,
@@ -2610,9 +2599,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 
-
-
-
 // ==========================================
 // โหมดรายงานออเดอร์ (OrdersScreen สมบูรณ์)
 // ==========================================
@@ -2661,7 +2647,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      // 👉 ปรับ Path ให้ดึงสถานะและยอดเงินจากโหนดบัญชีปัจจุบันโดยตรง
       _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -3045,11 +3030,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 
-
-
-
 // ==========================================
-// โหมดการบันทึกประจำวัน (HistoryScreen) - ปรับพื้นหลังมืดสบายตา
+// โหมดการบันทึกประจำวัน (HistoryScreen)
 // ==========================================
 
 class HistoryScreen extends StatefulWidget {
@@ -3225,7 +3207,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E), // เปลี่ยนพื้นหลังให้มืดทึบเหมือนหน้า Orders
+      backgroundColor: const Color(0xFF0B0B0E),
       appBar: AppBar(
         title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
@@ -3233,7 +3215,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ปรับแสงภาพพื้นหลังให้มืดสนิท ไม่ให้แสบตา
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
@@ -3243,7 +3224,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.92), // ปรับความมืดทับให้เข้มขึ้น
+            color: Colors.black.withOpacity(0.92),
           ),
           Column(
             children: [
@@ -3339,7 +3320,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121215), // พื้นหลังกล่องรายการให้ทึบสบายตา
+                    color: const Color(0xFF121215),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: Colors.redAccent.withOpacity(0.6),
@@ -3436,10 +3417,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 
-
-
 // ==========================================
-// โหมดการแจ้งเตือนข้อความ (AlertsScreen) - ฉบับแก้ไขสมบูรณ์
+// โหมดการแจ้งเตือนข้อความ (AlertsScreen)
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3506,7 +3485,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 👉 ปรับ Path ให้วิ่งไปอ่านข้อมูลแจ้งเตือนจากโหนดบัญชีปัจจุบันโดยตรง
       _alertsRef = database.ref('accounts/$login/alerts');
 
       _alertsRef?.onValue.listen((DatabaseEvent event) {
@@ -3681,11 +3659,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-
-
-
 // ==========================================
-// โหมดการตั้งค่าพารามิเตอร์
+// โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -3701,11 +3676,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String lotMode = 'Fixed';
   
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
-  
-  // ใช้ selectedTf เป็นตัวเลือก Timeframe หลัก (ย้ายมาอยู่ในกล่อง Trend Filter)
   String selectedTf = "M1";
 
-  // พารามิเตอร์ Trend Filter และสวิตช์เปิด/ปิด Daily Filter
   bool enableTrendFilter = true;
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
@@ -3734,7 +3706,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final String currentPinStateStatus = "ตั้งค่ารหัส PIN แล้ว";
 
   DatabaseReference? _statusRef;
-  String currentLogin = "53049695";
+  String currentLogin = "235305975";
 
   bool _isEditing = false;
   bool _isInitialized = false;
@@ -3778,7 +3750,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _statusRef = database.ref('status');
+      // 👉 แก้ไขให้โหลดค่า Parameter จากโฟลเดอร์บัญชีปัจจุบันโดยตรง
+      _statusRef = database.ref('accounts/$currentLogin/status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
         if (_isEditing) return;
 
@@ -4118,10 +4091,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
-
-                      // ==========================================
-                      // รวมกล่อง Trend Filter และ Timeframe เข้าด้วยกัน
-                      // ==========================================
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -4192,8 +4161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ==========================================
-
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
@@ -4214,7 +4181,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Expanded(child: _buildControllerInputField('Risk Reward', riskRewardController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          // ย้าย Calculated TP มาไว้แทนตำแหน่ง Start Time (คู่กับ Risk Reward)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4241,7 +4207,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // สลับตำแหน่ง Start Time และ End Time มาอยู่คู่กันในบรรทัดเดียวกัน
                       Row(
                         children: [
                           Expanded(
