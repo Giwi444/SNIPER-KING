@@ -833,7 +833,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
 
 // ==========================================
-// โหมดควบคุมแดชบอร์ด
+// โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
@@ -956,7 +956,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       
-      _alertsRef = database.ref('alerts');
+      _alertsRef = database.ref('accounts/$currentLogin/alerts');
       _alertsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (data != null && mounted) {
@@ -1031,7 +1031,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _logsRef = database.ref('logs');
+      // 👉 ปรับ Path ให้ดึง logs จากโหนดบัญชีเทรดปัจจุบันโดยตรง
+      _logsRef = database.ref('accounts/$currentLogin/logs');
       _logsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -1151,7 +1152,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. ส่วนแสดงหน้าหลักพร้อมเว้นระยะเผื่อ Navigation Bar ด้านล่าง
           Padding(
             padding: const EdgeInsets.only(bottom: 65.0),
             child: IndexedStack(
@@ -1159,8 +1159,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               children: pages,
             ),
           ),
-
-          // 2. แถบ Navigation Bar ด้านล่าง (นำมาไว้ใน Stack เพื่อให้ บอลลูน สามารถลากมาทับได้)
           Positioned(
             left: 0,
             right: 0,
@@ -1200,8 +1198,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ),
           ),
-          
-          // 3. หน้าต่าง Modal แสดง Logs
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1381,8 +1377,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                 ),
               ],
             ),
-
-          // 4. บอลลูนรูปโปรไฟล์ (ลอยอยู่ชั้นบนสุด สามารถลากลงมาทับแถบเมนูด้านล่างสุดได้ทั้งหมด)
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1722,10 +1716,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 }
 
-// ==========================================
-// โหมดสแกนเนอร์
-// ==========================================
-
 class ScannerClipper extends CustomClipper<Rect> {
   final double scanValue;
   ScannerClipper(this.scanValue);
@@ -1745,8 +1735,9 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 
+
 // ==========================================
-// โหมดHomeScreen
+// โหมด HomeScreen (แก้ไขดึง Bid/Ask ตามบัญชีเทรด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1781,17 +1772,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
-  DatabaseReference? _marketRef;
 
   bool _isChartModalOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _initFirebaseAndListen();
-    _listenToOrdersForDialog();
+    _initFirebaseAndListen(widget.accountLogin);
+    _listenToOrdersForDialog(widget.accountLogin);
     _listenToConnectionStatus();
-    _listenToMarketPrices();
     _listenToHistoryForStats(widget.accountLogin);
   }
 
@@ -1799,6 +1788,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.accountLogin != widget.accountLogin) {
+      _initFirebaseAndListen(widget.accountLogin);
+      _listenToOrdersForDialog(widget.accountLogin);
       _listenToHistoryForStats(widget.accountLogin);
     }
   }
@@ -1828,56 +1819,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToMarketPrices() {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      
-      _marketRef = database.ref('market');
-      _marketRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted) {
-          if (data is Map) {
-            setState(() {
-              if (data['bid'] != null) {
-                realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-              }
-              if (data['ask'] != null) {
-                realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-              }
-            });
-          }
-        }
-      });
-
-      database.ref('status').onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value;
-        if (data != null && mounted && data is Map) {
-          setState(() {
-            if (data['bid'] != null) {
-              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-            }
-            if (data['ask'] != null) {
-              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Market prices listen error: $e");
-    }
-  }
-
-  void _initFirebaseAndListen() {
+  void _initFirebaseAndListen(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _dbRef = database.ref('status');
+      // 👉 ปรับ Path ให้ดึงข้อมูล Bid, Ask และ Status จากบัญชีเทรดโดยตรง
+      _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -1943,13 +1893,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToOrdersForDialog() {
+  void _listenToOrdersForDialog(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _ordersRef = database.ref('orders');
+      _ordersRef = database.ref('accounts/$login/orders');
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -2183,7 +2133,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Center(
                   child: Container(
                     width: MediaQuery.of(context).size.width * 0.92,
-                    height: MediaQuery.of(context).size.height * 0.62, // ขยายความสูงให้พอดีกับกรอบ Win Rate ใหม่
+                    height: MediaQuery.of(context).size.height * 0.62,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
@@ -2336,10 +2286,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 12),
-          
-          // ==========================================
-          // กรอบ WIN RATE & TRADES ตามแบบดีไซน์ใหม่
-          // ==========================================
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -2666,8 +2612,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 
 
+
 // ==========================================
-// โหมดรายงานออเดอร์ (แก้ไขดึงค่าราคาเปิดให้ตรงกับ MQL5)
+// โหมดรายงานออเดอร์ (OrdersScreen สมบูรณ์)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -2696,7 +2643,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     _listenToOrders(widget.accountLogin);
-    _listenToStatusForSymbol();
+    _listenToStatusForSymbol(widget.accountLogin);
   }
 
   @override
@@ -2704,16 +2651,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.accountLogin != widget.accountLogin) {
       _listenToOrders(widget.accountLogin);
+      _listenToStatusForSymbol(widget.accountLogin);
     }
   }
 
-  void _listenToStatusForSymbol() {
+  void _listenToStatusForSymbol(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _dbRef = database.ref('status');
+      // 👉 ปรับ Path ให้ดึงสถานะและยอดเงินจากโหนดบัญชีปัจจุบันโดยตรง
+      _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
@@ -2989,10 +2938,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     final String type = order['type']?.toString() ?? 'BUY';
                                     final double lot = double.tryParse(order['lot']?.toString() ?? '0.01') ?? 0.01;
                                     final double profit = double.tryParse(order['profit']?.toString() ?? '0.0') ?? 0.0;
-                                    
-                                    // แก้ไขจาก 'price_open' เป็น 'price' ให้ตรงกับโครงสร้างข้อมูลใน Firebase Realtime Database
                                     final double priceOpen = double.tryParse(order['price']?.toString() ?? '0.0') ?? 0.0;
-                                    
                                     final String symbol = order['symbol']?.toString() ?? activeSymbol;
                                     bool isBuy = type.toUpperCase().contains('BUY');
                                     bool orderProfit = profit >= 0;
@@ -3097,6 +3043,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
+
 
 
 
@@ -3492,7 +3439,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 // ==========================================
-// โหมดการแจ้งเตือนข้อความ (AlertsScreen) - ปรับพื้นหลังมืดสบายตา
+// โหมดการแจ้งเตือนข้อความ (AlertsScreen) - ฉบับแก้ไขสมบูรณ์
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3512,7 +3459,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
   void initState() {
     super.initState();
     widget.onAlertsRead();
-    _listenToAlerts();
+    _listenToAlerts(widget.accountLogin);
+  }
+
+  @override
+  void didUpdateWidget(covariant AlertsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountLogin != widget.accountLogin) {
+      _listenToAlerts(widget.accountLogin);
+    }
   }
 
   DateTime? _extractDateTime(String message) {
@@ -3544,7 +3499,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return isFirstOrder || isRecovery || isProfitClose || isLossClose || isDailyTarget || isDailyLoss || isCloseTime;
   }
 
-  void _listenToAlerts() {
+  void _listenToAlerts(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
@@ -3552,7 +3507,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       );
 
       // 👉 ปรับ Path ให้วิ่งไปอ่านข้อมูลแจ้งเตือนจากโหนดบัญชีปัจจุบันโดยตรง
-      _alertsRef = database.ref('accounts/${widget.accountLogin}/alerts');
+      _alertsRef = database.ref('accounts/$login/alerts');
 
       _alertsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
