@@ -358,21 +358,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      FirebaseApp app;
-      if (Firebase.apps.isEmpty) {
-        app = await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-          ),
-        );
-      } else {
-        app = Firebase.app();
-      }
+      final app = Firebase.app();
 
       final database = FirebaseDatabase.instanceFor(
         app: app,
@@ -381,7 +367,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       await _loginStatusSubscription?.cancel();
 
-      // 👉 ปรับเส้นทางให้บันทึกและเช็กสถานะผ่านโหนด accounts/$login/status โดยตรง
       final statusRef = database.ref('accounts/$login/status');
 
       await statusRef.update({
@@ -673,6 +658,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 
