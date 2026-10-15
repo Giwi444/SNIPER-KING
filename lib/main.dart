@@ -1230,57 +1230,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. ส่วนแสดงหน้าหลักพร้อมเว้นระยะเผื่อ Navigation Bar ด้านล่าง
-          Padding(
-            padding: const EdgeInsets.only(bottom: 65.0),
-            child: IndexedStack(
-              index: _currentIndex,
-              children: pages,
-            ),
-          ),
-
-          // 2. แถบ Navigation Bar ด้านล่าง (นำมาไว้ใน Stack เพื่อให้ บอลลูน สามารถลากมาทับได้)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0B0B0E),
-                  border: Border(
-                    top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.8),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildCustomNavItem(0, Icons.tune, 'Settings'),
-                    _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
-                    _buildCustomNavItem(2, Icons.home_filled, 'Home'),
-                    _buildCustomNavItem(3, Icons.history, 'History'),
-                    _buildCustomNavItem(
-                      4, 
-                      Icons.notifications_active, 
-                      'Alerts', 
-                      badgeCount: unreadAlertsCount,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          IndexedStack(
+            index: _currentIndex,
+            children: pages,
           ),
           
-          // 3. หน้าต่าง Modal แสดง Logs
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1461,7 +1415,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ],
             ),
 
-          // 4. บอลลูนรูปโปรไฟล์ (ลอยอยู่ชั้นบนสุด สามารถลากลงมาทับแถบเมนูด้านล่างสุดได้ทั้งหมด)
+          // บอลลูนลอยที่สามารถลากทับลงมาได้ทั่วหน้าจอรวมถึงแถบเมนูด้านล่าง
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1511,6 +1465,39 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0B0E),
+            border: Border(
+              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCustomNavItem(0, Icons.tune, 'Settings'),
+              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+              _buildCustomNavItem(3, Icons.history, 'History'),
+              _buildCustomNavItem(
+                4, 
+                Icons.notifications_active, 
+                'Alerts', 
+                badgeCount: unreadAlertsCount,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1819,6 +1806,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 
