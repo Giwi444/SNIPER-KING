@@ -974,12 +974,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       _initFirebaseAndListen();
       _listenToLogs();
       _listenToConnectionStatus();
-      _listenToOrdersForDialog(); 
-    });
-
-    // คืนค่าการเรียกใช้งานบอลลูนใน initState ตามเดิม
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ป้องกัน Error และให้เรียกใช้งานได้อย่างราบรื่น
+      _listenToOrdersForDialog();
     });
 
     _scannerController.addStatusListener((status) {
@@ -1025,7 +1020,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
           _listenToAlertsCount();
           _initFirebaseAndListen();
           _listenToLogs();
-          _listenToOrdersForDialog(); 
+          _listenToOrdersForDialog();
         }
       });
     } catch (e) {
@@ -1235,11 +1230,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       body: Stack(
         fit: StackFit.expand,
         children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: pages,
+          // 1. ส่วนแสดงหน้าหลักพร้อมเว้นระยะเผื่อ Navigation Bar ด้านล่าง
+          Padding(
+            padding: const EdgeInsets.only(bottom: 65.0),
+            child: IndexedStack(
+              index: _currentIndex,
+              children: pages,
+            ),
+          ),
+
+          // 2. แถบ Navigation Bar ด้านล่าง (นำมาไว้ใน Stack เพื่อให้ บอลลูน สามารถลากมาทับได้)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B0B0E),
+                  border: Border(
+                    top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.8),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildCustomNavItem(0, Icons.tune, 'Settings'),
+                    _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+                    _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+                    _buildCustomNavItem(3, Icons.history, 'History'),
+                    _buildCustomNavItem(
+                      4, 
+                      Icons.notifications_active, 
+                      'Alerts', 
+                      badgeCount: unreadAlertsCount,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           
+          // 3. หน้าต่าง Modal แสดง Logs
           if (_isLargeLogsModalOpen)
             Stack(
               children: [
@@ -1420,7 +1461,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ],
             ),
 
-          // คืนค่าตำแหน่ง Draggable บอลลูนตามโครงสร้างดั้งเดิมที่ใช้งานได้ปกติ
+          // 4. บอลลูนรูปโปรไฟล์ (ลอยอยู่ชั้นบนสุด สามารถลากลงมาทับแถบเมนูด้านล่างสุดได้ทั้งหมด)
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1470,39 +1511,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
-            border: Border(
-              top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.8),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildCustomNavItem(0, Icons.tune, 'Settings'),
-              _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
-              _buildCustomNavItem(2, Icons.home_filled, 'Home'),
-              _buildCustomNavItem(3, Icons.history, 'History'),
-              _buildCustomNavItem(
-                4, 
-                Icons.notifications_active, 
-                'Alerts', 
-                badgeCount: unreadAlertsCount,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
