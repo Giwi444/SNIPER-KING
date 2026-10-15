@@ -3551,7 +3551,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      _alertsRef = database.ref('alerts');
+      // 👉 ปรับ Path ให้วิ่งไปอ่านข้อมูลแจ้งเตือนจากโหนดบัญชีปัจจุบันโดยตรง
+      _alertsRef = database.ref('accounts/${widget.accountLogin}/alerts');
 
       _alertsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
@@ -3632,7 +3633,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E), // เปลี่ยนพื้นหลังให้มืดทึบเหมือนหน้า Orders
+      backgroundColor: const Color(0xFF0B0B0E),
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
@@ -3657,12 +3658,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.92), // ปรับความมืดทับให้เข้มขึ้น สบายตา ไม่แสบตา
+            color: Colors.black.withOpacity(0.92),
           ),
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF121215), // พื้นหลังกล่องคอนเทนเนอร์ทึบ
+              color: const Color(0xFF121215),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.5),
             ),
@@ -3723,6 +3724,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 
 
