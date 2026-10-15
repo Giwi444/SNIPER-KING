@@ -339,7 +339,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     }
   }
 
-  void _submitMT5Login() async {
+      void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
@@ -356,7 +356,26 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      final app = Firebase.app();
+      // ❌ โค้ดเดิมที่ทำให้เกิด Error [core/no-app]
+      // final app = Firebase.app();
+      
+      // ✅ โค้ดที่แก้ไข: ตรวจสอบและ Initialize Firebase ให้เรียบร้อยก่อนใช้งานทุกครั้ง
+      FirebaseApp app;
+      if (Firebase.apps.isEmpty) {
+        app = await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+            messagingSenderId: "155532929563",
+            projectId: "liquidity-b8739",
+            storageBucket: "liquidity-b8739-firebasestorage.app",
+            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+          ),
+        );
+      } else {
+        app = Firebase.app();
+      }
+
       final database = FirebaseDatabase.instanceFor(
         app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
@@ -397,6 +416,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
