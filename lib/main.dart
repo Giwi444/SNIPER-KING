@@ -2170,6 +2170,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       },
     ),
+    ////////////////////////////////////
+    Widget _buildCircularButton({
+  required String label,
+  required IconData icon,
+  required List<Color> colors,
+  required Color borderColor,
+  Color? glowColor,
+  required VoidCallback onPressed,
+  bool isLarge = false,
+}) {
+  double size = isLarge ? 82 : 70;
+  return GestureDetector(
+    onTap: onPressed, // 👈 ต้องมีบรรทัดนี้เพื่อให้กดคลิกได้
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            border: Border.all(color: borderColor, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: (glowColor ?? borderColor).withOpacity(0.8),
+                blurRadius: 14,
+                spreadRadius: 2,
+                offset: const Offset(0, 0),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            letterSpacing: 0.5,
+            fontFamily: 'monospace',
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
     ///////////////////////////////////////
    ///////////////////////////////////////               
                     const SizedBox(height: 20),
