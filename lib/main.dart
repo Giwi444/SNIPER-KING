@@ -2074,15 +2074,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: 'CLOSE',
                           icon: Icons.delete_outline,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: _closeAllOrders,
                         ),
                         const SizedBox(width: 20),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
+                          // เปลี่ยนสีตามสถานะ: ถ้า Running เป็นเขียวนีออน 🟢 / ถ้า Stop เป็นแดงนีออน 🔴
                           colors: isRunning 
-                              ? const [Color(0xFFD50000), Color(0xFF5A0000)] 
-                              : const [Color(0xFFB71C1C), Color(0xFF7A0000)], 
+                              ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)] 
+                              : const [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000)], 
+                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
@@ -2091,6 +2095,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: 'STATS', 
                           icon: Icons.bar_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: () {
                             setState(() {
                               _isChartModalOpen = true;
@@ -2551,6 +2556,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required String label,
     required IconData icon,
     required List<Color> colors,
+    required Color borderColor,
+    Color? glowColor,
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
@@ -2570,12 +2577,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+              border: Border.all(color: borderColor, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: (glowColor ?? borderColor).withOpacity(0.8),
+                  blurRadius: 14,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 0),
                 ),
               ],
             ),
@@ -2597,6 +2605,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
 
 
 // ==========================================
