@@ -2117,7 +2117,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: Column(
                         children: const [
-                          FlashingSniperText(), // 👈 วิดเจ็ตข้อความกระพริบแฟลชเรืองแสงที่เพิ่มเข้ามา
+                          FlashingSniperText(),
                           SizedBox(height: 4),
                           Text(
                             'HYBRID  ROB O T',
@@ -2151,85 +2151,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
-                    
-  ///////////////////////////////////////
-  ///////////////////////////////////////               
-     const SizedBox(width: 12),
-    // 🎈 ปุ่มเปิด/ปิด บอลลูนลอยทับแอปอื่นที่เพิ่มเข้ามาใหม่
-    _buildCircularButton(
-      label: 'BALLOON',
-      icon: Icons.widgets,
-      colors: const [Color(0xFFFF1744), Color(0xFF8A0000)],
-      borderColor: const Color(0xFFFF1744),
-      onPressed: () async {
-        bool isActive = await FlutterOverlayWindow.isActive();
-        if (isActive) {
-          await FlutterOverlayWindow.closeOverlay();
-        } else {
-          await _showFloatingBalloon();
-        }
-      },
-    ),
-    ////////////////////////////////////
-    Widget _buildCircularButton({
-  required String label,
-  required IconData icon,
-  required List<Color> colors,
-  required Color borderColor,
-  Color? glowColor,
-  required VoidCallback onPressed,
-  bool isLarge = false,
-}) {
-  double size = isLarge ? 82 : 70;
-  return GestureDetector(
-    onTap: onPressed, // 👈 ต้องมีบรรทัดนี้เพื่อให้กดคลิกได้
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: colors,
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            border: Border.all(color: borderColor, width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                color: (glowColor ?? borderColor).withOpacity(0.8),
-                blurRadius: 14,
-                spreadRadius: 2,
-                offset: const Offset(0, 0),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 11,
-            letterSpacing: 0.5,
-            fontFamily: 'monospace',
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-    ///////////////////////////////////////
-   ///////////////////////////////////////               
                     const SizedBox(height: 20),
+                    // ปุ่มควบคุมหลัก (BALLOON, CLOSE, START, STATS)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        _buildCircularButton(
+                          label: 'BALLOON',
+                          icon: Icons.widgets,
+                          colors: const [Color(0xFFFF1744), Color(0xFF8A0000)],
+                          borderColor: const Color(0xFFFF1744),
+                          onPressed: () async {
+                            bool isActive = await FlutterOverlayWindow.isActive();
+                            if (isActive) {
+                              await FlutterOverlayWindow.closeOverlay();
+                            } else {
+                              await _showFloatingBalloon();
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 12),
                         _buildCircularButton(
                           label: 'CLOSE',
                           icon: Icons.delete_outline,
@@ -2237,7 +2178,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           borderColor: const Color(0xFFD50000),
                           onPressed: _closeAllOrders,
                         ),  
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 12),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
@@ -2249,7 +2190,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
-                        const SizedBox(width: 18),
+                        const SizedBox(width: 12),
                         _buildCircularButton(
                           label: 'STATS', 
                           icon: Icons.bar_chart,
@@ -2711,6 +2652,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // 👇 วางเมธอดสร้างปุ่มไว้นอก build แต่ยังอยู่ภายในคลาส _HomeScreenState อย่างถูกต้อง
   Widget _buildCircularButton({
     required String label,
     required IconData icon,
@@ -2763,10 +2705,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-}
+} // 👈 ปิดท้ายคลาส _HomeScreenState อย่างถูกต้อง
 
 // ==========================================
-// Widget ข้อความกระพริบแฟลชแบบไฟนีออนเรืองแสง (แยกไว้นอกคลาสหลัก)
+// Widget ข้อความกระพริบแฟลชแบบไฟนีออนเรืองแสง (อยู่นอกคลาสหลัก)
 // ==========================================
 class FlashingSniperText extends StatefulWidget {
   const FlashingSniperText({super.key});
@@ -2834,7 +2776,6 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
     );
   }
 }
-
 
 
 
