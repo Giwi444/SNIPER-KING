@@ -1003,7 +1003,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 👉 แก้ไขให้ดึงสถานะจากโฟลเดอร์บัญชีปัจจุบันโดยตรง
       _dbRef = database.ref('accounts/$currentLogin/status');
       _dbRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -1120,20 +1119,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _clearLogItem(String key) {
+  // 🗑️ แก้ไขให้ลบจริงบน Firebase (และเว็บ)
+  void _clearLogItem(String key) async {
     try {
-      _logsRef?.child(key).remove();
+      if (_logsRef != null) {
+        await _logsRef!.child(key).remove();
+      }
     } catch (e) {
       print("Clear log item error: $e");
     }
   }
 
-  void _clearAllLogs() {
+  // 🗑️ แก้ไขให้ลบ Node Logs ทั้งหมดจริงบน Firebase
+  void _clearAllLogs() async {
     try {
-      _logsRef?.remove();
-      setState(() {
-        _botLogs.clear();
-      });
+      if (_logsRef != null) {
+        await _logsRef!.remove();
+        if (mounted) {
+          setState(() {
+            _botLogs.clear();
+          });
+        }
+      }
     } catch (e) {
       print("Clear all logs error: $e");
     }
@@ -1287,101 +1294,73 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                                  const SizedBox(height: 16),
-                                  const Row(
-                                    children: [
-                                      Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'ACTIVITY LOGS',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (_botLogs.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                                      child: Center(
-                                        child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                const SizedBox(height: 16),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'ACTIVITY LOGS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        letterSpacing: 1,
                                       ),
                                     ),
-                                  ..._botLogs.asMap().entries.map((entry) {
-                                    var log = entry.value;
-                                    bool isLatest = (entry.key == 0);
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                if (_botLogs.isEmpty)
+                                  const Expanded(
+                                    child: Center(
+                                      child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: _botLogs.length,
+                                      itemBuilder: (context, index) {
+                                        var log = _botLogs[index];
+                                        bool isLatest = (index == 0);
 
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: isLatest
-                                                ? Row(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      const Text(
-                                                        '➔ ',
-                                                        style: TextStyle(
-                                                          color: Colors.redAccent,
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold,
-                                                          shadows: [
-                                                            Shadow(color: Colors.red, blurRadius: 8),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Expanded(
-                                                        child: TypewriterText(
-                                                          text: "${log['message']}",
-                                                          style: const TextStyle(
-                                                            color: Colors.redAccent,
-                                                            fontFamily: 'monospace',
-                                                            fontSize: 14,
-                                                            fontWeight: FontWeight.bold,
-                                                            height: 1.4,
-                                                            shadows: [
-                                                              Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                : Text(
-                                                    "> ${log['message']}",
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontFamily: 'monospace',
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.bold,
-                                                      height: 1.4,
-                                                    ),
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8.0),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  isLatest ? "➔ ${log['message']}" : "> ${log['message']}",
+                                                  style: TextStyle(
+                                                    color: isLatest ? Colors.redAccent : Colors.white,
+                                                    fontFamily: 'monospace',
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    height: 1.4,
+                                                    shadows: isLatest ? const [Shadow(color: Colors.red, blurRadius: 8)] : [],
                                                   ),
+                                                ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () => _clearLogItem(log['key']),
+                                                child: const Padding(
+                                                  padding: EdgeInsets.only(left: 8.0),
+                                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          GestureDetector(
-                                            onTap: () => _clearLogItem(log['key']),
-                                            child: const Padding(
-                                              padding: EdgeInsets.only(left: 8.0),
-                                              child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
@@ -1744,6 +1723,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 // ==========================================
@@ -3564,20 +3544,28 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  void _clearAlertItem(String key) {
+  // 🗑️ ลบเฉพาะรายการที่เลือกออกจาก Firebase จริง
+  void _clearAlertItem(String key) async {
     try {
-      _alertsRef?.child(key).remove();
+      if (_alertsRef != null) {
+        await _alertsRef!.child(key).remove();
+      }
     } catch (e) {
       print("Clear alert error: $e");
     }
   }
 
-  void _clearAllAlerts() {
+  // 🗑️ ลบ Node Alerts ทั้งหมดออกจาก Firebase จริง
+  void _clearAllAlerts() async {
     try {
-      _alertsRef?.remove();
-      setState(() {
-        alertItems.clear();
-      });
+      if (_alertsRef != null) {
+        await _alertsRef!.remove();
+        if (mounted) {
+          setState(() {
+            alertItems.clear();
+          });
+        }
+      }
     } catch (e) {
       print("Clear all alerts error: $e");
     }
@@ -3677,6 +3665,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 
 // ==========================================
