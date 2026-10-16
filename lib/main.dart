@@ -3868,6 +3868,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 // ==========================================
 //#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -3899,7 +3904,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
 
-  // 🟢 เพิ่ม Controller สำหรับระยะห่างแก้ไม้ (Grid Distance)
+  // 🟢 Controller ระยะห่างแก้ไม้ (Grid Distance)
   final TextEditingController recoveryStepController = TextEditingController(text: "200");
 
   final TextEditingController startTimeController = TextEditingController(text: "08:00");
@@ -3912,7 +3917,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // 🟢 Basket Control (ชุดปิดรวบรายรอบ)
+  // 🟢 Basket Control (ปิดรวบรายรอบ)
   bool enableBasketControl = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
   final TextEditingController basketSlController = TextEditingController(text: "5.00");
@@ -3943,13 +3948,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     maxOrdersController.dispose();
     slPointsController.dispose();
     riskRewardController.dispose();
-    recoveryStepController.dispose(); // 🟢 dispose
+    recoveryStepController.dispose(); 
     startTimeController.dispose();
     endTimeController.dispose();
     dailyTargetController.dispose();
     dailyLossController.dispose();
-    basketTpController.dispose(); // 🟢 dispose
-    basketSlController.dispose(); // 🟢 dispose
+    basketTpController.dispose(); 
+    basketSlController.dispose(); 
     super.dispose();
   }
 
@@ -3994,7 +3999,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             slPointsController.text = data['sl_points']?.toString() ?? '500';
             riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
 
-            // 🟢 โหลดค่า Recovery Step (Pts)
             recoveryStepController.text = data['recovery_step_pts']?.toString() ?? '200';
 
             enableDailyTarget = data['enable_daily_target'] ?? true;
@@ -4003,7 +4007,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
-            // 🟢 โหลดค่า Basket Control
             enableBasketControl = data['enable_basket_control'] ?? true;
             basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
             basketSlController.text = data['basket_sl']?.toString() ?? '5.00';
@@ -4044,7 +4047,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
         'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
         
-        // 🟢 บันทึก Recovery Step (Pts)
         'recovery_step_pts': double.tryParse(recoveryStepController.text) ?? 200.0,
 
         'enable_daily_target': enableDailyTarget,
@@ -4052,11 +4054,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
 
-        // 🟢 บันทึก Basket Control
         'enable_basket_control': enableBasketControl,
         'basket_tp': double.tryParse(basketTpController.text) ?? 1.50,
         'basket_sl': double.tryParse(basketSlController.text) ?? 5.00,
-        'use_individual_sl_tp': !enableBasketControl, // ปิด TP/SL รายไม้อัตโนมัติเมื่อใช้ Basket
+        'use_individual_sl_tp': !enableBasketControl,
       };
 
       _statusRef?.update(payload);
@@ -4116,10 +4117,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double sl = double.tryParse(slPointsController.text) ?? 500;
-    double rr = double.tryParse(riskRewardController.text) ?? 2.0;
-    double calculatedTP = sl * rr;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
@@ -4170,9 +4167,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      // ... Trading Symbol / Trading Mode / Lot Mode ... (โค้ดตามเดิมของคุณ)
-                      
-                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
@@ -4185,7 +4179,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Expanded(child: _buildControllerInputField('Max Orders', maxOrdersController, TextInputType.number)),
                           const SizedBox(width: 10),
-                          // 🟢 ใส่ Recovery Step (Pts) วางควบคู่กับ Max Orders
                           Expanded(child: _buildControllerInputField('Recovery Step (Pts)', recoveryStepController, TextInputType.number)),
                         ],
                       ),
@@ -4203,22 +4196,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 🟢 1. BASKET CONTROL (ปิดรวบรายรอบ - โทนสี Cyan/Blue)
+                      // 🟢 1. BASKET CONTROL (ปิดรวบกำไรสีฟ้า / ปิดรวบขาดทุนสีส้ม)
                       // ==========================================
                       const Text(
-                        'BASKET CONTROL (ปิดรวบรายรอบ / Per Cycle)', 
+                        'BASKET CONTROL', 
                         style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
+                          // 🔵 Basket TP (กำไร - สีฟ้า)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.5), width: 1),
+                                border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.6), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4244,13 +4238,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
+                          // 🟠 Basket SL (ขาดทุน - สีส้ม)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF2979FF).withOpacity(0.5), width: 1),
+                                border: Border.all(color: const Color(0xFFFF9100).withOpacity(0.6), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4258,10 +4253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket SL', style: TextStyle(color: Color(0xFF2979FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Basket SL', style: TextStyle(color: Color(0xFFFF9100), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketControl,
-                                        activeColor: const Color(0xFF2979FF),
+                                        activeColor: const Color(0xFFFF9100),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketControl = val;
@@ -4280,7 +4275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
 
                       // ==========================================
-                      // 🔴 2. DAILY TARGET & LOSS CONTROL (โทนสีเขียว/แดง)
+                      // 🔴 2. DAILY TARGET & LOSS CONTROL
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
@@ -4371,6 +4366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 40), // เผื่อระยะขอบล่างสุดให้เลื่อนพ้น Bottom Navigation Bar
               ],
             ),
           ),
