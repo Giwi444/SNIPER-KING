@@ -3912,6 +3912,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
+  // 🟢 เพิ่มตัวแปรสวิตช์เปิด/ปิด Basket Control หลัก
+  bool enableBasketControl = true;
   bool enableBasketTp = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
   
@@ -4002,6 +4004,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
+            // 🟢 โหลดค่าสถานะ Basket Control หลักจาก Firebase
+            enableBasketControl = data['enable_basket_control'] ?? true;
             enableBasketTp = data['enable_basket_tp'] ?? true;
             basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
 
@@ -4048,6 +4052,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+        // 🟢 ส่งค่าเปิด/ปิด Basket Control ไปยัง Firebase ให้ EA ตรวจสอบ
+        'enable_basket_control': enableBasketControl,
+        'use_individual_sl_tp': !enableBasketControl,
         'enable_basket_tp': enableBasketTp,
         'basket_tp': double.tryParse(basketTpController.text) ?? 1.50,
         'enable_basket_sl': enableBasketSl,
@@ -4509,11 +4516,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // BASKET CONTROL (แยกสวิตช์ TP สีฟ้าเข้ม และ SL สีส้ม อิสระ)
+                      // BASKET CONTROL (เพิ่มสวิตช์เปิด/ปิด Basket Control หลักไว้ด้านบน)
                       // ==========================================
-                      const Text(
-                        'BASKET CONTROL', 
-                        style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'BASKET CONTROL', 
+                            style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)
+                          ),
+                          Row(
+                            children: [
+                              const Text('Enable Basket', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                              const SizedBox(width: 6),
+                              Switch(
+                                value: enableBasketControl,
+                                activeColor: const Color(0xFF00B0FF),
+                                onChanged: (val) => setState(() {
+                                  _isEditing = true;
+                                  enableBasketControl = val;
+                                }),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Row(
