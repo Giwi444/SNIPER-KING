@@ -1767,7 +1767,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 // ==========================================
-// #8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด)
+//#8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -2058,24 +2058,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '🎯 S N I P E R 🎯',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 3.0,
-                              shadows: [
-                                Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
-                              ],
-                            ),
-                          ),
+                      child: Column(
+                        children: const [
+                          FlashingSniperText(), // 👈 วิดเจ็ตข้อความกระพริบแฟลชเรืองแสงที่เพิ่มเข้ามา
                           SizedBox(height: 4),
                           Text(
-                            'HYBRID ROBOT',
+                            'HYBRID  ROB O T',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
@@ -2114,6 +2102,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: 'CLOSE',
                           icon: Icons.delete_outline,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: _closeAllOrders,
                         ),
                         const SizedBox(width: 20),
@@ -2121,8 +2110,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
-                              ? const [Color(0xFFD50000), Color(0xFF5A0000)] 
-                              : const [Color(0xFFB71C1C), Color(0xFF7A0000)], 
+                              ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)] 
+                              : const [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000)], 
+                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
@@ -2131,6 +2122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           label: 'STATS', 
                           icon: Icons.bar_chart,
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: () {
                             setState(() {
                               _isChartModalOpen = true;
@@ -2591,6 +2583,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required String label,
     required IconData icon,
     required List<Color> colors,
+    required Color borderColor,
+    Color? glowColor,
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
@@ -2610,12 +2604,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              border: Border.all(color: const Color(0xFFD50000), width: 2.5),
+              border: Border.all(color: borderColor, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: (glowColor ?? borderColor).withOpacity(0.8),
+                  blurRadius: 14,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 0),
                 ),
               ],
             ),
@@ -2637,6 +2632,78 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+// ==========================================
+// Widget ข้อความกระพริบแฟลชแบบไฟนีออนเรืองแสง (แยกไว้นอกคลาสหลัก)
+// ==========================================
+class FlashingSniperText extends StatefulWidget {
+  const FlashingSniperText({super.key});
+
+  @override
+  State<FlashingSniperText> createState() => _FlashingSniperTextState();
+}
+
+class _FlashingSniperTextState extends State<FlashingSniperText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0.25, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        double val = _animation.value;
+        return Opacity(
+          opacity: val,
+          child: Text(
+            '🎯 S N I P E R 🎯',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 3.0,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFFF1744).withOpacity(val),
+                  blurRadius: 20 * val,
+                  offset: const Offset(0, 0),
+                ),
+                Shadow(
+                  color: Colors.redAccent.withOpacity(val),
+                  blurRadius: 10 * val,
+                  offset: const Offset(0, 0),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
 
 
 
@@ -3072,7 +3139,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
 
 // ==========================================
-// โหมดการบันทึกประจำวัน (HistoryScreen)
+// #10 โหมดการบันทึกประจำวัน (HistoryScreen)
 // ==========================================
 
 class HistoryScreen extends StatefulWidget {
@@ -3459,7 +3526,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 // ==========================================
-// โหมดการแจ้งเตือนข้อความ (AlertsScreen)
+// #11 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3707,7 +3774,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 // ==========================================
-// โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+//#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
