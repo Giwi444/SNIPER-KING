@@ -3488,9 +3488,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     color: const Color(0xFF121215),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: Colors.redAccent.withOpacity(0.6),
-                      width: 1.5,
+                      color: const Color(0xFFFF0000), // ปรับเป็นเส้นเรืองแสงสีแดง
+                      width: 2.0,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -3522,7 +3529,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF161619),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white12, width: 1),
+                                  border: Border.all(
+                                    color: Colors.redAccent.withOpacity(0.5),
+                                    width: 1.2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withOpacity(0.15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3769,7 +3786,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF121215),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFFFF0000), // ขอบเรืองแสงนีออนสีแดงเด่นชัด
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.6),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
@@ -3791,7 +3818,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF161619),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1),
+                            border: Border.all(
+                              color: Colors.redAccent.withOpacity(0.5),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.15),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3828,6 +3865,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+
 
 
 // ==========================================
