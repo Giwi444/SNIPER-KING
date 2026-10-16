@@ -151,30 +151,30 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
 
 Future<void> _showFloatingBalloon() async {
   try {
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
-    }
-
+    // 1. เช็กสิทธิ์ Overlay
     bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
-    if (isGranted == null || !isGranted) {
-      bool? requested = await FlutterOverlayWindow.requestPermission();
-      if (requested != true) return;
+    if (isGranted != true) {
+      await FlutterOverlayWindow.requestPermission();
+      return;
     }
 
+    // 2. เช็กว่าเปิดอยู่แล้วหรือไม่ ถ้ายังไม่เปิดให้สั่งเปิดทันที
     bool isActive = await FlutterOverlayWindow.isActive();
     if (!isActive) {
       await FlutterOverlayWindow.showOverlay(
-        height: 80,
-        width: 80,
+        height: 100,
+        width: 100,
         alignment: OverlayAlignment.centerRight,
         flag: OverlayFlag.defaultFlag,
         positionGravity: PositionGravity.auto,
+        enableDrag: true, // เพิ่มให้ผู้ใช้ลากย้ายตำแหน่งบอลลูนได้
       );
     }
   } catch (e) {
     print("Show floating balloon error: $e");
   }
 }
+
 
 
 // ==========================================
@@ -2151,6 +2151,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
+                    
+  ///////////////////////////////////////
+  ///////////////////////////////////////               
+     const SizedBox(width: 12),
+    // 🎈 ปุ่มเปิด/ปิด บอลลูนลอยทับแอปอื่นที่เพิ่มเข้ามาใหม่
+    _buildCircularButton(
+      label: 'BALLOON',
+      icon: Icons.widgets,
+      colors: const [Color(0xFFFF1744), Color(0xFF8A0000)],
+      borderColor: const Color(0xFFFF1744),
+      onPressed: () async {
+        bool isActive = await FlutterOverlayWindow.isActive();
+        if (isActive) {
+          await FlutterOverlayWindow.closeOverlay();
+        } else {
+          await _showFloatingBalloon();
+        }
+      },
+    ),
+    ///////////////////////////////////////
+   ///////////////////////////////////////               
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -2161,7 +2182,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
                           borderColor: const Color(0xFFD50000),
                           onPressed: _closeAllOrders,
-                        ),
+                        ),  
                         const SizedBox(width: 20),
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
