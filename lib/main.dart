@@ -3869,11 +3869,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 // ==========================================
 //#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -4220,7 +4215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ==========================================
                       const Text(
                         'BASKET CONTROL', 
-                        style: TextStyle(color: Colors.white12), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4299,7 +4294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Colors.white12), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
