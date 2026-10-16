@@ -3882,7 +3882,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String selectedSymbol = 'XAUUSD';
-  String tradingMode = 'Sniper';
+  String tradingMode = 'All Mode';
   String lotMode = 'Fixed';
   
   final List<String> timeframes = ["M1", "M2", "M3", "M4", "M5", "M15", "M30", "H1"];
@@ -3981,9 +3981,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
         if (data != null && mounted) {
           setState(() {
-            selectedSymbol = data['symbol']?.toString() ?? 'BTCUSD';
-            tradingMode = data['trading_mode']?.toString() ?? 'Sniper';
-            lotMode = data['lot_mode']?.toString() ?? 'Double';
+            selectedSymbol = data['symbol']?.toString() ?? 'XAUUSD';
+            tradingMode = data['trading_mode']?.toString() ?? 'All Mode';
+            lotMode = data['lot_mode']?.toString() ?? 'Fixed';
             selectedTf = data['timeframe']?.toString() ?? 'M1';
             
             enableTrendFilter = data['enable_trend_filter'] ?? true;
@@ -3993,24 +3993,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             initialLotController.text = data['initial_lot']?.toString() ?? '0.01';
             maxRecoveryController.text = data['max_recovery']?.toString() ?? '10';
-            maxOrdersController.text = data['max_orders']?.toString() ?? '10'; 
+            maxOrdersController.text = data['max_orders']?.toString() ?? '1'; 
             slPointsController.text = data['sl_points']?.toString() ?? '500';
-            riskRewardController.text = data['risk_reward']?.toString() ?? '2.0';
+            riskRewardController.text = data['risk_reward']?.toString() ?? '2.5';
 
             recoveryStepController.text = data['recovery_step_pts']?.toString() ?? '200';
 
             enableDailyTarget = data['enable_daily_target'] ?? true;
-            dailyTargetController.text = data['daily_target']?.toString() ?? '100.0';
+            dailyTargetController.text = data['daily_target']?.toString() ?? '1000.0';
 
             enableDailyLoss = data['enable_daily_loss'] ?? false;
-            dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
+            dailyLossController.text = data['daily_loss']?.toString() ?? '1000.0';
 
-            // 🟢 โหลดค่าแยกสวิตช์ Basket TP / Basket SL
             enableBasketTp = data['enable_basket_tp'] ?? true;
-            basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
+            basketTpController.text = data['basket_tp']?.toString() ?? '100';
 
             enableBasketSl = data['enable_basket_sl'] ?? false;
-            basketSlController.text = data['basket_sl']?.toString() ?? '5.00';
+            basketSlController.text = data['basket_sl']?.toString() ?? '100';
 
             _isInitialized = true;
           });
@@ -4044,22 +4043,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'end_time_th': endTimeController.text,
         'initial_lot': double.tryParse(initialLotController.text) ?? 0.01,
         'max_recovery': int.tryParse(maxRecoveryController.text) ?? 10,
-        'max_orders': int.tryParse(maxOrdersController.text) ?? 10, 
+        'max_orders': int.tryParse(maxOrdersController.text) ?? 1, 
         'sl_points': double.tryParse(slPointsController.text) ?? 500.0,
-        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.0,
+        'risk_reward': double.tryParse(riskRewardController.text) ?? 2.5,
         
         'recovery_step_pts': double.tryParse(recoveryStepController.text) ?? 200.0,
 
         'enable_daily_target': enableDailyTarget,
-        'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
+        'daily_target': double.tryParse(dailyTargetController.text) ?? 1000.0,
         'enable_daily_loss': enableDailyLoss,
-        'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
+        'daily_loss': double.tryParse(dailyLossController.text) ?? 1000.0,
 
-        // 🟢 บันทึกค่าแยก Basket TP / Basket SL
         'enable_basket_tp': enableBasketTp,
-        'basket_tp': double.tryParse(basketTpController.text) ?? 1.50,
+        'basket_tp': double.tryParse(basketTpController.text) ?? 100.0,
         'enable_basket_sl': enableBasketSl,
-        'basket_sl': double.tryParse(basketSlController.text) ?? 5.00,
+        'basket_sl': double.tryParse(basketSlController.text) ?? 100.0,
         'use_individual_sl_tp': !(enableBasketTp || enableBasketSl),
       };
 
@@ -4071,7 +4069,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Parameters & Basket Config Saved to Firebase Successfully!'),
+          content: Text('Parameters Saved to Firebase Successfully!'),
           backgroundColor: Color(0xFFFF1744),
         ),
       );
@@ -4081,7 +4079,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _resetPin() {
-    // ฟังก์ชันสำหรับรีเซ็ต PIN
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Reset PIN requested'), backgroundColor: Colors.orange),
     );
@@ -4090,7 +4087,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _logoutToLoginScreen() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('mt5_login');
-    // ทำการเปลี่ยนเส้นทางไปหน้า Login ตามโครงสร้างโปรเจกต์ของคุณ
+  }
+
+  Color buttonColorForLot(String mode) {
+    if (mode == 'Fixed') return const Color(0xFF00E5FF);
+    if (mode == 'Step') return const Color(0xFF9C27B0);
+    return const Color(0xFFFF9100);
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -4151,7 +4153,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: Colors.black.withOpacity(0.8),
               ),
             ),
-            // 🟢 ปรับเปลี่ยนโครงสร้างการ Scroll ให้ขยายสุดความสูงของหน้าจอ และเพิ่ม padding ด้านล่างให้เลื่อนพ้นเมนูทั้งหมด
             Positioned.fill(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -4182,6 +4183,158 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 16),
                       
+                      // ==========================================
+                      // 1. TRADING SYMBOL
+                      // ==========================================
+                      const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: symbolOptions.map((sym) {
+                          bool isSelected = (selectedSymbol == sym);
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
+                                  side: BorderSide(color: isSelected ? const Color(0xFFFF1744) : Colors.white24),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () => setState(() {
+                                  _isEditing = true;
+                                  selectedSymbol = sym;
+                                }),
+                                child: Text(sym, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ==========================================
+                      // 2. TRADING MODE
+                      // ==========================================
+                      const Text('Trading Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: tradingModeOptions.map((mode) {
+                          bool isSelected = (tradingMode == mode);
+                          return SizedBox(
+                            width: (MediaQuery.of(context).size.width - 64) / 2 - 4,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
+                                side: BorderSide(color: isSelected ? const Color(0xFFFF1744) : Colors.white24),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: () => setState(() {
+                                _isEditing = true;
+                                tradingMode = mode;
+                              }),
+                              child: Text(mode, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ==========================================
+                      // 3. LOT MODE
+                      // ==========================================
+                      const Text('Lot Mode', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: lotModeOptions.map((lMode) {
+                          bool isSelected = (lotMode == lMode);
+                          Color btnColor = buttonColorForLot(lMode);
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSelected ? btnColor : const Color(0xFF0B0B0E),
+                                  side: BorderSide(color: isSelected ? btnColor : Colors.white24),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () => setState(() {
+                                  _isEditing = true;
+                                  lotMode = lMode;
+                                }),
+                                child: Text(lMode, style: TextStyle(color: isSelected ? Colors.black : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ==========================================
+                      // 4. TREND FILTER & TIMEFRAME CONTAINER
+                      // ==========================================
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B0B0E),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFFF1744), fontSize: 12, fontWeight: FontWeight.bold)),
+                                Switch(
+                                  value: enableTrendFilter,
+                                  activeColor: Colors.redAccent,
+                                  onChanged: (val) => setState(() {
+                                    _isEditing = true;
+                                    enableTrendFilter = val;
+                                  }),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            const Text('Trading Timeframe', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: timeframes.map((tf) {
+                                bool isSelected = (selectedTf == tf);
+                                return SizedBox(
+                                  width: (MediaQuery.of(context).size.width - 76) / 4,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF161619),
+                                      side: BorderSide(color: isSelected ? const Color(0xFFFF1744) : Colors.white24),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () => setState(() {
+                                      _isEditing = true;
+                                      selectedTf = tf;
+                                    }),
+                                    child: Text(tf, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ==========================================
+                      // 5. NUMERIC INPUTS (Initial Lot, Max Recovery, etc.)
+                      // ==========================================
                       Row(
                         children: [
                           Expanded(child: _buildControllerInputField('Initial Lot', initialLotController, TextInputType.number)),
@@ -4211,23 +4364,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 🟢 1. BASKET CONTROL (แยกสวิตช์ TP สีฟ้า / SL สีส้ม อิสระ)
+                      // 6. BASKET CONTROL
                       // ==========================================
                       const Text(
                         'BASKET CONTROL', 
-                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          // 🔵 Basket TP (ปิดรวบกำไร - สีฟ้า)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.6), width: 1.5),
+                                border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4235,10 +4387,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Basket TP', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        activeColor: const Color(0xFF00E5FF),
+                                        activeColor: Colors.white,
+                                        activeTrackColor: Colors.grey,
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketTp = val;
@@ -4253,7 +4406,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // 🟠 Basket SL (ปิดรวบขาดทุน - สีส้ม)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
@@ -4290,7 +4442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
 
                       // ==========================================
-                      // 🔴 2. DAILY TARGET & LOSS CONTROL
+                      // 7. DAILY TARGET & LOSS CONTROL
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
@@ -4384,7 +4536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 🔒 3. SECURITY & PRIVACY
+                      // 8. SECURITY & PRIVACY
                       // ==========================================
                       const Text(
                         'SECURITY & PRIVACY', 
