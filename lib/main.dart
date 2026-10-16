@@ -205,16 +205,17 @@ void main() async {
 }
 
 
+// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ (ประกาศไว้ที่เดียวที่ใช้งานร่วมกัน)
 class TypewriterText extends StatefulWidget {
   final String text;
-  final TextStyle? style;
-  final Duration duration;
+  final TextStyle style;
+  final Duration speed;
 
   const TypewriterText({
     super.key,
     required this.text,
-    this.style,
-    this.duration = const Duration(milliseconds: 50),
+    required this.style,
+    this.speed = const Duration(milliseconds: 65),
   });
 
   @override
@@ -224,12 +225,13 @@ class TypewriterText extends StatefulWidget {
 class _TypewriterTextState extends State<TypewriterText> {
   String _displayedText = "";
   int _currentIndex = 0;
+  bool _completed = false;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startTypewriter();
+    _startTyping();
   }
 
   @override
@@ -237,21 +239,29 @@ class _TypewriterTextState extends State<TypewriterText> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
       _timer?.cancel();
-      _currentIndex = 0;
       _displayedText = "";
-      _startTypewriter();
+      _currentIndex = 0;
+      _completed = false;
+      _startTyping();
     }
   }
 
-  void _startTypewriter() {
+  void _startTyping() {
     if (widget.text.isEmpty) return;
-    _timer = Timer.periodic(widget.duration, (timer) {
+    _timer = Timer.periodic(widget.speed, (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_currentIndex < widget.text.length) {
         setState(() {
           _displayedText += widget.text[_currentIndex];
           _currentIndex++;
         });
       } else {
+        setState(() {
+          _completed = true;
+        });
         timer.cancel();
       }
     });
@@ -265,9 +275,13 @@ class _TypewriterTextState extends State<TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(_displayedText, style: widget.style);
+    return Text(
+      _displayedText,
+      style: widget.style,
+    );
   }
 }
+
 
 // ==========================================
 // #4 โหมดเริ่มต้นแอพ
@@ -296,7 +310,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #5 โหมดการเข้าใช้งานครั้งแรก (ตรวจสอบบัญชีจาก Firebase โดยตรง)
+// #5 โหมดการเข้าใช้งานครั้งแรก
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -339,7 +353,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     }
   }
 
-      void _submitMT5Login() async {
+  void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
@@ -356,10 +370,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      // ❌ โค้ดเดิมที่ทำให้เกิด Error [core/no-app]
-      // final app = Firebase.app();
-      
-      // ✅ โค้ดที่แก้ไข: ตรวจสอบและ Initialize Firebase ให้เรียบร้อยก่อนใช้งานทุกครั้ง
       FirebaseApp app;
       if (Firebase.apps.isEmpty) {
         app = await Firebase.initializeApp(
@@ -416,7 +426,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -612,7 +621,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 // ==========================================
-// โหมดการสร้างรหัสป้องกัน
+// โหมดการสร้างรหัสป้องกัน (PinAuthWrapper)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -838,6 +847,44 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             child: val == 'del'
                 ? const Icon(Icons.backspace_outlined, color: Colors.white)
                 : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ==========================================
+// HomeScreen (หน้าแรกของแดชบอร์ด)
+// ==========================================
+
+class HomeScreen extends StatelessWidget {
+  final String accountLogin;
+  const HomeScreen({super.key, required this.accountLogin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.radar, color: Color(0xFFFF1744), size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'SNIPER HYBRID ROBOT',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Active Account: $accountLogin',
+                style: const TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'monospace'),
+              ),
+            ],
           ),
         ),
       ),
@@ -1753,73 +1800,6 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
-
-// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
-class TypewriterText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-  final Duration speed;
-
-  const TypewriterText({
-    super.key,
-    required this.text,
-    required this.style,
-    this.speed = const Duration(milliseconds: 65),
-  });
-
-  @override
-  State<TypewriterText> createState() => _TypewriterTextState();
-}
-
-class _TypewriterTextState extends State<TypewriterText> {
-  String _displayedText = "";
-  int _currentIndex = 0;
-  bool _completed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTyping();
-  }
-
-  @override
-  void didUpdateWidget(covariant TypewriterText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
-      _displayedText = "";
-      _currentIndex = 0;
-      _completed = false;
-      _startTyping();
-    }
-  }
-
-  void _startTyping() {
-    Future.delayed(widget.speed, () {
-      if (!mounted) return;
-      if (_currentIndex < widget.text.length) {
-        setState(() {
-          _displayedText += widget.text[_currentIndex];
-          _currentIndex++;
-        });
-        _startTyping();
-      } else {
-        setState(() {
-          _completed = true;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _displayedText,
-      style: widget.style,
-    );
-  }
-}
-
-
 
 
 // ==========================================
@@ -2767,7 +2747,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  // 🗑️ ลบเฉพาะรายการที่เลือกออกจาก Firebase จริง
   void _clearAlertItem(String key) async {
     try {
       if (_alertsRef != null) {
@@ -2778,7 +2757,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
-  // 🗑️ ลบ Node Alerts ทั้งหมดออกจาก Firebase จริง
   void _clearAllAlerts() async {
     try {
       if (_alertsRef != null) {
@@ -2890,7 +2868,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-
 // ==========================================
 // โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -2982,7 +2959,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 👉 แก้ไขให้โหลดค่า Parameter จากโฟลเดอร์บัญชีปัจจุบันโดยตรง
       _statusRef = database.ref('accounts/$currentLogin/status');
       _statusRef?.onValue.listen((DatabaseEvent event) {
         if (_isEditing) return;
