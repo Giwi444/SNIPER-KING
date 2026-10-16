@@ -877,6 +877,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   DatabaseReference? _ordersRef;
 
   Offset _orderBubbleOffset = const Offset(20, 100);
+  
+  // เพิ่มตัวแปรสำหรับตำแหน่งและการเปิด-ปิดกล่อง Modal Logs และ Live Status
+  Offset _modalOffset = const Offset(16, 80);
+  bool _isLiveStatusVisible = true;
+
   bool _isOrderBubblePressed = false;
   bool _isLargeLogsModalOpen = false;
   bool isRunning = false;
@@ -1227,189 +1232,196 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ),
           ),
+          
+          // กล่อง EA STATUS & BOT LOGS แบบย่อส่วน พอดีกรอบ และสามารถลากขยับไปมาได้
           if (_isLargeLogsModalOpen)
-            Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isLargeLogsModalOpen = false;
-                    });
-                  },
-                  child: Container(color: Colors.black54),
-                ),
-                Center(
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.94,
-                    height: MediaQuery.of(context).size.height * 0.78,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.9),
-                          blurRadius: 25,
-                          spreadRadius: 5,
+            Positioned(
+              left: _modalOffset.dx,
+              top: _modalOffset.dy,
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  setState(() {
+                    _modalOffset += details.delta;
+                  });
+                },
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.92,
+                  height: MediaQuery.of(context).size.height * 0.72,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFF0000), width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.7),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                    color: const Color(0xFF121215),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.terminal, color: Color(0xFFFF1744), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'STATUS & LOGS',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                if (_botLogs.isNotEmpty)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
+                                    onPressed: _clearAllLogs,
+                                    tooltip: 'Clear All Logs',
+                                    constraints: const BoxConstraints(),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isLargeLogsModalOpen = false;
+                                    });
+                                  },
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                      color: const Color(0xFF121215),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ),
+                      const Divider(color: Color(0xFFFF0000), height: 1, thickness: 1.5),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // แสดงหรือซ่อน Live Status ตามการกดปุ่มกากบาท
+                              if (_isLiveStatusVisible) ...[
+                                _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                const SizedBox(height: 12),
+                              ],
                               const Row(
                                 children: [
-                                  Icon(Icons.terminal, color: Color(0xFFFF1744), size: 20),
-                                  SizedBox(width: 8),
+                                  Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
+                                  SizedBox(width: 6),
                                   Text(
-                                    'EA STATUS & BOT LOGS',
+                                    'ACTIVITY LOGS',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
                                       color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                       letterSpacing: 1,
                                     ),
                                   ),
                                 ],
                               ),
-                              Row(
-                                children: [
-                                  if (_botLogs.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-                                      onPressed: _clearAllLogs,
-                                      tooltip: 'Clear All Logs',
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isLargeLogsModalOpen = false;
-                                      });
-                                    },
+                              const SizedBox(height: 8),
+                              if (_botLogs.isEmpty)
+                                const Expanded(
+                                  child: Center(
+                                    child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
-                                const SizedBox(height: 16),
-                                const Row(
-                                  children: [
-                                    Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'ACTIVITY LOGS',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                if (_botLogs.isEmpty)
-                                  const Expanded(
-                                    child: Center(
-                                      child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
-                                    ),
-                                  )
-                                else
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: _botLogs.length,
-                                      itemBuilder: (context, index) {
-                                        var log = _botLogs[index];
-                                        bool isLatest = (index == 0);
+                                )
+                              else
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: _botLogs.length,
+                                    itemBuilder: (context, index) {
+                                      var log = _botLogs[index];
+                                      bool isLatest = (index == 0);
 
-                                        return Padding(
-                                          padding: const EdgeInsets.only(bottom: 8.0),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: isLatest
-                                                    ? Row(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          const Text(
-                                                            '➔ ',
-                                                            style: TextStyle(
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: isLatest
+                                                  ? Row(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        const Text(
+                                                          '➔ ',
+                                                          style: TextStyle(
+                                                            color: Color(0xFF00E676),
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.bold,
+                                                            shadows: [
+                                                              Shadow(color: Color(0xFF00E676), blurRadius: 8),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        Expanded(
+                                                          child: TypewriterText(
+                                                            text: "${log['message']}",
+                                                            speed: const Duration(milliseconds: 65),
+                                                            style: const TextStyle(
                                                               color: Color(0xFF00E676),
-                                                              fontSize: 14,
+                                                              fontFamily: 'monospace',
+                                                              fontSize: 13,
                                                               fontWeight: FontWeight.bold,
+                                                              height: 1.4,
                                                               shadows: [
-                                                                Shadow(color: Color(0xFF00E676), blurRadius: 8),
+                                                                Shadow(color: Color(0xFF00E676), blurRadius: 10, offset: Offset(0, 0)),
                                                               ],
                                                             ),
                                                           ),
-                                                          Expanded(
-                                                            child: TypewriterText(
-                                                              text: "${log['message']}",
-                                                              speed: const Duration(milliseconds: 65),
-                                                              style: const TextStyle(
-                                                                color: Color(0xFF00E676),
-                                                                fontFamily: 'monospace',
-                                                                fontSize: 14,
-                                                                fontWeight: FontWeight.bold,
-                                                                height: 1.4,
-                                                                shadows: [
-                                                                  Shadow(color: Color(0xFF00E676), blurRadius: 10, offset: Offset(0, 0)),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        "> ${log['message']}",
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontFamily: 'monospace',
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold,
-                                                          height: 1.4,
                                                         ),
+                                                      ],
+                                                    )
+                                                  : Text(
+                                                      "> ${log['message']}",
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontFamily: 'monospace',
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        height: 1.4,
                                                       ),
+                                                    ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () => _clearLogItem(log['key']),
+                                              child: const Padding(
+                                                padding: EdgeInsets.only(left: 8.0),
+                                                child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 15),
                                               ),
-                                              GestureDetector(
-                                                onTap: () => _clearLogItem(log['key']),
-                                                child: const Padding(
-                                                  padding: EdgeInsets.only(left: 8.0),
-                                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
-                              ],
-                            ),
+                                ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
+            
           Positioned(
             left: _orderBubbleOffset.dx,
             top: _orderBubbleOffset.dy,
@@ -1526,135 +1538,164 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF161619),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFFFF0000),
-          width: 2.5,
+          width: 2.0,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              color: Colors.black,
-              child: AnimatedBuilder(
-                animation: _scannerAnimation,
-                builder: (context, child) {
-                  double scanValue = _scannerAnimation.value * 200;
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        baseImage,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        width: double.infinity,
-                        height: 200,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  color: Colors.black,
+                  child: AnimatedBuilder(
+                    animation: _scannerAnimation,
+                    builder: (context, child) {
+                      double scanValue = _scannerAnimation.value * 150;
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            baseImage,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            width: double.infinity,
+                            height: 150,
+                          ),
+                          ClipRect(
+                            clipper: ScannerClipper(scanValue),
+                            child: Image.asset(
+                              morphImage,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 150,
+                            ),
+                          ),
+                          Positioned(
+                            top: scanValue - 2,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 3,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF1744),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.redAccent,
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white,
+                                    blurRadius: 2,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'LIVE STATUS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
                       ),
-                      ClipRect(
-                        clipper: ScannerClipper(scanValue),
-                        child: Image.asset(
-                          morphImage,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 200,
-                        ),
-                      ),
-                      Positioned(
-                        top: scanValue - 2,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 4,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF1744),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.redAccent,
-                                blurRadius: 10,
-                                spreadRadius: 3,
-                              ),
-                              BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 3,
-                                spreadRadius: 1,
-                              ),
+                                color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                                blurRadius: 4,
+                              )
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(width: 6),
+                        Text(
+                          isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
+                          style: TextStyle(
+                            color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(color: Colors.white24, height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                        Text(
+                          'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'LIVE STATUS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
+          // ปุ่มกากบาท (X) สำหรับปิดกล่อง Live Status ที่มุมขวาบนของรูปภาพ
+          Positioned(
+            right: 8,
+            top: 8,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isLiveStatusVisible = false;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.redAccent, width: 1.5),
                 ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
-                            blurRadius: 6,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
-                      style: TextStyle(
-                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
                 ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.white24, height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    Text(
-                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -1763,6 +1804,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 
