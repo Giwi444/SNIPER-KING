@@ -877,9 +877,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   DatabaseReference? _ordersRef;
 
   Offset _orderBubbleOffset = const Offset(20, 100);
-  
-  // เพิ่มตัวแปรสำหรับตำแหน่งและการเปิด-ปิดกล่อง Modal Logs และ Live Status
   Offset _modalOffset = const Offset(16, 80);
+  
+  // ตัวแปรควบคุมการเปิด-ปิด Live Status
   bool _isLiveStatusVisible = true;
 
   bool _isOrderBubblePressed = false;
@@ -1233,7 +1233,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             ),
           ),
           
-          // กล่อง EA STATUS & BOT LOGS แบบย่อส่วน พอดีกรอบ และสามารถลากขยับไปมาได้
           if (_isLargeLogsModalOpen)
             Positioned(
               left: _modalOffset.dx,
@@ -1284,13 +1283,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ),
                             Row(
                               children: [
+                                // 👁️ ปุ่มสลับเปิด-ปิดกล่อง Live Status ที่แถบด้านบน
+                                IconButton(
+                                  icon: Icon(
+                                    _isLiveStatusVisible ? Icons.visibility : Icons.visibility_off,
+                                    color: _isLiveStatusVisible ? const Color(0xFF00E676) : Colors.grey,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isLiveStatusVisible = !_isLiveStatusVisible;
+                                    });
+                                  },
+                                  tooltip: _isLiveStatusVisible ? 'Hide Live Status' : 'Show Live Status',
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                ),
                                 if (_botLogs.isNotEmpty)
                                   IconButton(
                                     icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
                                     onPressed: _clearAllLogs,
                                     tooltip: 'Clear All Logs',
                                     constraints: const BoxConstraints(),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6),
                                   ),
                                 IconButton(
                                   icon: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -1314,7 +1329,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // แสดงหรือซ่อน Live Status ตามการกดปุ่มกากบาท
                               if (_isLiveStatusVisible) ...[
                                 _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                                 const SizedBox(height: 12),
@@ -1673,7 +1687,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ],
           ),
-          // ปุ่มกากบาท (X) สำหรับปิดกล่อง Live Status ที่มุมขวาบนของรูปภาพ
+          // ปุ่มกากบาท (X) สำหรับปิด Live Status
           Positioned(
             right: 8,
             top: 8,
@@ -1804,6 +1818,7 @@ class ScannerClipper extends CustomClipper<Rect> {
     return oldClipper.scanValue != scanValue;
   }
 }
+
 
 
 
