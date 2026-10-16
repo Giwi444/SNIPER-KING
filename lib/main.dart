@@ -3869,6 +3869,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
+
 // ==========================================
 //#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -3900,7 +3901,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController slPointsController = TextEditingController();
   final TextEditingController riskRewardController = TextEditingController();
   
-  // 🟢 เพิ่ม Recovery Step Controller กลับมาให้ครบถ้วนตามโครงสร้างพารามิเตอร์
   final TextEditingController recoveryStepController = TextEditingController(text: "200");
 
   final TextEditingController startTimeController = TextEditingController(text: "08:00");
@@ -3912,7 +3912,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // 🟢 Basket Control (แยกสวิตช์เปิด-ปิดอิสระ TP และ SL)
   bool enableBasketTp = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
   
@@ -4420,34 +4419,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
+                      // 🟢 Calculated TP วางเต็มความกว้างตามตำแหน่งกรอบสีขาวในรูป
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  height: 46,
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0B0B0E),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12, width: 1),
-                                  ),
-                                  child: Text(
-                                    '${calculatedTP.toStringAsFixed(1)} Pts',
-                                    style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ],
+                          const Text('Calculated TP', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: double.infinity,
+                            height: 46,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0B0E),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12, width: 1),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(), // เว้นช่องว่างให้สมดุล
+                            child: Text(
+                              '${calculatedTP.toStringAsFixed(1)} Pts',
+                              style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
                           ),
                         ],
                       ),
@@ -4518,11 +4509,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // BASKET CONTROL (แยกสวิตช์ TP สีขาว และ SL สีส้ม อิสระ)
+                      // BASKET CONTROL (แยกสวิตช์ TP สีฟ้าเข้ม และ SL สีส้ม อิสระ)
                       // ==========================================
                       const Text(
                         'BASKET CONTROL', 
-                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4533,7 +4524,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+                                border: Border.all(color: const Color(0xFF00B0FF).withOpacity(0.6), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4541,11 +4532,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket TP', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        activeColor: Colors.white,
-                                        activeTrackColor: Colors.grey,
+                                        activeColor: const Color(0xFF00B0FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketTp = val;
