@@ -3869,6 +3869,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 // ==========================================
 //#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -3881,7 +3886,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String selectedSymbol = 'BTCUSD';
+  String selectedSymbol = 'XAUUSD';
   String tradingMode = 'Sniper';
   String lotMode = 'Fixed';
   
@@ -3891,7 +3896,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableTrendFilter = true;
 
   final List<String> symbolOptions = ['XAUUSD', 'BTCUSD', 'EURUSD'];
-  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Enqulfing'];
+  final List<String> tradingModeOptions = ['All Mode', 'Liquidity', 'Breakout', 'Engulfing'];
   final List<String> lotModeOptions = ['Fixed', 'Step', 'Double'];
   
   final TextEditingController initialLotController = TextEditingController();
@@ -3913,11 +3918,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // 🟢 Basket Control (แยกอิสระ TP และ SL)
+  // 🟢 Basket Control (แยกสวิตช์เปิด-ปิด อิสระ TP และ SL)
   bool enableBasketTp = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
   
-  bool enableBasketSl = true;
+  bool enableBasketSl = false;
   final TextEditingController basketSlController = TextEditingController(text: "5.00");
 
   bool isSoundEnabled = true;
@@ -4005,11 +4010,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
-            // 🟢 โหลดสถานะแยกอิสระของ Basket TP และ Basket SL
+            // 🟢 โหลดค่าแยกสวิตช์ Basket TP / Basket SL
             enableBasketTp = data['enable_basket_tp'] ?? true;
             basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
 
-            enableBasketSl = data['enable_basket_sl'] ?? true;
+            enableBasketSl = data['enable_basket_sl'] ?? false;
             basketSlController.text = data['basket_sl']?.toString() ?? '5.00';
 
             _isInitialized = true;
@@ -4055,11 +4060,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
 
-        // 🟢 บันทึกสถานะแยกอิสระไปยัง Firebase
+        // 🟢 บันทึกค่าแยก Basket TP / Basket SL
         'enable_basket_tp': enableBasketTp,
         'basket_tp': double.tryParse(basketTpController.text) ?? 1.50,
         'enable_basket_sl': enableBasketSl,
         'basket_sl': double.tryParse(basketSlController.text) ?? 5.00,
+        'use_individual_sl_tp': !(enableBasketTp || enableBasketSl),
       };
 
       _statusRef?.update(payload);
@@ -4079,10 +4085,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF00E5FF);
-    if (mode == 'Step') return const Color(0xFF9C27B0);
-    return const Color(0xFFFF9100);
+  void _resetPin() {
+    // ฟังก์ชันสำหรับรีเซ็ต PIN
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reset PIN requested'), backgroundColor: Colors.orange),
+    );
+  }
+
+  void _logoutToLoginScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('mt5_login');
+    // ทำการเปลี่ยนเส้นทางไปหน้า Login ตามโครงสร้างโปรเจกต์ของคุณ
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -4120,43 +4133,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E),
       appBar: AppBar(
         title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            color: Colors.black.withOpacity(0.8),
-          ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/ppp.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(color: const Color(0xFF0B0B0E));
+                },
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.8),
+              ),
+            ),
+            // 🟢 ปรับเปลี่ยนโครงสร้างการ Scroll ให้ขยายสุดความสูงของหน้าจอ และเพิ่ม padding ด้านล่างให้เลื่อนพ้นเมนูทั้งหมด
+            Positioned.fill(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
+                    color: const Color(0xFF161619).withOpacity(0.92),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: Colors.redAccent,
-                      width: 2.5,
+                      width: 2.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.7),
-                        blurRadius: 14,
-                        spreadRadius: 2,
+                        color: Colors.redAccent.withOpacity(0.5),
+                        blurRadius: 12,
+                        spreadRadius: 1,
                       ),
                     ],
                   ),
@@ -4165,9 +4183,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       
                       Row(
                         children: [
@@ -4198,16 +4216,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 🟢 1. BASKET CONTROL (แยกเปิด-ปิดอิสระ)
+                      // 🟢 1. BASKET CONTROL (แยกสวิตช์ TP สีฟ้า / SL สีส้ม อิสระ)
                       // ==========================================
                       const Text(
                         'BASKET CONTROL', 
-                        style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Colors.white12), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          // 🔵 Basket TP (กำไร - สีฟ้า - ควบคุมด้วย enableBasketTp อิสระ)
+                          // 🔵 Basket TP (ปิดรวบกำไร - สีฟ้า)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
@@ -4240,7 +4258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // 🟠 Basket SL (ขาดทุน - สีส้ม - ควบคุมด้วย enableBasketSl อิสระ)
+                          // 🟠 Basket SL (ปิดรวบขาดทุน - สีส้ม)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
@@ -4281,7 +4299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Colors.white12), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4351,7 +4369,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -4365,14 +4383,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
+                      
+                      const SizedBox(height: 20),
+                      const Divider(color: Colors.white24, height: 24),
+                      const SizedBox(height: 8),
+
+                      // ==========================================
+                      // 🔒 3. SECURITY & PRIVACY
+                      // ==========================================
+                      const Text(
+                        'SECURITY & PRIVACY', 
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Reset Security PIN / Login', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                const SizedBox(height: 2),
+                                Text(currentPinStateStatus, style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD50000),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _resetPin,
+                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text('Log Out (เปลี่ยนบัญชี MT5)', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                SizedBox(height: 2),
+                                Text('ออกจากระบบเพื่อกลับไปหน้าล็อกอิน', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[850],
+                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _logoutToLoginScreen,
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
