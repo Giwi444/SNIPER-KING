@@ -1727,67 +1727,177 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 // ==========================================
-// โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด)
+// โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
-class HomeScreen extends StatefulWidget {
-  final String accountLogin;
-  const HomeScreen({super.key, required this.accountLogin});
+
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  bool isRunning = false;
+class _MainNavigationScreenState extends State<MainNavigationScreen> with TickerProviderStateMixin {
+  int _currentIndex = 2;
+  String currentLogin = "235305975"; 
+  int unreadAlertsCount = 0;
+  DatabaseReference? _alertsRef;
   DatabaseReference? _dbRef;
-  
-  double balance = 0.0;
-  double equity = 0.0;
-  double profit = 0.0;
-  String symbol = "XAUUSD";
-  String timeframe = "M1";
-
-  List<Map<dynamic, dynamic>> activeOrders = [];
+  DatabaseReference? _logsRef;
   DatabaseReference? _ordersRef;
 
-  List<Map<dynamic, dynamic>> _historyTrades = [];
-  DatabaseReference? _historyRef;
-
+  Offset _orderBubbleOffset = const Offset(20, 100);
+  bool _isOrderBubblePressed = false;
+  bool _isLargeLogsModalOpen = false;
+  bool isRunning = false;
   bool isConnected = false;
+  
+  String symbol = "BTCUSD";
+  String timeframe = "M1";
+  double profit = 0.0;
+  List<Map<String, dynamic>> _botLogs = [];
+  List<Map<dynamic, dynamic>> activeOrders = [];
 
-  late final AnimationController _scannerController = AnimationController(
-    duration: const Duration(seconds: 2),
+  final String _imageA = 'assets/images/ppp.jpg';
+  final String _imageB = 'assets/images/1791591138980.jpg';
+  bool _showMorphImage = false; 
+
+  late final AnimationController _bounceController = AnimationController(
+    duration: const Duration(seconds: 1),
     vsync: this,
   )..repeat(reverse: true);
 
-  double realTimeBid = 0.0;
-  double realTimeAsk = 0.0;
+  late final Animation<double> _bounceAnimation = Tween<double>(begin: 0.0, end: -10.0).animate(
+    CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+  );
 
-  bool _isChartModalOpen = false;
+  late final AnimationController _scannerController = AnimationController(
+    duration: const Duration(seconds: 3),
+    vsync: this,
+  )..repeat(reverse: true);
+
+  late final Animation<double> _scannerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
+  );
 
   @override
   void initState() {
     super.initState();
-    _initFirebaseAndListen(widget.accountLogin);
-    _listenToOrdersForDialog(widget.accountLogin);
-    _listenToConnectionStatus();
-    _listenToHistoryForStats(widget.accountLogin);
-  }
+    _loadSavedLogin().then((_) {
+      _listenToActiveAccount();
+      _listenToAlertsCount();
+      _initFirebaseAndListen();
+      _listenToLogs();
+      _listenToConnectionStatus();
+      _listenToOrdersForDialog();
+    });
 
-  @override
-  void didUpdateWidget(covariant HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.accountLogin != widget.accountLogin) {
-      _initFirebaseAndListen(widget.accountLogin);
-      _listenToOrdersForDialog(widget.accountLogin);
-      _listenToHistoryForStats(widget.accountLogin);
-    }
+    _scannerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() {
+            _showMorphImage = !_showMorphImage;
+          });
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _bounceController.dispose();
     _scannerController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('mt5_login');
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        currentLogin = saved;
+      });
+    }
+  }
+
+  void _listenToActiveAccount() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      database.ref('status/login').onValue.listen((event) {
+        final val = event.snapshot.value?.toString();
+        if (val != null && val.isNotEmpty && mounted && val != currentLogin) {
+          setState(() {
+            currentLogin = val;
+          });
+          _listenToAlertsCount();
+          _initFirebaseAndListen();
+          _listenToLogs();
+          _listenToOrdersForDialog();
+        }
+      });
+    } catch (e) {
+      print("Account listen error: $e");
+    }
+  }
+
+  void _listenToAlertsCount() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+      
+      _alertsRef = database.ref('accounts/$currentLogin/alerts');
+      _alertsRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value;
+        if (data != null && mounted) {
+          int total = 0;
+          if (data is Map) {
+            total = data.length;
+          } else if (data is List) {
+            total = data.where((e) => e != null).length;
+          }
+          setState(() {
+            if (_currentIndex != 4) {
+              unreadAlertsCount = total;
+            }
+          });
+        } else if (data == null && mounted) {
+          setState(() {
+            unreadAlertsCount = 0;
+          });
+        }
+      });
+    } catch (e) {
+      print("Alerts count error: $e");
+    }
+  }
+
+  void _initFirebaseAndListen() {
+    try {
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      );
+
+      _dbRef = database.ref('accounts/$currentLogin/status');
+      _dbRef?.onValue.listen((DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null && mounted) {
+          setState(() {
+            isRunning = data['is_running'] ?? false;
+            profit = (data['profit'] ?? 0.0).toDouble();
+            symbol = data['symbol']?.toString() ?? 'BTCUSD';
+            timeframe = data['timeframe']?.toString() ?? 'M1';
+          });
+        }
+      });
+    } catch (e) {
+      print("Database listen error: $e");
+    }
   }
 
   void _listenToConnectionStatus() {
@@ -1809,86 +1919,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _initFirebaseAndListen(String login) {
+  void _listenToLogs() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-
-      _dbRef = database.ref('accounts/$login/status');
-      _dbRef?.onValue.listen((DatabaseEvent event) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null && mounted) {
-          setState(() {
-            isRunning = data['is_running'] ?? false;
-            balance = (data['balance'] ?? 0.0).toDouble();
-            equity = (data['equity'] ?? 0.0).toDouble();
-            profit = (data['profit'] ?? 0.0).toDouble();
-            symbol = data['symbol']?.toString() ?? 'BTCUSD';
-            timeframe = data['timeframe']?.toString() ?? 'M1';
-            
-            if (data['bid'] != null) {
-              realTimeBid = double.tryParse(data['bid'].toString()) ?? realTimeBid;
-            }
-            if (data['ask'] != null) {
-              realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
-            }
-          });
-        }
-      });
-    } catch (e) {
-      print("Database listen error: $e");
-    }
-  }
-
-  void _listenToHistoryForStats(String login) {
-    try {
-      final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-      _historyRef = database.ref('accounts/$login/history');
-      _historyRef?.onValue.listen((DatabaseEvent event) {
+      _logsRef = database.ref('accounts/$currentLogin/logs');
+      _logsRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
-          List<Map<dynamic, dynamic>> tempHistory = [];
+          List<Map<String, dynamic>> tempLogs = [];
           if (data is Map) {
-            data.forEach((key, value) {
-              if (value is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(value));
-              } else if (value is List) {
-                for (var item in value) {
-                  if (item is Map) {
-                    tempHistory.add(Map<dynamic, dynamic>.from(item));
-                  }
-                }
+            var sortedEntries = data.entries.toList()
+              ..sort((a, b) => b.key.toString().compareTo(a.key.toString()));
+            for (var entry in sortedEntries) {
+              if (entry.value != null) {
+                String rawMsg = entry.value.toString();
+                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                tempLogs.add({
+                  'key': entry.key.toString(),
+                  'message': cleanMsg,
+                });
               }
-            });
+            }
           } else if (data is List) {
-            for (var e in data) {
-              if (e is Map) {
-                tempHistory.add(Map<dynamic, dynamic>.from(e));
+            for (int i = data.length - 1; i >= 0; i--) {
+              if (data[i] != null) {
+                String rawMsg = data[i].toString();
+                String cleanMsg = rawMsg.replaceAll(RegExp(r'command\s*', caseSensitive: false), '');
+                tempLogs.add({
+                  'key': i.toString(),
+                  'message': cleanMsg,
+                });
               }
             }
           }
           setState(() {
-            _historyTrades = tempHistory;
+            _botLogs = tempLogs;
           });
         }
       });
     } catch (e) {
-      print("History stats listen error: $e");
+      print("Logs listen error: $e");
     }
   }
 
-  void _listenToOrdersForDialog(String login) {
+  void _listenToOrdersForDialog() {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
-      _ordersRef = database.ref('accounts/$login/orders');
+      _ordersRef = database.ref('accounts/$currentLogin/orders');
       _ordersRef?.onValue.listen((DatabaseEvent event) {
         final data = event.snapshot.value;
         if (mounted) {
@@ -1916,221 +1999,122 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _toggleBotStatus(bool status) {
+  void _clearLogItem(String key) async {
     try {
-      _dbRef?.update({
-        'is_running': status,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
+      if (_logsRef != null) {
+        await _logsRef!.child(key).remove();
+      }
     } catch (e) {
-      print("Toggle bot error: $e");
+      print("Clear log item error: $e");
     }
   }
 
-  void _closeAllOrders() {
+  void _clearAllLogs() async {
     try {
-      _dbRef?.update({
-        'close_all': true,
-        'command_timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
-      );
+      if (_logsRef != null) {
+        await _logsRef!.remove();
+        if (mounted) {
+          setState(() {
+            _botLogs.clear();
+          });
+        }
+      }
     } catch (e) {
-      print("Close all error: $e");
+      print("Clear all logs error: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      const SettingsScreen(),
+      OrdersScreen(accountLogin: currentLogin),
+      HomeScreen(accountLogin: currentLogin),
+      HistoryScreen(accountLogin: currentLogin),
+      AlertsScreen(accountLogin: currentLogin, onAlertsRead: () {
+        setState(() {
+          unreadAlertsCount = 0;
+        });
+      }),
+    ];
+
+    double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
+    });
+    double totalLots = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['lot']?.toString() ?? '0.0') ?? 0.0);
+    });
+    bool isTotalProfit = totalOrdersProfit >= 0;
+
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0E),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: const Color(0xFF0B0B0E)),
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            opacity: const AlwaysStoppedAnimation(0.3),
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 65.0),
+            child: IndexedStack(
+              index: _currentIndex,
+              children: pages,
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: SingleChildScrollView(
-                child: Column(
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B0B0E),
+                  border: Border(
+                    top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.8),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    const SizedBox(height: 15),
-                    Center(
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/ppp.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    _buildCustomNavItem(0, Icons.tune, 'Settings'),
+                    _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+                    _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+                    _buildCustomNavItem(3, Icons.history, 'History'),
+                    _buildCustomNavItem(
+                      4, 
+                      Icons.notifications_active, 
+                      'Alerts', 
+                      badgeCount: unreadAlertsCount,
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.8),
-                            blurRadius: 12.0,
-                            spreadRadius: 2.0,
-                          ),
-                        ],
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '🌹 R   O   S   E 🌹',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 3.0,
-                              shadows: [
-                                Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'C Y B E R   B O T',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 2.5,
-                              shadows: [
-                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
-                        color: Colors.black.withOpacity(0.6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
-                        ],
-                      ),
-                      child: const Text(
-                        'Powered By Algohost',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildCircularButton(
-                          label: 'CLOSE',
-                          icon: Icons.delete_outline,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          borderColor: const Color(0xFFD50000),
-                          onPressed: _closeAllOrders,
-                        ),
-                        const SizedBox(width: 20),
-                        _buildCircularButton(
-                          label: isRunning ? 'STOP' : 'START',
-                          icon: isRunning ? Icons.stop : Icons.play_arrow,
-                          // เปลี่ยนสีตามสถานะ: ถ้า Running เป็นเขียวนีออน 🟢 / ถ้า Stop เป็นแดงนีออน 🔴
-                          colors: isRunning 
-                              ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)] 
-                              : const [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000)], 
-                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
-                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
-                          onPressed: () => _toggleBotStatus(!isRunning),
-                          isLarge: true,
-                        ),
-                        const SizedBox(width: 18),
-                        _buildCircularButton(
-                          label: 'STATS', 
-                          icon: Icons.bar_chart,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          borderColor: const Color(0xFFD50000),
-                          onPressed: () {
-                            setState(() {
-                              _isChartModalOpen = true;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _buildBidAskBoxContent(context),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
           ),
-          if (_isChartModalOpen)
+          if (_isLargeLogsModalOpen)
             Stack(
-              alignment: Alignment.center,
               children: [
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _isChartModalOpen = false;
+                      _isLargeLogsModalOpen = false;
                     });
                   },
                   child: Container(color: Colors.black54),
                 ),
                 Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.92,
-                    height: MediaQuery.of(context).size.height * 0.62,
+                    width: MediaQuery.of(context).size.width * 0.94,
+                    height: MediaQuery.of(context).size.height * 0.78,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 4.0),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.red.withOpacity(0.9),
@@ -2144,18 +2128,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 18),
+                                  Icon(Icons.terminal, color: Color(0xFFFF1744), size: 20),
                                   SizedBox(width: 8),
                                   Text(
-                                    'DASHBOARD STATS',
+                                    'EA STATUS & BOT LOGS',
                                     style: TextStyle(
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       letterSpacing: 1,
@@ -2163,22 +2147,132 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                                onPressed: () {
-                                  setState(() {
-                                    _isChartModalOpen = false;
-                                  });
-                                },
+                              Row(
+                                children: [
+                                  if (_botLogs.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                                      onPressed: _clearAllLogs,
+                                      tooltip: 'Clear All Logs',
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isLargeLogsModalOpen = false;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFFFF0000), height: 1, thickness: 2),
+                        const Divider(color: Color(0xFFFF0000), height: 2, thickness: 2),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: _buildDashboardStatsContent(),
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
+                                const SizedBox(height: 16),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'ACTIVITY LOGS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                if (_botLogs.isEmpty)
+                                  const Expanded(
+                                    child: Center(
+                                      child: Text('No log records...', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: _botLogs.length,
+                                      itemBuilder: (context, index) {
+                                        var log = _botLogs[index];
+                                        bool isLatest = (index == 0);
+
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8.0),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: isLatest
+                                                    ? Row(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          const Text(
+                                                            '➔ ',
+                                                            style: TextStyle(
+                                                              color: Color(0xFF00E676),
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.bold,
+                                                              shadows: [
+                                                                Shadow(color: Color(0xFF00E676), blurRadius: 8),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          Expanded(
+                                                            child: TypewriterText(
+                                                              text: "${log['message']}",
+                                                              // 🟢 ปรับความไวข้อความวิ่งให้ช้าลง (เพิ่มความเร็วดีเลย์ต่อตัวอักษร)
+                                                              speed: const Duration(milliseconds: 65),
+                                                              style: const TextStyle(
+                                                                color: Color(0xFF00E676),
+                                                                fontFamily: 'monospace',
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                                height: 1.4,
+                                                                shadows: [
+                                                                  Shadow(color: Color(0xFF00E676), blurRadius: 10, offset: Offset(0, 0)),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      )
+                                                    : Text(
+                                                        "> ${log['message']}",
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontFamily: 'monospace',
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.bold,
+                                                          height: 1.4,
+                                                        ),
+                                                      ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () => _clearLogItem(log['key']),
+                                                child: const Padding(
+                                                  padding: EdgeInsets.only(left: 8.0),
+                                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -2187,234 +2281,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardStatsContent() {
-    int totalTrades = _historyTrades.length;
-    int winTrades = 0;
-    int lossTrades = 0;
-    double totalProfitLoss = 0.0;
-    double maxProfit = 0.0;
-    double maxLoss = 0.0;
-
-    for (var trade in _historyTrades) {
-      double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-      totalProfitLoss += p;
-      if (p > 0) {
-        winTrades++;
-        if (p > maxProfit) maxProfit = p;
-      } else if (p < 0) {
-        lossTrades++;
-        if (p < maxLoss) maxLoss = p;
-      }
-    }
-
-    double winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0.0;
-    double lossRate = 100.0 - winRate;
-    double peak = balance > 0 ? balance : 1000.0;
-    double maxDDAmount = 0.0;
-    for (var trade in _historyTrades) {
-      double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
-      peak += p;
-      double currentDD = peak > 0 ? (maxLoss.abs() / peak) * 100 : 0.0;
-      if (currentDD > maxDDAmount) {
-        maxDDAmount = currentDD;
-      }
-    }
-    if (maxDDAmount == 0 && lossTrades > 0) {
-      maxDDAmount = (maxLoss.abs() / (balance > 0 ? balance : 1000.0)) * 100;
-    }
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'WIN RATE',
-                  value: '${winRate.toStringAsFixed(1)}%',
-                  subText: '$winTrades Win / $lossTrades Loss',
-                  color: const Color(0xFF00C853),
-                  icon: Icons.pie_chart,
+          Positioned(
+            left: _orderBubbleOffset.dx,
+            top: _orderBubbleOffset.dy,
+            child: AnimatedBuilder(
+              animation: _bounceAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _bounceAnimation.value),
+                  child: child,
+                );
+              },
+              child: Draggable(
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: _buildSymbolBubbleWidget(),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'MAX DRAWDOWN',
-                  value: '${maxDDAmount.toStringAsFixed(2)}%',
-                  subText: 'Max Loss: \$${maxLoss.toStringAsFixed(2)}',
-                  color: Colors.redAccent,
-                  icon: Icons.trending_down,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'TOTAL TRADES',
-                  value: '$totalTrades',
-                  subText: '',
-                  color: const Color(0xFFFF1744),
-                  icon: Icons.receipt_long,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'NET PROFIT',
-                  value: '${totalProfitLoss >= 0 ? "+" : ""}\$${totalProfitLoss.toStringAsFixed(2)}',
-                  subText: 'Balance: \$${balance.toStringAsFixed(2)}',
-                  color: totalProfitLoss >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
-                  icon: Icons.account_balance_wallet,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F0F12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFF1744), width: 2.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'WIN RATE & TRADES',
-                  style: TextStyle(
-                    color: const Color(0xFFFF5252),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    shadows: [
-                      Shadow(color: Colors.redAccent.withOpacity(0.8), blurRadius: 8),
-                    ],
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    _orderBubbleOffset = details.offset;
+                  });
+                },
+                child: GestureDetector(
+                  onTapDown: (_) {
+                    setState(() {
+                      _isOrderBubblePressed = true;
+                    });
+                  },
+                  onTapUp: (_) {
+                    setState(() {
+                      _isOrderBubblePressed = false;
+                      _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
+                    });
+                  },
+                  onTapCancel: () {
+                    setState(() {
+                      _isOrderBubblePressed = false;
+                    });
+                  },
+                  child: AnimatedScale(
+                    scale: _isOrderBubblePressed ? 0.85 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    child: _buildSymbolBubbleWidget(),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16161A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1.2),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Center(
-                        child: Text(
-                          'WIN RATE PERCENT',
-                          style: TextStyle(
-                            color: Color(0xFFFF5252),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'GREEN NEON',
-                                style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                              ),
-                              Text(
-                                'WIN RATE: ${winRate.toStringAsFixed(1)}%',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text(
-                                'RED NEON',
-                                style: TextStyle(color: Color(0xFFFF5252), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                              ),
-                              Text(
-                                'LOSS RATE: ${lossRate.toStringAsFixed(1)}%',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          height: 14,
-                          width: double.infinity,
-                          color: const Color(0xFFD50000).withOpacity(0.4),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: (winRate / 100).clamp(0.0, 1.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00C853),
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF00C853).withOpacity(0.9),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.2),
-                          color: Colors.black.withOpacity(0.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Based on $winTrades Win / $lossTrades Loss Trades',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -2422,189 +2334,372 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatCard({required String title, required String value, required String subText, required Color color, required IconData icon}) {
+  Widget _buildSymbolBubbleWidget() {
+    bool isServerActive = isConnected && isRunning;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      width: 58,
+      height: 58,
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B20),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-              Icon(icon, color: color, size: 16),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Text(
-              value, 
-              style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(subText, style: const TextStyle(color: Colors.white54, fontSize: 9, fontFamily: 'monospace')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBidAskBoxContent(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double boxWidth = screenWidth - 32;
-    double spreadVal = (realTimeAsk > 0 && realTimeBid > 0) ? (realTimeAsk - realTimeBid) * 100 : 0.0;
-
-    return Container(
-      width: boxWidth,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        shape: BoxShape.circle,
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.5),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            blurRadius: 10,
+            spreadRadius: 2,
           ),
         ],
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF161619),
-          borderRadius: BorderRadius.circular(13),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              _showMorphImage ? _imageB : _imageA,
+              fit: BoxFit.cover,
+              width: 54,
+              height: 54,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black);
+              },
+            ),
+          ),
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusReportBox(String symbol, String tf, double totalOrdersProfit, int orderCount, double totalLots, bool isTotalProfit) {
+    bool isServerActive = isConnected && isRunning;
+    String baseImage = _showMorphImage ? _imageA : _imageB;
+    String morphImage = _showMorphImage ? _imageB : _imageA;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF161619),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF0000),
+          width: 2.5,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: AnimatedBuilder(
+                animation: _scannerAnimation,
+                builder: (context, child) {
+                  double scanValue = _scannerAnimation.value * 200;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        baseImage,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        width: double.infinity,
+                        height: 200,
+                      ),
+                      ClipRect(
+                        clipper: ScannerClipper(scanValue),
+                        child: Image.asset(
+                          morphImage,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 200,
+                        ),
+                      ),
+                      Positioned(
+                        top: scanValue - 2,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF1744),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent,
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                              BoxShadow(
+                                color: Colors.white,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text(
+                  '🌹 ROSE CYBER BOT LIVE STATUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 5),
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
-                    const SizedBox(width: 6),
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      symbol,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace'),
+                      isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
+                      style: TextStyle(
+                        color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
-                  ),
-                  child: Text(
-                    'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                  ),
+                const SizedBox(height: 10),
+                const Divider(color: Colors.white24, height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    Text(
+                      'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const Divider(color: Colors.white24, height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomNavItem(int index, IconData icon, String label, {int badgeCount = 0}) {
+    bool isSelected = _currentIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+          if (index == 4) {
+            unreadAlertsCount = 0;
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: isSelected ? 1.5 : 0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.redAccent.withOpacity(0.8),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                Column(
-                  children: [
-                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 6),
-                    Text(
-                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
-                    ),
-                  ],
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white70,
+                  size: 22,
                 ),
-                Container(height: 35, width: 1, color: Colors.white24),
-                Column(
-                  children: [
-                    const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                    const SizedBox(height: 6),
-                    Text(
-                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
               ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontFamily: 'monospace',
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildCircularButton({
-    required String label,
-    required IconData icon,
-    required List<Color> colors,
-    required Color borderColor,
-    Color? glowColor,
-    required VoidCallback onPressed,
-    bool isLarge = false,
-  }) {
-    double size = isLarge ? 82 : 70;
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: colors,
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: Border.all(color: borderColor, width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: (glowColor ?? borderColor).withOpacity(0.8),
-                  blurRadius: 14,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 0),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 0.5,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ],
-      ),
+class ScannerClipper extends CustomClipper<Rect> {
+  final double scanValue;
+  ScannerClipper(this.scanValue);
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTRB(0, 0, size.width, scanValue);
+  }
+
+  @override
+  bool shouldReclip(covariant ScannerClipper oldClipper) {
+    return oldClipper.scanValue != scanValue;
+  }
+}
+
+// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final Duration speed;
+
+  const TypewriterText({
+    super.key,
+    required this.text,
+    required this.style,
+    this.speed = const Duration(milliseconds: 65),
+  });
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> {
+  String _displayedText = "";
+  int _currentIndex = 0;
+  bool _completed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTyping();
+  }
+
+  @override
+  void didUpdateWidget(covariant TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _displayedText = "";
+      _currentIndex = 0;
+      _completed = false;
+      _startTyping();
+    }
+  }
+
+  void _startTyping() {
+    Future.delayed(widget.speed, () {
+      if (!mounted) return;
+      if (_currentIndex < widget.text.length) {
+        setState(() {
+          _displayedText += widget.text[_currentIndex];
+          _currentIndex++;
+        });
+        _startTyping();
+      } else {
+        setState(() {
+          _completed = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: widget.style,
     );
   }
 }
+
 
 
 
