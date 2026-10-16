@@ -3868,6 +3868,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 
+
 // ==========================================
 //#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
@@ -3912,9 +3913,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // 🟢 Basket Control (ปิดรวบรายรอบ)
-  bool enableBasketControl = true;
+  // 🟢 Basket Control (แยกอิสระ TP และ SL)
+  bool enableBasketTp = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
+  
+  bool enableBasketSl = true;
   final TextEditingController basketSlController = TextEditingController(text: "5.00");
 
   bool isSoundEnabled = true;
@@ -4002,8 +4005,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
-            enableBasketControl = data['enable_basket_control'] ?? true;
+            // 🟢 โหลดสถานะแยกอิสระของ Basket TP และ Basket SL
+            enableBasketTp = data['enable_basket_tp'] ?? true;
             basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
+
+            enableBasketSl = data['enable_basket_sl'] ?? true;
             basketSlController.text = data['basket_sl']?.toString() ?? '5.00';
 
             _isInitialized = true;
@@ -4049,10 +4055,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
 
-        'enable_basket_control': enableBasketControl,
+        // 🟢 บันทึกสถานะแยกอิสระไปยัง Firebase
+        'enable_basket_tp': enableBasketTp,
         'basket_tp': double.tryParse(basketTpController.text) ?? 1.50,
+        'enable_basket_sl': enableBasketSl,
         'basket_sl': double.tryParse(basketSlController.text) ?? 5.00,
-        'use_individual_sl_tp': !enableBasketControl,
       };
 
       _statusRef?.update(payload);
@@ -4191,7 +4198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // 🟢 1. BASKET CONTROL (ปิดรวบกำไรสีฟ้า / ปิดรวบขาดทุนสีส้ม)
+                      // 🟢 1. BASKET CONTROL (แยกเปิด-ปิดอิสระ)
                       // ==========================================
                       const Text(
                         'BASKET CONTROL', 
@@ -4200,7 +4207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          // 🔵 Basket TP (กำไร - สีฟ้า)
+                          // 🔵 Basket TP (กำไร - สีฟ้า - ควบคุมด้วย enableBasketTp อิสระ)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
@@ -4217,11 +4224,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     children: [
                                       const Text('Basket TP', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
-                                        value: enableBasketControl,
+                                        value: enableBasketTp,
                                         activeColor: const Color(0xFF00E5FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
-                                          enableBasketControl = val;
+                                          enableBasketTp = val;
                                         }),
                                       ),
                                     ],
@@ -4233,7 +4240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // 🟠 Basket SL (ขาดทุน - สีส้ม)
+                          // 🟠 Basket SL (ขาดทุน - สีส้ม - ควบคุมด้วย enableBasketSl อิสระ)
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(10),
@@ -4250,11 +4257,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     children: [
                                       const Text('Basket SL', style: TextStyle(color: Color(0xFFFF9100), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
-                                        value: enableBasketControl,
+                                        value: enableBasketSl,
                                         activeColor: const Color(0xFFFF9100),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
-                                          enableBasketControl = val;
+                                          enableBasketSl = val;
                                         }),
                                       ),
                                     ],
@@ -4361,7 +4368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 40), // เผื่อระยะขอบล่างสุดให้เลื่อนพ้น Bottom Navigation Bar
+                const SizedBox(height: 40),
               ],
             ),
           ),
