@@ -3912,7 +3912,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool enableDailyLoss = false;
   final TextEditingController dailyLossController = TextEditingController();
 
-  // 🟢 เพิ่มตัวแปรสวิตช์เปิด/ปิด Basket Control หลัก
   bool enableBasketControl = true;
   bool enableBasketTp = true;
   final TextEditingController basketTpController = TextEditingController(text: "1.50");
@@ -4004,7 +4003,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             enableDailyLoss = data['enable_daily_loss'] ?? false;
             dailyLossController.text = data['daily_loss']?.toString() ?? '50.0';
 
-            // 🟢 โหลดค่าสถานะ Basket Control หลักจาก Firebase
             enableBasketControl = data['enable_basket_control'] ?? true;
             enableBasketTp = data['enable_basket_tp'] ?? true;
             basketTpController.text = data['basket_tp']?.toString() ?? '1.50';
@@ -4052,7 +4050,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'daily_target': double.tryParse(dailyTargetController.text) ?? 100.0,
         'enable_daily_loss': enableDailyLoss,
         'daily_loss': double.tryParse(dailyLossController.text) ?? 50.0,
-        // 🟢 ส่งค่าเปิด/ปิด Basket Control ไปยัง Firebase ให้ EA ตรวจสอบ
         'enable_basket_control': enableBasketControl,
         'use_individual_sl_tp': !enableBasketControl,
         'enable_basket_tp': enableBasketTp,
@@ -4426,7 +4423,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // 🟢 Calculated TP วางเต็มความกว้างตามตำแหน่งกรอบสีขาวในรูป
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -4516,7 +4512,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
 
                       // ==========================================
-                      // BASKET CONTROL (เพิ่มสวิตช์เปิด/ปิด Basket Control หลักไว้ด้านบน)
+                      // BASKET CONTROL (เปลี่ยนสีกล่อง Basket TP เป็นน้ำเงินเข้ม)
                       // ==========================================
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4550,7 +4546,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00B0FF).withOpacity(0.6), width: 1.5),
+                                // 🔵 เปลี่ยนขอบเป็นสีน้ำเงินเข้ม
+                                border: Border.all(color: const Color(0xFF2962FF).withOpacity(0.8), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4558,10 +4555,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      // 🔵 เปลี่ยนข้อความ Basket TP เป็นสีน้ำเงินเข้ม
+                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF2962FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        activeColor: const Color(0xFF00B0FF),
+                                        // 🔵 เปลี่ยนสีสวิตช์ Basket TP เป็นสีน้ำเงินเข้ม
+                                        activeColor: const Color(0xFF2962FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketTp = val;
