@@ -3851,7 +3851,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 // ==========================================
-//#12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+// #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen) - ฉบับแก้ไขวงเล็บสมบูรณ์
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
