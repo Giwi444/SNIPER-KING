@@ -28,6 +28,7 @@ flutter:
   assets: 
     - assets/images/ppp.jpg
     - assets/images/1791591138980.jpg
+    - assets/images/1792243456006.jpg   
     - assets/images/1.jpg
 
 flutter_launcher_icons:
