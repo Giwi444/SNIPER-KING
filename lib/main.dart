@@ -120,7 +120,7 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
           children: [
             ClipOval(
               child: Image.asset(
-                'assets/images/1792242219466.jpg',
+                'assets/images/1792250578954.jpg',
                 fit: BoxFit.cover,
                 width: 56,
                 height: 56,
@@ -361,7 +361,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     }
   }
 
-  void _submitMT5Login() async {
+    void _submitMT5Login() async {
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
@@ -378,6 +378,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
+      // แก้ไขจุดนี้: ใช้การเช็กว่ามี Firebase Apps อยู่แล้วหรือไม่ ป้องกันการ Initialize ซ้ำ
       FirebaseApp app;
       if (Firebase.apps.isEmpty) {
         app = await Firebase.initializeApp(
@@ -435,6 +436,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     if (_isLoggedInMT5) {
@@ -446,7 +448,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
@@ -478,7 +480,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             fit: StackFit.expand,
                             children: [
                               Image.asset(
-                                'assets/images/1792242219466.jpg',
+                                'assets/images/1792250578954.jpg',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Colors.black);
@@ -755,7 +757,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466.jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
@@ -901,8 +903,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  final String _imageA = 'assets/images/1792242219466.jpg';
-  final String _imageB = 'assets/images/1792242355664.jpg';
+  final String _imageA = 'assets/images/1792250578954.jpg';
+  final String _imageB = 'assets/images/1792250396366.jpg';
   bool _showMorphImage = false; 
 
   late final AnimationController _bounceController = AnimationController(
@@ -2084,7 +2086,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fit: StackFit.expand,
                             children: [
                               Image.asset(
-                                'assets/images/1792242219466.jpg',
+                                'assets/images/1792250578954.jpg',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Colors.black);
@@ -2874,7 +2876,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466.jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: kDarkSilverBg);
@@ -3364,7 +3366,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466.jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
@@ -3755,7 +3757,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466.jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
@@ -4138,7 +4140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792242219466.jpg',
+            'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: kDarkSilverBg);
