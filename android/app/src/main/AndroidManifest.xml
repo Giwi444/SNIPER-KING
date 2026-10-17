@@ -1,6 +1,6 @@
     <application
         android:name="${applicationName}"
-        android:label="SNIPER HYBRID"
+        android:label="SNIPER HYBRID" 
         android:icon="@mipmap/ic_launcher">
         
         <activity
