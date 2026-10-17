@@ -22,18 +22,16 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Fix Android Platform for v2 embedding
-        run: |
-          rm -rf android
-          flutter create . --platforms=android
+      - name: Clean Build Cache
+        run: flutter clean
 
-      - name: Install dependencies
+      - name: Fetch Dependencies
         run: flutter pub get
 
       - name: Generate Launcher Icons
         run: dart run flutter_launcher_icons
 
-      - name: Build APK
+      - name: Build Release APK
         run: flutter build apk --release
 
       - name: Upload APK Artifact
