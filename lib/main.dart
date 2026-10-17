@@ -54,8 +54,9 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
 
   Future<void> _initFirebaseAndListenConnection() async {
     try {
+      FirebaseApp app;
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
+        app = await Firebase.initializeApp(
           options: const FirebaseOptions(
             apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
             appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
@@ -65,10 +66,12 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
             databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
           ),
         );
+      } else {
+        app = Firebase.app();
       }
 
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -117,7 +120,7 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
           children: [
             ClipOval(
               child: Image.asset(
-                'assets/images/1.jpg',
+                'assets/images/1792242219466.jpg',
                 fit: BoxFit.cover,
                 width: 56,
                 height: 56,
@@ -443,7 +446,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
@@ -475,7 +478,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                             fit: StackFit.expand,
                             children: [
                               Image.asset(
-                                'assets/images/ppp.jpg',
+                                'assets/images/1792242219466.jpg',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Colors.black);
@@ -752,7 +755,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
@@ -898,8 +901,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   List<Map<String, dynamic>> _botLogs = [];
   List<Map<dynamic, dynamic>> activeOrders = [];
 
-  final String _imageA = 'assets/images/ppp.jpg';
-  final String _imageB = 'assets/images/1791591138980.jpg';
+  final String _imageA = 'assets/images/1792242219466.jpg';
+  final String _imageB = 'assets/images/1792242355664.jpg';
   bool _showMorphImage = false; 
 
   late final AnimationController _bounceController = AnimationController(
@@ -2081,7 +2084,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fit: StackFit.expand,
                             children: [
                               Image.asset(
-                                'assets/images/ppp.jpg',
+                                'assets/images/1792242219466.jpg',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Colors.black);
@@ -2871,7 +2874,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: kDarkSilverBg);
@@ -3361,7 +3364,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
@@ -3569,8 +3572,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -3751,7 +3754,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466.jpg',
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
@@ -4134,7 +4137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/ppp.jpg',
+            'assets/images/1792242219466.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: kDarkSilverBg);
