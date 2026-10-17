@@ -1,3 +1,4 @@
+
 name: Build Flutter APK
 
 on:
@@ -22,8 +23,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean Build Cache
-        run: flutter clean
+      - name: Recreate Android v2 Embedding Platform
+        run: |
+          rm -rf android
+          flutter create . --platforms=android
 
       - name: Fetch Dependencies
         run: flutter pub get
