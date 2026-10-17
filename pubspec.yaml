@@ -30,6 +30,6 @@ flutter:
     - assets/images/1792250396366.jpg       
 
 flutter_launcher_icons:
-image_path: "assets/images/1792250578954.jpg"
+  image_path: "assets/images/1792250578954.jpg"
   android: true
   ios: false
