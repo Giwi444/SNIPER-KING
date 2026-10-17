@@ -1824,7 +1824,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 // ==========================================
-//#8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด)
+//#8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด & Cycle Stats)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1843,6 +1843,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double profit = 0.0;
   String symbol = "XAUUSD";
   String timeframe = "M1";
+
+  // 🔴 เพิ่มตัวแปรสำหรับเก็บสถิติ Win Rate ระดับ Cycle (รอบ)
+  int cycleWins = 0;
+  int cycleLosses = 0;
+  double cycleWinRate = 0.0;
 
   List<Map<dynamic, dynamic>> activeOrders = [];
   DatabaseReference? _ordersRef;
@@ -1922,7 +1927,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             balance = (data['balance'] ?? 0.0).toDouble();
             equity = (data['equity'] ?? 0.0).toDouble();
             profit = (data['profit'] ?? 0.0).toDouble();
-            symbol = data['symbol']?.toString() ?? 'BTCUSD';
+            symbol = data['symbol']?.toString() ?? 'XAUUSD';
             timeframe = data['timeframe']?.toString() ?? 'M1';
             
             if (data['bid'] != null) {
@@ -1931,6 +1936,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (data['ask'] != null) {
               realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
             }
+
+            // 🔴 ดึงค่าสถิติการปิดแบบเป็นรอบ (Cycle Stats)
+            cycleWins = int.tryParse(data['cycle_wins']?.toString() ?? '0') ?? 0;
+            cycleLosses = int.tryParse(data['cycle_losses']?.toString() ?? '0') ?? 0;
+            cycleWinRate = (data['cycle_win_rate'] ?? 0.0).toDouble();
           });
         }
       });
@@ -2117,7 +2127,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: Column(
                         children: const [
-                          FlashingSniperText(), // 👈 วิดเจ็ตข้อความกระพริบแฟลชเรืองแสงที่เพิ่มเข้ามา
+                          FlashingSniperText(),
                           SizedBox(height: 4),
                           Text(
                             'HYBRID  ROB O T',
@@ -2277,9 +2287,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDashboardStatsContent() {
-    int totalTrades = _historyTrades.length;
-    int winTrades = 0;
-    int lossTrades = 0;
     double totalProfitLoss = 0.0;
     double maxProfit = 0.0;
     double maxLoss = 0.0;
@@ -2288,16 +2295,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       totalProfitLoss += p;
       if (p > 0) {
-        winTrades++;
         if (p > maxProfit) maxProfit = p;
       } else if (p < 0) {
-        lossTrades++;
         if (p < maxLoss) maxLoss = p;
       }
     }
 
-    double winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0.0;
-    double lossRate = 100.0 - winRate;
+    // 🔴 ปรับเปลี่ยนการใช้ค่า Win / Loss ตามรอบ (Cycle Stats)
+    int displayWins = cycleWins;
+    int displayLosses = cycleLosses;
+    int totalCycles = displayWins + displayLosses;
+    double displayWinRate = totalCycles > 0 ? (displayWins / totalCycles) * 100 : cycleWinRate;
+    double lossRate = 100.0 - displayWinRate;
+
     double peak = balance > 0 ? balance : 1000.0;
     double maxDDAmount = 0.0;
     for (var trade in _historyTrades) {
@@ -2308,7 +2318,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         maxDDAmount = currentDD;
       }
     }
-    if (maxDDAmount == 0 && lossTrades > 0) {
+    if (maxDDAmount == 0 && displayLosses > 0) {
       maxDDAmount = (maxLoss.abs() / (balance > 0 ? balance : 1000.0)) * 100;
     }
 
@@ -2321,8 +2331,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Expanded(
                 child: _buildStatCard(
                   title: 'WIN RATE',
-                  value: '${winRate.toStringAsFixed(1)}%',
-                  subText: '$winTrades Win / $lossTrades Loss',
+                  value: '${displayWinRate.toStringAsFixed(1)}%',
+                  subText: '$displayWins Win / $displayLosses Loss',
                   color: const Color(0xFF00C853),
                   icon: Icons.pie_chart,
                 ),
@@ -2344,8 +2354,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  title: 'TOTAL TRADES',
-                  value: '$totalTrades',
+                  title: 'TOTAL CYCLES',
+                  value: '$totalCycles',
                   subText: '',
                   color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
@@ -2383,7 +2393,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'WIN RATE & TRADES',
+                  'WIN RATE & CYCLES',
                   style: TextStyle(
                     color: const Color(0xFFFF5252),
                     fontSize: 14,
@@ -2428,7 +2438,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                               Text(
-                                'WIN RATE: ${winRate.toStringAsFixed(1)}%',
+                                'WIN RATE: ${displayWinRate.toStringAsFixed(1)}%',
                                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
                               ),
                             ],
@@ -2457,7 +2467,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           color: const Color(0xFFD50000).withOpacity(0.4),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
-                            widthFactor: (winRate / 100).clamp(0.0, 1.0),
+                            widthFactor: (displayWinRate / 100).clamp(0.0, 1.0),
                             child: Container(
                               decoration: BoxDecoration(
                                 color: const Color(0xFF00C853),
@@ -2485,7 +2495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         child: Center(
                           child: Text(
-                            'Based on $winTrades Win / $lossTrades Loss Trades',
+                            'Based on $displayWins Win / $displayLosses Loss Cycles',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -2759,7 +2769,6 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
     );
   }
 }
-
 
 
 
