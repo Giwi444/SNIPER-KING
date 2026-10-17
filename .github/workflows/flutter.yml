@@ -22,10 +22,8 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean and Recreate Android Platform
-        run: |
-          rm -rf android
-          flutter create . --platforms=android
+      - name: Clean Flutter Cache
+        run: flutter clean
 
       - name: Install dependencies
         run: flutter pub get
