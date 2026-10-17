@@ -11,6 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// 🎨 กำหนดชุดสีธีม Metallic Silver & Mint Neon
+const Color kNeonMint = Color(0xFF00FFC3);
+const Color kNeonCyan = Color(0xFF00E5A3);
+const Color kDarkSilverBg = Color(0xFF1E242C);
+const Color kLightSilverBorder = Color(0xFF9AAEC4);
+
 
 // ==========================================
 // #2 โหมดบอลลูนทับแอปอื่น
@@ -96,10 +102,10 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
         height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFD50000), width: 2),
+          border: Border.all(color: kLightSilverBorder, width: 2),
           boxShadow: [
             BoxShadow(
-              color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+              color: (isConnected ? kNeonMint : Colors.redAccent).withOpacity(0.6),
               blurRadius: 8,
               spreadRadius: 2,
             ),
@@ -117,8 +123,8 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
                 height: 56,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: const Color(0xFFD50000),
-                    child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
+                    color: kDarkSilverBg,
+                    child: Icon(Icons.show_chart, color: kNeonMint, size: 30),
                   );
                 },
               ),
@@ -130,12 +136,12 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                  color: isConnected ? kNeonMint : Colors.redAccent,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.black, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                      color: (isConnected ? kNeonMint : Colors.redAccent).withOpacity(0.8),
                       blurRadius: 4,
                     ),
                   ],
@@ -205,7 +211,6 @@ void main() async {
 }
 
 
-// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ (ประกาศไว้ที่เดียวที่ใช้งานร่วมกัน)
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle style;
@@ -296,11 +301,11 @@ class LiquiditySweepApp extends StatelessWidget {
       title: '🎯SNIPER  HYBRID🎯',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0B0B0E),
-        cardColor: const Color(0xFF161619),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFD50000),
-          secondary: Color(0xFFFF1744),
+        scaffoldBackgroundColor: kDarkSilverBg,
+        cardColor: const Color(0xFF161A20),
+        colorScheme: ColorScheme.dark(
+          primary: kLightSilverBorder,
+          secondary: kNeonMint,
         ),
       ),
       home: const MT5LoginWrapper(),
@@ -360,7 +365,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
     if (login.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFFD50000)),
+        SnackBar(content: const Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: kDarkSilverBg),
       );
       return;
     }
@@ -440,9 +445,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+            errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
-          Container(color: Colors.black.withOpacity(0.88)),
+          Container(color: Colors.black.withOpacity(0.85)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
@@ -458,7 +463,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
+                              color: kNeonMint.withOpacity(0.5),
                               blurRadius: 22,
                               spreadRadius: 4,
                             ),
@@ -484,18 +489,18 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF161619).withOpacity(0.85),
+                          color: const Color(0xFF181E25).withOpacity(0.9),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                          border: Border.all(color: kLightSilverBorder, width: 2.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.8),
+                              color: kNeonMint.withOpacity(0.3),
                               blurRadius: 12.0,
                               spreadRadius: 2.0,
                             ),
                           ],
                         ),
-                        child: const Column(
+                        child: Column(
                           children: [
                             Text(
                               '🎯SNIPER  HYBRID🎯',
@@ -506,21 +511,21 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                                 color: Colors.white,
                                 letterSpacing: 3.0,
                                 shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 12, offset: Offset(0, 0)),
+                                  Shadow(color: kNeonMint, blurRadius: 12, offset: Offset(0, 0)),
                                 ],
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               ' R O B O T',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                color: kNeonMint,
                                 letterSpacing: 2.5,
                                 shadows: [
-                                  Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                                  Shadow(color: kNeonMint, blurRadius: 10, offset: Offset(0, 0)),
                                 ],
                               ),
                             ),
@@ -532,15 +537,15 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                          border: Border.all(color: kLightSilverBorder, width: 1.5),
                           color: Colors.black.withOpacity(0.6),
                           boxShadow: [
-                            BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                            BoxShadow(color: kNeonMint.withOpacity(0.2), blurRadius: 6),
                           ],
                         ),
                         child: const Text(
                           'Powered By Algohost',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -551,8 +556,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         decoration: InputDecoration(
                           hintText: 'Account Login',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kLightSilverBorder, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kNeonMint, width: 2.0)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       ),
@@ -564,13 +569,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         decoration: InputDecoration(
                           hintText: 'Investor Password',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kLightSilverBorder, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kNeonMint, width: 2.0)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.redAccent,
+                              color: kNeonMint,
                             ),
                             onPressed: () {
                               setState(() {
@@ -586,9 +591,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
-                          hintStyle: TextStyle(color: Colors.redAccent.withOpacity(0.6), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF1744), width: 2.0)),
+                          hintStyle: TextStyle(color: kLightSilverBorder.withOpacity(0.6), fontStyle: FontStyle.italic),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kLightSilverBorder, width: 1.5)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: kNeonMint, width: 2.0)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       ),
@@ -598,13 +603,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submitMT5Login,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD50000),
+                            backgroundColor: const Color(0xFF323B47),
+                            side: BorderSide(color: kNeonMint, width: 1.5),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                              ? CircularProgressIndicator(color: kNeonMint)
+                              : Text('VERIFY & CONNECT', style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                         ),
                       ),
                     ],
@@ -748,14 +754,14 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
+            errorBuilder: (context, error, stackTrace) => Container(color: kDarkSilverBg),
           ),
           Container(color: Colors.black.withOpacity(0.85)),
           SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFFF1744), size: 48),
+                Icon(Icons.lock_outline, color: kNeonMint, size: 48),
                 const SizedBox(height: 16),
                 Text(
                   titleText,
@@ -772,8 +778,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                       height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFFF1744) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFFF1744), width: 2),
+                        color: isFilled ? kNeonMint : Colors.transparent,
+                        border: Border.all(color: kLightSilverBorder, width: 2),
                       ),
                     );
                   }),
@@ -824,13 +830,14 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       width: 72,
       height: 72,
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [Color(0xFFD50000), Color(0xFF7A0000)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF43505E), Color(0xFF1B222A)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
+        border: Border.all(color: kLightSilverBorder, width: 1.5),
       ),
       child: Material(
         color: Colors.transparent,
@@ -845,15 +852,14 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           customBorder: const CircleBorder(),
           child: Center(
             child: val == 'del'
-                ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                ? Icon(Icons.backspace_outlined, color: kNeonMint)
+                : Text(val, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kNeonMint)),
           ),
         ),
       ),
     );
   }
 }
-
 
 
 // ==========================================
@@ -879,7 +885,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   Offset _orderBubbleOffset = const Offset(20, 100);
   Offset _modalOffset = const Offset(16, 80);
   
-  // ตัวแปรควบคุมการเปิด-ปิด Live Status
   bool _isLiveStatusVisible = true;
 
   bool _isOrderBubblePressed = false;
@@ -1182,7 +1187,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E),
+      backgroundColor: kDarkSilverBg,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -1202,9 +1207,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B0B0E),
+                  color: const Color(0xFF151B22),
                   border: Border(
-                    top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
+                    top: BorderSide(color: kLightSilverBorder.withOpacity(0.6), width: 1.5),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1248,15 +1253,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                   height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFF0000), width: 2.5),
+                    border: Border.all(color: kLightSilverBorder, width: 2.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.7),
+                        color: kNeonMint.withOpacity(0.3),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
-                    color: const Color(0xFF121215),
+                    color: const Color(0xFF161C23),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1266,11 +1271,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.terminal, color: Color(0xFFFF1744), size: 18),
-                                SizedBox(width: 8),
-                                Text(
+                                Icon(Icons.terminal, color: kNeonMint, size: 18),
+                                const SizedBox(width: 8),
+                                const Text(
                                   'STATUS & LOGS',
                                   style: TextStyle(
                                     fontSize: 14,
@@ -1283,11 +1288,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ),
                             Row(
                               children: [
-                                // 👁️ ปุ่มสลับเปิด-ปิดกล่อง Live Status ที่แถบด้านบน
                                 IconButton(
                                   icon: Icon(
                                     _isLiveStatusVisible ? Icons.visibility : Icons.visibility_off,
-                                    color: _isLiveStatusVisible ? const Color(0xFF00E676) : Colors.grey,
+                                    color: _isLiveStatusVisible ? kNeonMint : Colors.grey,
                                     size: 20,
                                   ),
                                   onPressed: () {
@@ -1322,7 +1326,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           ],
                         ),
                       ),
-                      const Divider(color: Color(0xFFFF0000), height: 1, thickness: 1.5),
+                      Divider(color: kLightSilverBorder, height: 1, thickness: 1.5),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
@@ -1333,11 +1337,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                 _buildStatusReportBox(symbol, timeframe, totalOrdersProfit, activeOrders.length, totalLots, isTotalProfit),
                                 const SizedBox(height: 12),
                               ],
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
-                                  SizedBox(width: 6),
-                                  Text(
+                                  Icon(Icons.show_chart, color: kNeonMint, size: 16),
+                                  const SizedBox(width: 6),
+                                  const Text(
                                     'ACTIVITY LOGS',
                                     style: TextStyle(
                                       color: Colors.white,
@@ -1373,14 +1377,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                   ? Row(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        const Text(
+                                                        Text(
                                                           '➔ ',
                                                           style: TextStyle(
-                                                            color: Color(0xFF00E676),
+                                                            color: kNeonMint,
                                                             fontSize: 13,
                                                             fontWeight: FontWeight.bold,
                                                             shadows: [
-                                                              Shadow(color: Color(0xFF00E676), blurRadius: 8),
+                                                              Shadow(color: kNeonMint, blurRadius: 8),
                                                             ],
                                                           ),
                                                         ),
@@ -1388,14 +1392,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                                           child: TypewriterText(
                                                             text: "${log['message']}",
                                                             speed: const Duration(milliseconds: 65),
-                                                            style: const TextStyle(
-                                                              color: Color(0xFF00E676),
+                                                            style: TextStyle(
+                                                              color: kNeonMint,
                                                               fontFamily: 'monospace',
                                                               fontSize: 13,
                                                               fontWeight: FontWeight.bold,
                                                               height: 1.4,
                                                               shadows: [
-                                                                Shadow(color: Color(0xFF00E676), blurRadius: 10, offset: Offset(0, 0)),
+                                                                Shadow(color: kNeonMint, blurRadius: 10, offset: Offset(0, 0)),
                                                               ],
                                                             ),
                                                           ),
@@ -1497,14 +1501,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
-          colors: [Color(0xFF222222), Color(0xFF8A0000)],
+          colors: [Color(0xFF43505E), Color(0xFF1B222A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
+        border: Border.all(color: kLightSilverBorder, width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
+            color: (isServerActive ? kNeonMint : Colors.redAccent).withOpacity(0.6),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -1532,7 +1536,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                color: isServerActive ? kNeonMint : Colors.redAccent,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 2),
               ),
@@ -1551,10 +1555,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF161619),
+        color: const Color(0xFF161A20),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFFFF0000),
+          color: kLightSilverBorder,
           width: 2.0,
         ),
       ),
@@ -1599,15 +1603,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             right: 0,
                             child: Container(
                               height: 3,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFF1744),
+                              decoration: BoxDecoration(
+                                color: kNeonMint,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.redAccent,
+                                    color: kNeonMint,
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
-                                  BoxShadow(
+                                  const BoxShadow(
                                     color: Colors.white,
                                     blurRadius: 2,
                                     spreadRadius: 1,
@@ -1643,11 +1647,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                            color: isServerActive ? kNeonMint : Colors.redAccent,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                                color: (isServerActive ? kNeonMint : Colors.redAccent).withOpacity(0.8),
                                 blurRadius: 4,
                               )
                             ],
@@ -1657,7 +1661,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         Text(
                           isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
                           style: TextStyle(
-                            color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
+                            color: isServerActive ? kNeonMint : Colors.redAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
@@ -1670,12 +1674,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('Active Orders: $orderCount', style: TextStyle(color: kNeonMint, fontSize: 10, fontWeight: FontWeight.bold)),
                         Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
                         Text(
                           'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                           style: TextStyle(
-                            color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                            color: isTotalProfit ? kNeonMint : Colors.redAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1687,7 +1691,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ],
           ),
-          // ปุ่มกากบาท (X) สำหรับปิด Live Status
           Positioned(
             right: 8,
             top: 8,
@@ -1702,7 +1705,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.redAccent, width: 1.5),
+                  border: Border.all(color: kLightSilverBorder, width: 1.5),
                 ),
                 child: const Icon(
                   Icons.close,
@@ -1733,16 +1736,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
+          color: isSelected ? const Color(0xFF323B47) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? kNeonMint : Colors.transparent,
             width: isSelected ? 1.5 : 0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.redAccent.withOpacity(0.8),
+                    color: kNeonMint.withOpacity(0.4),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -1757,7 +1760,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.white70,
+                  color: isSelected ? kNeonMint : Colors.white70,
                   size: 22,
                 ),
                 if (badgeCount > 0)
@@ -1777,7 +1780,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                       child: Text(
                         '$badgeCount',
                         style: const TextStyle(
-                          color: Colors.red,
+                          color: Colors.black,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1791,7 +1794,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
+                color: isSelected ? kNeonMint : Colors.white70,
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontFamily: 'monospace',
@@ -1820,11 +1823,8 @@ class ScannerClipper extends CustomClipper<Rect> {
 }
 
 
-
-
-
 // ==========================================
-//#8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด & Cycle Stats)
+//#8 โหมด HomeScreen (สไตล์ Silver & Mint Neon)
 // ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
@@ -1844,7 +1844,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
-  // 🔴 เพิ่มตัวแปรสำหรับเก็บสถิติ Win Rate ระดับ Cycle (รอบ)
   int cycleWins = 0;
   int cycleLosses = 0;
   double cycleWinRate = 0.0;
@@ -1856,11 +1855,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   DatabaseReference? _historyRef;
 
   bool isConnected = false;
-
-  late final AnimationController _scannerController = AnimationController(
-    duration: const Duration(seconds: 2),
-    vsync: this,
-  )..repeat(reverse: true);
 
   double realTimeBid = 0.0;
   double realTimeAsk = 0.0;
@@ -1884,12 +1878,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _listenToOrdersForDialog(widget.accountLogin);
       _listenToHistoryForStats(widget.accountLogin);
     }
-  }
-
-  @override
-  void dispose() {
-    _scannerController.dispose();
-    super.dispose();
   }
 
   void _listenToConnectionStatus() {
@@ -1937,7 +1925,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
             }
 
-            // 🔴 ดึงค่าสถิติการปิดแบบเป็นรอบ (Cycle Stats)
             cycleWins = int.tryParse(data['cycle_wins']?.toString() ?? '0') ?? 0;
             cycleLosses = int.tryParse(data['cycle_losses']?.toString() ?? '0') ?? 0;
             cycleWinRate = (data['cycle_win_rate'] ?? 0.0).toDouble();
@@ -2041,7 +2028,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
+        SnackBar(content: const Text('Sent Close All Command to EA!'), backgroundColor: kNeonMint),
       );
     } catch (e) {
       print("Close all error: $e");
@@ -2054,19 +2041,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: const Color(0xFF0B0B0E)),
-          Image.asset(
-            'assets/images/ppp.jpg',
-            fit: BoxFit.cover,
-            opacity: const AlwaysStoppedAnimation(0.3),
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
-            },
-          ),
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
+                colors: [Color(0xFF2C353E), Color(0xFF181D23), Color(0xFF101317)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -2081,20 +2059,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 15),
                     Center(
                       child: Container(
-                        width: 250,
-                        height: 250,
+                        width: 230,
+                        height: 230,
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: const LinearGradient(
+                            colors: [kLightSilverBorder, Color(0xFF3B4856)],
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
+                              color: kNeonMint.withOpacity(0.6),
+                              blurRadius: 20,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(18),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
@@ -2114,31 +2096,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF161619).withOpacity(0.85),
+                        color: const Color(0xFF1E242C).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
+                        border: Border.all(color: kLightSilverBorder, width: 2.0),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.8),
+                            color: kNeonMint.withOpacity(0.5),
                             blurRadius: 12.0,
                             spreadRadius: 2.0,
                           ),
                         ],
                       ),
                       child: Column(
-                        children: const [
-                          FlashingSniperText(),
-                          SizedBox(height: 4),
+                        children: [
+                          FlashingSniperText(neonColor: kNeonMint),
+                          const SizedBox(height: 4),
                           Text(
-                            'HYBRID  ROB O T',
+                            'HYBRID  ROBOT',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: kNeonMint,
                               letterSpacing: 2.5,
                               shadows: [
-                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
+                                Shadow(color: kNeonMint, blurRadius: 10, offset: Offset(0, 0)),
                               ],
                             ),
                           ),
@@ -2150,46 +2132,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
+                        border: Border.all(color: kLightSilverBorder, width: 1.5),
                         color: Colors.black.withOpacity(0.6),
                         boxShadow: [
-                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                          BoxShadow(color: kNeonMint.withOpacity(0.3), blurRadius: 6),
                         ],
                       ),
                       child: const Text(
                         'Powered By Algohost',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildCircularButton(
+                        _buildMetallicButton(
                           label: 'CLOSE',
                           icon: Icons.delete_outline,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          borderColor: const Color(0xFFD50000),
+                          glowColor: kNeonMint,
                           onPressed: _closeAllOrders,
                         ),
                         const SizedBox(width: 20),
-                        _buildCircularButton(
+                        _buildMetallicButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
-                          colors: isRunning 
-                              ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)] 
-                              : const [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000)], 
-                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
-                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                          glowColor: isRunning ? kNeonMint : Colors.redAccent,
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
                         const SizedBox(width: 18),
-                        _buildCircularButton(
+                        _buildMetallicButton(
                           label: 'STATS', 
                           icon: Icons.bar_chart,
-                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
-                          borderColor: const Color(0xFFD50000),
+                          glowColor: kNeonMint,
                           onPressed: () {
                             setState(() {
                               _isChartModalOpen = true;
@@ -2224,15 +2200,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     height: MediaQuery.of(context).size.height * 0.62,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
+                      border: Border.all(color: kLightSilverBorder, width: 3.5),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.9),
+                          color: kNeonMint.withOpacity(0.6),
                           blurRadius: 25,
                           spreadRadius: 5,
                         ),
                       ],
-                      color: const Color(0xFF121215),
+                      color: const Color(0xFF141920),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2242,11 +2218,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
+                                  Icon(Icons.dashboard_outlined, color: kNeonMint, size: 18),
+                                  const SizedBox(width: 8),
+                                  const Text(
                                     'DASHBOARD STATS',
                                     style: TextStyle(
                                       fontSize: 15,
@@ -2268,7 +2244,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFFFF0000), height: 1, thickness: 2),
+                        Divider(color: kLightSilverBorder, height: 1, thickness: 2),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(14.0),
@@ -2301,7 +2277,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
 
-    // 🔴 ปรับเปลี่ยนการใช้ค่า Win / Loss ตามรอบ (Cycle Stats)
     int displayWins = cycleWins;
     int displayLosses = cycleLosses;
     int totalCycles = displayWins + displayLosses;
@@ -2333,7 +2308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'WIN RATE',
                   value: '${displayWinRate.toStringAsFixed(1)}%',
                   subText: '$displayWins Win / $displayLosses Loss',
-                  color: const Color(0xFF00C853),
+                  color: kNeonMint,
                   icon: Icons.pie_chart,
                 ),
               ),
@@ -2357,7 +2332,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'TOTAL CYCLES',
                   value: '$totalCycles',
                   subText: '',
-                  color: const Color(0xFFFF1744),
+                  color: kLightSilverBorder,
                   icon: Icons.receipt_long,
                 ),
               ),
@@ -2367,7 +2342,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'NET PROFIT',
                   value: '${totalProfitLoss >= 0 ? "+" : ""}\$${totalProfitLoss.toStringAsFixed(2)}',
                   subText: 'Balance: \$${balance.toStringAsFixed(2)}',
-                  color: totalProfitLoss >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                  color: totalProfitLoss >= 0 ? kNeonMint : Colors.redAccent,
                   icon: Icons.account_balance_wallet,
                 ),
               ),
@@ -2378,12 +2353,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F0F12),
+              color: const Color(0xFF10141A),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFF1744), width: 2.0),
+              border: Border.all(color: kLightSilverBorder, width: 2.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
+                  color: kNeonMint.withOpacity(0.3),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -2395,12 +2370,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Text(
                   'WIN RATE & CYCLES',
                   style: TextStyle(
-                    color: const Color(0xFFFF5252),
+                    color: kNeonMint,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
                     shadows: [
-                      Shadow(color: Colors.redAccent.withOpacity(0.8), blurRadius: 8),
+                      Shadow(color: kNeonMint.withOpacity(0.8), blurRadius: 8),
                     ],
                   ),
                 ),
@@ -2408,18 +2383,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF16161A),
+                    color: const Color(0xFF1A2027),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1.2),
+                    border: Border.all(color: kLightSilverBorder.withOpacity(0.4), width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Center(
+                      Center(
                         child: Text(
                           'WIN RATE PERCENT',
                           style: TextStyle(
-                            color: Color(0xFFFF5252),
+                            color: kNeonMint,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
@@ -2433,9 +2408,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'GREEN NEON',
-                                style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              Text(
+                                'MINT NEON',
+                                style: TextStyle(color: kNeonMint, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                               Text(
                                 'WIN RATE: ${displayWinRate.toStringAsFixed(1)}%',
@@ -2448,7 +2423,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Text(
                                 'RED NEON',
-                                style: TextStyle(color: Color(0xFFFF5252), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                               Text(
                                 'LOSS RATE: ${lossRate.toStringAsFixed(1)}%',
@@ -2464,17 +2439,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Container(
                           height: 14,
                           width: double.infinity,
-                          color: const Color(0xFFD50000).withOpacity(0.4),
+                          color: Colors.redAccent.withOpacity(0.4),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: (displayWinRate / 100).clamp(0.0, 1.0),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00C853),
+                                color: kNeonMint,
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00C853).withOpacity(0.9),
+                                    color: kNeonMint.withOpacity(0.9),
                                     blurRadius: 10,
                                     spreadRadius: 2,
                                   ),
@@ -2490,7 +2465,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.2),
+                          border: Border.all(color: kLightSilverBorder.withOpacity(0.6), width: 1.2),
                           color: Colors.black.withOpacity(0.5),
                         ),
                         child: Center(
@@ -2520,7 +2495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B20),
+        color: const Color(0xFF181E25),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withOpacity(0.4), width: 1.5),
         boxShadow: [
@@ -2556,21 +2531,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildBidAskBoxContent(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double boxWidth = screenWidth - 32;
-    double spreadVal = (realTimeAsk > 0 && realTimeBid > 0) ? (realTimeAsk - realTimeBid) * 100 : 0.0;
+    double spreadVal = (realTimeAsk > 0 && realTimeBid > 0) ? (realTimeAsk - realTimeBid) * 100 : 500.0;
 
     return Container(
       width: boxWidth,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
+        gradient: LinearGradient(
+          colors: [kLightSilverBorder, const Color(0xFF43505E), const Color(0xFF1B222A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.5),
+            color: kNeonMint.withOpacity(0.4),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -2579,7 +2554,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF161619),
+          color: const Color(0xFF161A20),
           borderRadius: BorderRadius.circular(13),
         ),
         child: Column(
@@ -2591,7 +2566,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
+                    Icon(Icons.show_chart, color: kNeonMint, size: 16),
                     const SizedBox(width: 6),
                     Text(
                       symbol,
@@ -2604,11 +2579,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                    border: Border.all(color: kLightSilverBorder.withOpacity(0.4)),
                   ),
                   child: Text(
                     'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    style: TextStyle(color: kNeonMint, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                   ),
                 ),
               ],
@@ -2619,22 +2594,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Column(
                   children: [
-                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    const Text('BID', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                     const SizedBox(height: 6),
                     Text(
-                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
+                      realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : '81390.48',
+                      style: TextStyle(color: kNeonMint, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
                 Container(height: 35, width: 1, color: Colors.white24),
                 Column(
                   children: [
-                    const Text('ASK', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    const Text('ASK', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                     const SizedBox(height: 6),
                     Text(
-                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : 'Loading...',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
+                      realTimeAsk > 0 ? realTimeAsk.toStringAsFixed(2) : '81395.48',
+                      style: TextStyle(color: kNeonMint, fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -2646,16 +2621,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCircularButton({
+  Widget _buildMetallicButton({
     required String label,
     required IconData icon,
-    required List<Color> colors,
-    required Color borderColor,
     Color? glowColor,
     required VoidCallback onPressed,
     bool isLarge = false,
   }) {
     double size = isLarge ? 82 : 70;
+    Color activeGlow = glowColor ?? kNeonMint;
     return GestureDetector(
       onTap: onPressed,
       child: Column(
@@ -2666,28 +2640,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: colors,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF43505E), Color(0xFF1B222A)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              border: Border.all(color: borderColor, width: 2.5),
+              border: Border.all(color: activeGlow, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: (glowColor ?? borderColor).withOpacity(0.8),
+                  color: activeGlow.withOpacity(0.6),
                   blurRadius: 14,
                   spreadRadius: 2,
                   offset: const Offset(0, 0),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
+            child: Icon(icon, color: activeGlow, size: isLarge ? 34 : 28),
           ),
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: activeGlow,
               fontWeight: FontWeight.bold,
               fontSize: 11,
               letterSpacing: 0.5,
@@ -2700,11 +2674,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// ==========================================
-// Widget ข้อความกระพริบแฟลชแบบไฟนีออนเรืองแสง (แยกไว้นอกคลาสหลัก)
-// ==========================================
 class FlashingSniperText extends StatefulWidget {
-  const FlashingSniperText({super.key});
+  final Color neonColor;
+  const FlashingSniperText({super.key, required this.neonColor});
 
   @override
   State<FlashingSniperText> createState() => _FlashingSniperTextState();
@@ -2746,18 +2718,18 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
             '🎯 S N I P E R 🎯',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: 3.0,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFFF1744).withOpacity(val),
+                  color: widget.neonColor.withOpacity(val),
                   blurRadius: 20 * val,
                   offset: const Offset(0, 0),
                 ),
                 Shadow(
-                  color: Colors.redAccent.withOpacity(val),
+                  color: widget.neonColor.withOpacity(val),
                   blurRadius: 10 * val,
                   offset: const Offset(0, 0),
                 ),
@@ -2771,10 +2743,8 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
 }
 
 
-
-
 // ==========================================
-//#9  โหมดรายงานออเดอร์ (OrdersScreen สมบูรณ์)
+//#9 โหมดรายงานออเดอร์ (OrdersScreen)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -2887,12 +2857,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
     double totalOrdersProfit = activeOrders.fold(0.0, (sum, item) {
       return sum + (double.tryParse(item['profit']?.toString() ?? '0.0') ?? 0.0);
     });
+    double totalLots = activeOrders.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['lot']?.toString() ?? '0.0') ?? 0.0);
+    });
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
+        backgroundColor: kDarkSilverBg,
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -2901,7 +2874,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
+              return Container(color: kDarkSilverBg);
             },
           ),
           Container(
@@ -2916,18 +2889,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
+                      colors: [Color(0xFF43505E), Color(0xFF141920), Color(0xFF1B222A)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFFF0000),
+                      color: kLightSilverBorder,
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.8),
+                        color: kNeonMint.withOpacity(0.3),
                         blurRadius: 15,
                         spreadRadius: 2,
                         offset: const Offset(0, 4),
@@ -2940,11 +2913,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.account_balance, color: Color(0xFFFF1744), size: 18),
-                              SizedBox(width: 8),
-                              Text(
+                              Icon(Icons.account_balance, color: kNeonMint, size: 18),
+                              const SizedBox(width: 8),
+                              const Text(
                                 'TRADING ACCOUNT INFO',
                                 style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, fontFamily: 'monospace'),
                               ),
@@ -2955,11 +2928,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black45,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.redAccent, width: 1),
+                              border: Border.all(color: kLightSilverBorder, width: 1),
                             ),
                             child: Text(
                               activeSymbol,
-                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              style: TextStyle(color: kNeonMint, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                             ),
                           ),
                         ],
@@ -2986,7 +2959,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 accountServer,
-                                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                style: TextStyle(color: kNeonMint, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                             ],
                           ),
@@ -3000,12 +2973,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: Colors.redAccent,
+                      color: kLightSilverBorder,
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.7),
+                        color: kNeonMint.withOpacity(0.3),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -3014,7 +2987,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      color: const Color(0xFF161619).withOpacity(0.95),
+                      color: const Color(0xFF161A20).withOpacity(0.95),
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         children: [
@@ -3039,15 +3012,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: isTotalProfit
-                                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
-                                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
+                                colors: [kNeonMint.withOpacity(0.2), const Color(0xFF161A20)],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
+                                color: kNeonMint.withOpacity(0.8),
                                 width: 1.5,
                               ),
                             ),
@@ -3061,7 +3032,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 Text(
                                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                                    color: kNeonMint,
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
                                     fontFamily: 'monospace',
@@ -3077,7 +3048,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
                               child: Text(
                                 'ACTIVE ORDERS (${activeOrders.length})',
-                                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, fontFamily: 'monospace'),
+                                style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, fontFamily: 'monospace'),
                               ),
                             ),
                           ),
@@ -3106,10 +3077,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       margin: const EdgeInsets.only(bottom: 10),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF0B0B0E),
+                                        color: const Color(0xFF10141A),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+                                          color: kLightSilverBorder.withOpacity(0.5),
                                           width: 1,
                                         ),
                                       ),
@@ -3121,12 +3092,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                 decoration: BoxDecoration(
-                                                  color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                                  color: kNeonMint.withOpacity(0.2),
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
                                                   type,
-                                                  style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                                  style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -3143,7 +3114,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                           Text(
                                             '${orderProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
                                             style: TextStyle(
-                                              color: orderProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                              color: orderProfit ? kNeonMint : Colors.redAccent,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
                                               fontFamily: 'monospace',
@@ -3171,7 +3142,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B0B0E),
+        color: const Color(0xFF10141A),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white12, width: 1),
       ),
@@ -3381,10 +3352,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E),
+      backgroundColor: kDarkSilverBg,
       appBar: AppBar(
         title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
+        backgroundColor: kDarkSilverBg,
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -3394,7 +3365,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
+              return Container(color: kDarkSilverBg);
             },
           ),
           Container(
@@ -3416,10 +3387,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: ChoiceChip(
                         label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
                         selected: isSelected,
-                        selectedColor: const Color(0xFFFF1744),
-                        backgroundColor: const Color(0xFF161619),
+                        selectedColor: const Color(0xFF323B47),
+                        backgroundColor: const Color(0xFF181E25),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected ? kNeonMint : Colors.white70,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           fontFamily: 'monospace',
@@ -3440,18 +3411,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
+                    colors: [Color(0xFF43505E), Color(0xFF141920), Color(0xFF1B222A)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: const Color(0xFFFF0000),
+                    color: kLightSilverBorder,
                     width: 2.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.8),
+                      color: kNeonMint.withOpacity(0.3),
                       blurRadius: 15,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),
@@ -3479,7 +3450,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: Text(
                           '${totalProfit >= 0 ? "+" : ""}\$${totalProfit.toStringAsFixed(2)}',
                           style: TextStyle(
-                            color: totalProfit >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
+                            color: totalProfit >= 0 ? kNeonMint : Colors.redAccent,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'monospace',
@@ -3494,15 +3465,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121215),
+                    color: const Color(0xFF141920),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: const Color(0xFFFF0000), // ปรับเป็นเส้นเรืองแสงสีแดง
+                      color: kLightSilverBorder,
                       width: 2.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.5),
+                        color: kNeonMint.withOpacity(0.2),
                         blurRadius: 10,
                         spreadRadius: 1,
                       ),
@@ -3536,15 +3507,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF161619),
+                                  color: const Color(0xFF1A2027),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.redAccent.withOpacity(0.5),
+                                    color: kLightSilverBorder.withOpacity(0.5),
                                     width: 1.2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.red.withOpacity(0.15),
+                                      color: kNeonMint.withOpacity(0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -3558,12 +3529,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                                            color: kNeonMint.withOpacity(0.2),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
                                             type,
-                                            style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                            style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -3574,7 +3545,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             const SizedBox(height: 3),
                                             Text(
                                               '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'monospace'),
+                                              style: TextStyle(color: kLightSilverBorder, fontSize: 11, fontFamily: 'monospace'),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
@@ -3585,7 +3556,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     Text(
                                       '${isProfit ? "+" : ""}\$${profit.toStringAsFixed(2)}',
                                       style: TextStyle(
-                                        color: isProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                        color: isProfit ? kNeonMint : Colors.redAccent,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                         fontFamily: 'monospace',
@@ -3763,10 +3734,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0E),
+      backgroundColor: kDarkSilverBg,
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
+        backgroundColor: kDarkSilverBg,
         actions: [
           if (alertItems.isNotEmpty)
             IconButton(
@@ -3784,7 +3755,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
+              return Container(color: kDarkSilverBg);
             },
           ),
           Container(
@@ -3793,15 +3764,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF121215),
+              color: const Color(0xFF141920),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFFFF0000), // ขอบเรืองแสงนีออนสีแดงเด่นชัด
+                color: kLightSilverBorder,
                 width: 2.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.6),
+                  color: kNeonMint.withOpacity(0.4),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -3825,15 +3796,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF161619),
+                            color: const Color(0xFF1A2027),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.redAccent.withOpacity(0.5),
+                              color: kLightSilverBorder.withOpacity(0.5),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.red.withOpacity(0.15),
+                                color: kNeonMint.withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -3842,7 +3813,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
+                              Icon(Icons.notifications_active, color: kNeonMint, size: 20),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -3876,11 +3847,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
-
-
-
 // ==========================================
-//#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+//#12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -4074,9 +4042,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFFFF1744),
+        SnackBar(
+          content: const Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
+          backgroundColor: kNeonMint,
         ),
       );
     } catch (e) {
@@ -4113,8 +4081,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF00E5FF);
-    if (mode == 'Step') return const Color(0xFF9C27B0);
+    if (mode == 'Fixed') return kNeonMint;
+    if (mode == 'Step') return const Color(0xFF00B0FF);
     return const Color(0xFFFF9100);
   }
 
@@ -4127,7 +4095,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B0B0E),
+            color: const Color(0xFF10141A),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white12, width: 1),
           ),
@@ -4159,7 +4127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF0B0B0E),
+        backgroundColor: kDarkSilverBg,
         elevation: 0,
       ),
       body: Stack(
@@ -4169,7 +4137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'assets/images/ppp.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF0B0B0E));
+              return Container(color: kDarkSilverBg);
             },
           ),
           Container(
@@ -4184,15 +4152,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161619).withOpacity(0.9),
+                    color: const Color(0xFF161A20).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.redAccent,
+                      color: kLightSilverBorder,
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.7),
+                        color: kNeonMint.withOpacity(0.3),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -4201,9 +4169,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
@@ -4211,11 +4179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color buttonColor = sym == 'XAUUSD'
-                              ? const Color(0xFFFF1744)
-                              : sym == 'BTCUSD'
-                                  ? const Color(0xFF00C853)
-                                  : const Color(0xFFD50000);
+                          Color buttonColor = kLightSilverBorder;
 
                           return Expanded(
                             child: Padding(
@@ -4228,17 +4192,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     selectedSymbol = sym;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
+                                    backgroundColor: isSelected ? const Color(0xFF323B47) : const Color(0xFF10141A),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
+                                    side: BorderSide(color: isSelected ? kNeonMint : buttonColor, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     sym,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected ? kNeonMint : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -4255,14 +4219,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
-                          Color modeColor = mode == 'All Mode'
-                              ? const Color(0xFFFF1744)
-                              : mode == 'Liquidity'
-                                  ? const Color(0xFFE91E63)
-                                  : mode == 'Breakout'
-                                      ? const Color(0xFF00BCD4)
-                                      : const Color(0xFFFF5722);
-
                           return Expanded(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 3.0),
@@ -4274,17 +4230,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     tradingMode = mode;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    backgroundColor: isSelected ? const Color(0xFF323B47) : const Color(0xFF10141A),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    side: BorderSide(color: isSelected ? kNeonMint : kLightSilverBorder, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected ? kNeonMint : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 10,
                                     ),
@@ -4314,17 +4270,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     lotMode = mode;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
+                                    backgroundColor: isSelected ? const Color(0xFF323B47) : const Color(0xFF10141A),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
+                                    side: BorderSide(color: isSelected ? modeColor : kLightSilverBorder, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     mode,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected ? modeColor : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -4341,9 +4297,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B0B0E),
+                          color: const Color(0xFF10141A),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFFF1744), width: 1.5),
+                          border: Border.all(color: kLightSilverBorder, width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4351,10 +4307,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFFF1744), fontSize: 12, fontWeight: FontWeight.bold)),
+                                Text('Daily Trend Filter (D1)', style: TextStyle(color: kNeonMint, fontSize: 12, fontWeight: FontWeight.bold)),
                                 Switch(
                                   value: enableTrendFilter,
-                                  activeColor: const Color(0xFFFF1744),
+                                  activeColor: kNeonMint,
                                   onChanged: (val) => setState(() {
                                     _isEditing = true;
                                     enableTrendFilter = val;
@@ -4384,11 +4340,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     selectedTf = tf;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
+                                    backgroundColor: isSelected ? const Color(0xFF323B47) : const Color(0xFF181E25),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(
-                                      color: const Color(0xFFFF1744),
+                                      color: isSelected ? kNeonMint : kLightSilverBorder,
                                       width: isSelected ? 2 : 1,
                                     ),
                                     padding: EdgeInsets.zero,
@@ -4396,7 +4352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text(
                                     tf,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected ? kNeonMint : Colors.white70,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -4443,13 +4399,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0B0B0E),
+                              color: const Color(0xFF10141A),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.white12, width: 1),
                             ),
                             child: Text(
                               '${calculatedTP.toStringAsFixed(1)} Pts',
-                              style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
+                              style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ),
                         ],
@@ -4466,7 +4422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0B0B0E),
+                                    color: const Color(0xFF10141A),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: Colors.white12, width: 1),
                                   ),
@@ -4495,7 +4451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0B0B0E),
+                                    color: const Color(0xFF10141A),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: Colors.white12, width: 1),
                                   ),
@@ -4520,9 +4476,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
 
-                      // ==========================================
-                      // BASKET CONTROL (เปลี่ยนสีกล่อง Basket TP เป็นน้ำเงินเข้ม)
-                      // ==========================================
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -4553,9 +4506,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
+                                color: const Color(0xFF10141A),
                                 borderRadius: BorderRadius.circular(12),
-                                // 🔵 เปลี่ยนขอบเป็นสีน้ำเงินเข้ม
                                 border: Border.all(color: const Color(0xFF2962FF).withOpacity(0.8), width: 1.5),
                               ),
                               child: Column(
@@ -4564,11 +4516,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      // 🔵 เปลี่ยนข้อความ Basket TP เป็นสีน้ำเงินเข้ม
                                       const Text('Basket TP', style: TextStyle(color: Color(0xFF2962FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        // 🔵 เปลี่ยนสีสวิตช์ Basket TP เป็นสีน้ำเงินเข้ม
                                         activeColor: const Color(0xFF2962FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
@@ -4588,7 +4538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
+                                color: const Color(0xFF10141A),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: const Color(0xFFFF9100).withOpacity(0.6), width: 1.5),
                               ),
@@ -4619,12 +4569,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // ==========================================
-                      // DAILY TARGET & LOSS CONTROL
-                      // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: kLightSilverBorder, fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4633,9 +4580,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
+                                color: const Color(0xFF10141A),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
+                                border: Border.all(color: kNeonMint.withOpacity(0.5), width: 1),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4643,10 +4590,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Text('Daily Target', style: TextStyle(color: kNeonMint, fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableDailyTarget,
-                                        activeColor: const Color(0xFF00C853),
+                                        activeColor: kNeonMint,
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableDailyTarget = val;
@@ -4665,7 +4612,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0B0B0E),
+                                color: const Color(0xFF10141A),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
                               ),
@@ -4702,7 +4649,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: const Icon(Icons.save, color: Colors.white),
                           label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF1744),
+                            backgroundColor: const Color(0xFF323B47),
+                            side: BorderSide(color: kNeonMint, width: 1.5),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -4711,9 +4659,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 20),
                       const Divider(color: Colors.white24, height: 24),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'SECURITY & PRIVACY', 
-                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                        style: TextStyle(color: kNeonMint, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4731,7 +4679,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD50000),
+                              backgroundColor: const Color(0xFF323B47),
+                              side: BorderSide(color: kLightSilverBorder, width: 1),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             ),
                             onPressed: _resetPin,
@@ -4756,11 +4705,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey[850],
-                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
+                              side: BorderSide(color: kLightSilverBorder, width: 1.5),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             ),
                             onPressed: _logoutToLoginScreen,
-                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                            child: const Text('Log Out', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
