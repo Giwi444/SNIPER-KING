@@ -28,10 +28,11 @@ flutter:
   assets: 
   
     - assets/images/1792243456006.jpg  
-    - assets/images/1792242355664.jpg   
+    - assets/images/1792242355664.jpg  
+    - assets/images/1792242219466.jpg   
     
 
 flutter_launcher_icons:
-  image_path: "assets/images/1792242355664.jpg"
+  image_path: "assets/images/1792242219466.jpg"
   android: true
   ios: false
