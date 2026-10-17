@@ -22,8 +22,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean Flutter Cache
-        run: flutter clean
+      - name: Fix Android Platform for v2 embedding
+        run: |
+          rm -rf android
+          flutter create . --platforms=android
 
       - name: Install dependencies
         run: flutter pub get
