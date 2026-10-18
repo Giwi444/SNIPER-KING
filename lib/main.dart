@@ -8,8 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 // ฟังก์ชันช่วยจัดการ Firebase safely และกำหนดค่าเริ่มต้นอย่างถูกต้อง
 Future<FirebaseApp> _getFirebaseApp() async {
@@ -29,171 +27,7 @@ Future<FirebaseApp> _getFirebaseApp() async {
 }
 
 // ==========================================
-// #2 โหมดบอลลูนทับแอปอื่น (Stainless Steel Theme)
-// ==========================================
-
-@pragma("vm:entry-point")
-void overlayMain() {
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Material(
-        color: Colors.transparent,
-        child: OverlayBallonWidget(),
-      ),
-    ),
-  );
-}
-
-class OverlayBallonWidget extends StatefulWidget {
-  const OverlayBallonWidget({super.key});
-
-  @override
-  State<OverlayBallonWidget> createState() => _OverlayBallonWidgetState();
-}
-
-class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
-  bool isConnected = false;
-  StreamSubscription? _connectionSub;
-
-  @override
-  void initState() {
-    super.initState();
-    _initFirebaseAndListenConnection();
-  }
-
-  Future<void> _initFirebaseAndListenConnection() async {
-    try {
-      final app = await _getFirebaseApp();
-      final database = FirebaseDatabase.instanceFor(
-        app: app,
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
-      );
-
-      _connectionSub = database.ref('.info/connected').onValue.listen((event) {
-        final connected = event.snapshot.value as bool? ?? false;
-        if (mounted) {
-          setState(() {
-            isConnected = connected;
-          });
-        }
-      });
-    } catch (e) {
-      print("Overlay connection listen error: $e");
-    }
-  }
-
-  @override
-  void dispose() {
-    _connectionSub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        await FlutterOverlayWindow.closeOverlay();
-      },
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF1F5F9), Color(0xFF94A3B8), Color(0xFF334155)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isConnected ? const Color(0xFF00E676) : const Color(0xFF94A3B8)).withOpacity(0.6),
-              blurRadius: 8,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(2),
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF0F172A),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/images/1792250578954.jpg',
-                  fit: BoxFit.cover,
-                  width: 52,
-                  height: 52,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: const Color(0xFF1E293B),
-                      child: const Icon(Icons.show_chart, color: Color(0xFFCBD5E1), size: 30),
-                    );
-                  },
-                ),
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: isConnected ? const Color(0xFF00E676) : const Color(0xFF64748B),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF0F172A), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isConnected ? const Color(0xFF00E676) : const Color(0xFF64748B)).withOpacity(0.8),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-Future<void> _showFloatingBalloon() async {
-  try {
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
-    }
-
-    bool? isGranted = await FlutterOverlayWindow.isPermissionGranted();
-    if (isGranted == null || !isGranted) {
-      bool? requested = await FlutterOverlayWindow.requestPermission();
-      if (requested != true) return;
-    }
-
-    bool isActive = await FlutterOverlayWindow.isActive();
-    if (!isActive) {
-      await FlutterOverlayWindow.showOverlay(
-        height: 80,
-        width: 80,
-        alignment: OverlayAlignment.centerRight,
-        flag: OverlayFlag.defaultFlag,
-        positionGravity: PositionGravity.auto,
-      );
-    }
-  } catch (e) {
-    print("Show floating balloon error: $e");
-  }
-}
-
-
-// ==========================================
-// #3 โหมดเมนหลัก
+// #2 โหมดเมนหลัก
 // ==========================================
 
 void main() async {
@@ -207,7 +41,6 @@ void main() async {
 
   runApp(const LiquiditySweepApp());
 }
-
 
 // Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
 class TypewriterText extends StatefulWidget {
@@ -286,9 +119,8 @@ class _TypewriterTextState extends State<TypewriterText> {
   }
 }
 
-
 // ==========================================
-// #4 โหมดเริ่มต้นแอพ (Stainless Steel Theme)
+// #3 โหมดเริ่มต้นแอพ (Stainless Steel Theme)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -312,10 +144,8 @@ class LiquiditySweepApp extends StatelessWidget {
   }
 }
 
-
-
 // ==========================================
-// #5 โหมดการเข้าใช้งานครั้งแรก (Stainless Steel Theme)
+// #4 โหมดการเข้าใช้งานครั้งแรก (Stainless Steel Theme)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -641,11 +471,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 }
 
-
-
-
 // ==========================================
-// #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper - Stainless Steel Theme)
+// #5 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper - Stainless Steel Theme)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -690,7 +517,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (!mounted) return;
     final storedPin = prefs.getString('user_pin');
     if (storedPin == pin) {
-      await _showFloatingBalloon();
       setState(() {
         isAuthorized = true;
       });
@@ -719,7 +545,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           } else {
             if (firstEnteredPin == currentPinInput) {
               _saveNewPin(currentPinInput);
-              _showFloatingBalloon();
               setState(() {
                 hasStoredPin = true;
                 isAuthorized = true;
@@ -886,10 +711,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-
-
 // ==========================================
-// #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Stainless Steel Theme)
+// #6 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Stainless Steel Theme)
 // ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
@@ -1848,9 +1671,8 @@ class ScannerClipper extends CustomClipper<Rect> {
   }
 }
 
-
 // ==========================================
-// #8 โหมด HomeScreen (Stainless Steel Theme)
+// #7 โหมด HomeScreen (Stainless Steel Theme)
 // ==========================================
 
 class HomeScreen extends StatefulWidget {
@@ -2796,9 +2618,8 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
   }
 }
 
-
 // ==========================================
-// #9 โหมดรายงานออเดอร์ (OrdersScreen - Stainless Steel Theme)
+// #8 โหมดรายงานออเดอร์ (OrdersScreen - Stainless Steel Theme)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -3229,9 +3050,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-
 // ==========================================
-// #10 โหมดการบันทึกประจำวัน (HistoryScreen)
+// #9 โหมดการบันทึกประจำวัน (HistoryScreen)
 // ==========================================
 
 class HistoryScreen extends StatefulWidget {
@@ -3634,9 +3454,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-
 // ==========================================
-// #11 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
+// #10 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3903,9 +3722,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-
 // ==========================================
-// #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+// #11 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -4237,7 +4055,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color buttonColor = const Color(0xFF64748B);
 
                           return Expanded(
                             child: Padding(
