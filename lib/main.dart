@@ -10,7 +10,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// ฟังก์ชันช่วยจัดการ Firebase safely และกำหนดค่าเริ่มต้นอย่างถูกต้อง
 Future<FirebaseApp> _getFirebaseApp() async {
   if (Firebase.apps.isNotEmpty) {
     return Firebase.app();
@@ -27,23 +26,16 @@ Future<FirebaseApp> _getFirebaseApp() async {
   );
 }
 
-// ==========================================
-// #3 โหมดเมนหลัก
-// ==========================================
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   try {
     await _getFirebaseApp();
   } catch (e) {
     print("Firebase init error: $e");
   }
-
   runApp(const LiquiditySweepApp());
 }
 
-// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle style;
@@ -113,16 +105,9 @@ class _TypewriterTextState extends State<TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      _displayedText,
-      style: widget.style,
-    );
+    return Text(_displayedText, style: widget.style);
   }
 }
-
-// ==========================================
-// #4 โหมดเริ่มต้นแอพ (Stainless Steel Theme)
-// ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
@@ -146,7 +131,7 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 // ==========================================
-// #5 โหมดการเข้าใช้งานครั้งแรก (แก้ไขตัด SharedPreferences ออกเพื่อกัน Error)
+// #5 โหมดการเข้าใช้งานครั้งแรก (บันทึกข้อมูล Login ลง SharedPreferences)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -181,22 +166,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      FirebaseApp app;
-      if (Firebase.apps.isNotEmpty) {
-        app = Firebase.app();
-      } else {
-        app = await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-          ),
-        );
-      }
-
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
         app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
@@ -206,6 +176,11 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       final snapshot = await accountRef.get();
 
       if (snapshot.exists) {
+        // บันทึกหมายเลขบัญชีและ Server ลง SharedPreferences ทันที
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mt5_login', login);
+        await prefs.setString('mt5_server', server);
+
         if (!mounted) return;
         setState(() {
           _isLoading = false;
@@ -249,7 +224,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0F172A)),
           ),
-          Container(color: const Color(0xFF0F172A).withOpacity(0.9)),
+          // ปรับลดความเข้มพื้นหลังเพื่อให้เห็นรูปโรบอทรำไร
+          Container(color: const Color(0xFF0F172A).withOpacity(0.7)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
@@ -297,16 +273,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B).withOpacity(0.9),
+                          color: const Color(0xFF1E293B).withOpacity(0.85),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0), width: 2.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.2),
-                              blurRadius: 12.0,
-                              spreadRadius: 2.0,
-                            ),
-                          ],
                         ),
                         child: const Column(
                           children: [
@@ -318,9 +287,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: 3.0,
-                                shadows: [
-                                  Shadow(color: Color(0xFFCBD5E1), blurRadius: 12, offset: Offset(0, 0)),
-                                ],
                               ),
                             ),
                             SizedBox(height: 4),
@@ -332,28 +298,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFFE2E8F0),
                                 letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(color: Color(0xFF94A3B8), blurRadius: 10, offset: Offset(0, 0)),
-                                ],
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
-                          color: Colors.black.withOpacity(0.6),
-                          boxShadow: [
-                            BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 6),
-                          ],
-                        ),
-                        child: const Text(
-                          'Powered By Algohost',
-                          style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -444,7 +391,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 }
 
 // ==========================================
-// #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper - Stainless Theme)
+// #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -468,7 +415,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     _checkPinExists();
   }
 
-  // ปรับปรุงให้มี Timeout และ try-catch ป้องกันอาการค้างหมุนนาน
   Future<void> _checkPinExists() async {
     try {
       final prefs = await SharedPreferences.getInstance().timeout(
@@ -508,8 +454,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       if (!mounted) return;
       
       if (storedPin == pin) {
-        // หากมีฟังก์ชัน _showFloatingBalloon ในระบบหลัก สามารถเรียกใช้ต่อได้
-        // await _showFloatingBalloon();
         setState(() {
           isAuthorized = true;
         });
@@ -604,7 +548,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF10131A)),
           ),
-          Container(color: Colors.black.withOpacity(0.85)),
+          // ปรับลดความเข้มพื้นหลัง PIN ลงเหลือ 0.7 ให้เห็นรูปโรบอทชัดเจนขึ้น
+          Container(color: Colors.black.withOpacity(0.7)),
           SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -716,10 +661,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-
-
 // ==========================================
-// #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Stainless Steel Theme)
+// #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
@@ -1679,7 +1622,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 }
 
 // ==========================================
-// #8 โหมด HomeScreen (Stainless Steel Theme)
+// #8 โหมด HomeScreen
 // ==========================================
 
 class HomeScreen extends StatefulWidget {
@@ -1924,7 +1867,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.85), const Color(0xFF1E293B).withOpacity(0.6), Colors.black.withOpacity(0.95)],
+                colors: [Colors.black.withOpacity(0.7), const Color(0xFF1E293B).withOpacity(0.4), Colors.black.withOpacity(0.8)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -1978,16 +1921,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B).withOpacity(0.9),
+                        color: const Color(0xFF1E293B).withOpacity(0.85),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.2),
-                            blurRadius: 12.0,
-                            spreadRadius: 1.0,
-                          ),
-                        ],
                       ),
                       child: Column(
                         children: const [
@@ -2001,9 +1937,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: 2.5,
-                              shadows: [
-                                Shadow(color: Color(0xFFCBD5E1), blurRadius: 10, offset: Offset(0, 0)),
-                              ],
                             ),
                           ),
                         ],
@@ -2086,13 +2019,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFE2E8F0), width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.2),
-                          blurRadius: 25,
-                          spreadRadius: 3,
-                        ),
-                      ],
                       color: const Color(0xFF1E293B),
                     ),
                     child: Column(
@@ -2149,16 +2075,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildDashboardStatsContent() {
     double totalProfitLoss = 0.0;
-    double maxProfit = 0.0;
     double maxLoss = 0.0;
 
     for (var trade in _historyTrades) {
       double p = double.tryParse(trade['profit']?.toString() ?? '0.0') ?? 0.0;
       totalProfitLoss += p;
-      if (p > 0) {
-        if (p > maxProfit) maxProfit = p;
-      } else if (p < 0) {
-        if (p < maxLoss) maxLoss = p;
+      if (p < 0 && p < maxLoss) {
+        maxLoss = p;
       }
     }
 
@@ -2177,9 +2100,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (currentDD > maxDDAmount) {
         maxDDAmount = currentDD;
       }
-    }
-    if (maxDDAmount == 0 && displayLosses > 0) {
-      maxDDAmount = (maxLoss.abs() / (balance > 0 ? balance : 1000.0)) * 100;
     }
 
     return SingleChildScrollView(
@@ -2241,13 +2161,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.1),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2272,47 +2185,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Center(
-                        child: Text(
-                          'WIN RATE PERCENT',
-                          style: TextStyle(
-                            color: Color(0xFFCBD5E1),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'GREEN',
-                                style: TextStyle(color: Color(0xFF00E676), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                              ),
-                              Text(
-                                'WIN RATE: ${displayWinRate.toStringAsFixed(1)}%',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text(
-                                'GRAY',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                              ),
-                              Text(
-                                'LOSS RATE: ${lossRate.toStringAsFixed(1)}%',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-                              ),
-                            ],
-                          ),
+                          Text('WIN RATE: ${displayWinRate.toStringAsFixed(1)}%', style: const TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                          Text('LOSS RATE: ${lossRate.toStringAsFixed(1)}%', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                         ],
                       ),
                       const SizedBox(height: 10),
@@ -2329,35 +2206,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF00E676),
                                 borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF00E676).withOpacity(0.9),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF64748B), width: 1.2),
-                          color: Colors.black.withOpacity(0.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Based on $displayWins Win / $displayLosses Loss Cycles',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
                             ),
                           ),
                         ),
@@ -2380,9 +2229,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF64748B), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 3)),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2425,13 +2271,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withOpacity(0.2),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2529,14 +2368,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 end: Alignment.bottomCenter,
               ),
               border: Border.all(color: borderColor, width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: (glowColor ?? borderColor).withOpacity(0.6),
-                  blurRadius: 14,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 0),
-                ),
-              ],
             ),
             child: Icon(icon, color: Colors.white, size: isLarge ? 34 : 28),
           ),
@@ -2557,7 +2388,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// Widget ข้อความกระพริบแฟลชแบบสแตนเลสเงินเรืองแสง
 class FlashingSniperText extends StatefulWidget {
   const FlashingSniperText({super.key});
 
@@ -2605,18 +2435,6 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: 3.0,
-              shadows: [
-                Shadow(
-                  color: Colors.white.withOpacity(val),
-                  blurRadius: 20 * val,
-                  offset: const Offset(0, 0),
-                ),
-                Shadow(
-                  color: const Color(0xFFCBD5E1).withOpacity(val),
-                  blurRadius: 10 * val,
-                  offset: const Offset(0, 0),
-                ),
-              ],
             ),
           ),
         );
@@ -2626,7 +2444,7 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
 }
 
 // ==========================================
-// #9 โหมดรายงานออเดอร์ (OrdersScreen - Stainless Steel Theme)
+// #9 โหมดรายงานออเดอร์ (OrdersScreen)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -2649,22 +2467,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
   double equity = 0.0;
   double margin = 0.0;
   double freeMargin = 0.0;
-  double profitLoss = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _listenToOrders(widget.accountLogin);
-    _listenToStatusForSymbol(widget.accountLogin);
+    _loadAccountDetailsAndListen();
   }
 
   @override
   void didUpdateWidget(covariant OrdersScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.accountLogin != widget.accountLogin) {
-      _listenToOrders(widget.accountLogin);
-      _listenToStatusForSymbol(widget.accountLogin);
+      _loadAccountDetailsAndListen();
     }
+  }
+
+  void _loadAccountDetailsAndListen() async {
+    // โหลด Server ที่เก็บไว้จากตอนล็อกอิน
+    final prefs = await SharedPreferences.getInstance();
+    final savedServer = prefs.getString('mt5_server');
+    if (savedServer != null && savedServer.isNotEmpty && mounted) {
+      setState(() {
+        accountServer = savedServer;
+      });
+    }
+    _listenToOrders(widget.accountLogin);
+    _listenToStatusForSymbol(widget.accountLogin);
   }
 
   void _listenToStatusForSymbol(String login) async {
@@ -2681,13 +2509,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
           setState(() {
             activeSymbol = data['symbol']?.toString() ?? 'BTCUSD';
             activeTimeframe = data['timeframe']?.toString() ?? 'M1';
-            accountServer = data['server']?.toString() ?? 'ICMarketsSC-Demo';
-            
+            if (data['server'] != null && data['server'].toString().isNotEmpty) {
+              accountServer = data['server'].toString();
+            }
             balance = (data['balance'] ?? 0.0).toDouble();
             equity = (data['equity'] ?? 0.0).toDouble();
             margin = (data['margin'] ?? 0.0).toDouble();
             freeMargin = (data['free_margin'] ?? 0.0).toDouble();
-            profitLoss = (data['profit'] ?? 0.0).toDouble();
           });
         }
       });
@@ -2758,8 +2586,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
               return Container(color: const Color(0xFF0F172A));
             },
           ),
+          // ปรับลดความเข้มพื้นหลัง Orders
           Container(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withOpacity(0.7),
           ),
           SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -2779,14 +2608,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       color: const Color(0xFFCBD5E1),
                       width: 2.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
-                        blurRadius: 15,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2857,18 +2678,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       color: const Color(0xFF94A3B8),
                       width: 2.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.15),
-                        blurRadius: 14,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      color: const Color(0xFF1E293B).withOpacity(0.95),
+                      color: const Color(0xFF1E293B).withOpacity(0.85),
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         children: [
@@ -3252,7 +3066,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.92),
+            color: Colors.black.withOpacity(0.8),
           ),
           Column(
             children: [
@@ -3303,14 +3117,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     color: const Color(0xFFCBD5E1),
                     width: 2.0,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.2),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3354,13 +3160,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       color: const Color(0xFF94A3B8),
                       width: 2.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -3396,13 +3195,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     color: const Color(0xFF475569),
                                     width: 1.2,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.4),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3642,24 +3434,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.92),
+            color: Colors.black.withOpacity(0.8),
           ),
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: const Color(0xFF1E293B).withOpacity(0.85),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: const Color(0xFF94A3B8),
                 width: 1.5,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.15),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
@@ -3685,13 +3470,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
                               color: const Color(0xFF475569),
                               width: 1.2,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3730,7 +3508,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 // ==========================================
-// #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+// #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen - แก้ไขปุ่ม Logout และ Reset PIN แล้ว)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -3761,7 +3539,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController riskRewardController = TextEditingController();
   
   final TextEditingController recoveryStepController = TextEditingController(text: "200");
-
   final TextEditingController startTimeController = TextEditingController(text: "08:00");
   final TextEditingController endTimeController = TextEditingController(text: "22:00");
 
@@ -3935,6 +3712,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // 3. รีเซ็ตรหัสผ่านพินแล้วเด้งไปหน้าสร้างพินใหม่
   Future<void> _resetPin() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
@@ -3948,6 +3726,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // 2. ล็อกเอาต์แล้วเด้งไปหน้าล็อกอิน MT5 ใหม่
   Future<void> _logoutToLoginScreen() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_pin');
@@ -4023,8 +3802,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               return Container(color: const Color(0xFF0F172A));
             },
           ),
+          // 4. ปรับลดความเข้มพื้นหลัง Settings
           Container(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withOpacity(0.7),
           ),
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -4035,19 +3815,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B).withOpacity(0.9),
+                    color: const Color(0xFF1E293B).withOpacity(0.85),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: const Color(0xFFCBD5E1),
                       width: 2.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
-                        blurRadius: 14,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -4078,8 +3851,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     side: BorderSide(color: const Color(0xFF94A3B8), width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
-                                    padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     sym,
@@ -4117,8 +3888,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(color: const Color(0xFF94A3B8), width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
-                                    padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     mode,
@@ -4157,8 +3926,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
-                                    padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     mode,
@@ -4230,7 +3997,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       color: const Color(0xFF94A3B8),
                                       width: isSelected ? 2 : 1,
                                     ),
-                                    padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
                                     tf,
@@ -4293,93 +4059,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Start Time (เวลาไทย)', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0F172A),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12, width: 1),
-                                  ),
-                                  child: TextField(
-                                    controller: startTimeController,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                                    onChanged: (val) => setState(() { _isEditing = true; }),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('End Time (เวลาไทย)', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0F172A),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12, width: 1),
-                                  ),
-                                  child: TextField(
-                                    controller: endTimeController,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                                    onChanged: (val) => setState(() { _isEditing = true; }),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'BASKET CONTROL', 
-                            style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)
-                          ),
-                          Row(
-                            children: [
-                              const Text('Enable Basket', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                              const SizedBox(width: 6),
-                              Switch(
-                                value: enableBasketControl,
-                                activeColor: const Color(0xFFCBD5E1),
-                                onChanged: (val) => setState(() {
-                                  _isEditing = true;
-                                  enableBasketControl = val;
-                                }),
-                              ),
-                            ],
-                          ),
-                        ],
+                      const Text(
+                        'BASKET CONTROL', 
+                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4443,79 +4128,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   _buildControllerInputField('Limit (\$)', basketSlController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: enableDailyTarget,
-                                        activeColor: const Color(0xFF00E676),
-                                        onChanged: (val) => setState(() {
-                                          _isEditing = true;
-                                          enableDailyTarget = val;
-                                        }),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Target (\$)', dailyTargetController, TextInputType.number),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('Daily Loss', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                                      Switch(
-                                        value: enableDailyLoss,
-                                        activeColor: Colors.redAccent,
-                                        onChanged: (val) => setState(() {
-                                          _isEditing = true;
-                                          enableDailyLoss = val;
-                                        }),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _buildControllerInputField('Limit (\$)', dailyLossController, TextInputType.number),
                                 ],
                               ),
                             ),
