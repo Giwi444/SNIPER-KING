@@ -1,14 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION"/>
+
     <application
+        android:label="SNIPER HYBRID"
         android:name="${applicationName}"
-        android:label="SNIPER HYBRID" 
         android:icon="@mipmap/ic_launcher">
         
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
             
             <meta-data
@@ -25,9 +32,9 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Service ของ flutter_overlay_window ที่แก้ไขให้ถูกต้องแล้ว -->
         <service
             android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
             android:exported="false" />
 
     </application>
+</manifest>
