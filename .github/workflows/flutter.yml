@@ -1,4 +1,5 @@
-name: BotHybrid 
+
+name: BotHybrid
 
 on:
   workflow_dispatch:
@@ -78,6 +79,11 @@ jobs:
           cd "$PROJECT_DIR"
           flutter pub get
 
+      - name: Generate SNIPER HYBRID Robot Icon
+        run: |
+          cd "$PROJECT_DIR"
+          dart run flutter_launcher_icons
+
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
@@ -91,6 +97,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SniperHybrid-APK
+          name: SniperHybrid
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
