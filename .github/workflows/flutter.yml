@@ -1,4 +1,5 @@
-name: Build Sniper Hybrid APK
+```yaml
+name: Sniper Hybrid 
 
 on:
   workflow_dispatch:
@@ -53,49 +54,29 @@ jobs:
           )
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Flutter project not found."
-            echo "Required: pubspec.yaml and lib/main.dart"
+            echo "ERROR: Cannot find Flutter project"
             exit 1
           fi
 
           PROJECT_DIR="${PROJECT_DIR#./}"
-          if [ -z "$PROJECT_DIR" ]; then
-            PROJECT_DIR="."
-          fi
+          [ -n "$PROJECT_DIR" ] || PROJECT_DIR="."
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Flutter project: $PROJECT_DIR"
 
-      - name: Validate Flutter project
+      - name: Validate project and icon
         shell: bash
         run: |
           cd "$PROJECT_DIR"
-
           test -f pubspec.yaml
           test -f lib/main.dart
-
-          echo "Flutter project files found."
-
-          if [ -f assets/images/1792250578954.jpg ]; then
-            echo "First image found."
-          else
-            echo "WARNING: First image not found."
-          fi
-
-          if [ -f assets/images/1792250396366.jpg ]; then
-            echo "Second image found."
-          else
-            echo "WARNING: Second image not found."
-          fi
+          test -f assets/images/1792250578954.jpg
+          test -f assets/images/1792250396366.jpg
 
       - name: Generate Android platform
-        shell: bash
         run: |
           cd "$PROJECT_DIR"
-
-          flutter create . \
-            --platforms=android \
-            --project-name sniperhybrid
+          flutter create . --platforms=android
 
       - name: Clean Flutter
         run: |
@@ -106,6 +87,11 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
+
+      - name: Generate App Icon
+        run: |
+          cd "$PROJECT_DIR"
+          dart run flutter_launcher_icons
 
       - name: Build APK
         run: |
