@@ -249,7 +249,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
       }
-    } } on FirebaseException catch (e, stackTrace) {
+    } on FirebaseException catch (e, stackTrace) {
       debugPrint('Firebase error code: ${e.code}');
       debugPrint('Firebase error message: ${e.message}');
       debugPrintStack(stackTrace: stackTrace);
