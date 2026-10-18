@@ -1,4 +1,3 @@
-
 name: Build Sniper Hybrid APK
 
 on:
@@ -37,32 +36,66 @@ jobs:
         shell: bash
         run: |
           PROJECT_DIR=""
+
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
+
             if [ -f "$candidate/lib/main.dart" ]; then
               PROJECT_DIR="$candidate"
               break
             fi
-          done < <(find . -name pubspec.yaml \
-            -not -path '*/.dart_tool/*' \
-            -not -path '*/build/*')
+          done < <(
+            find . -name pubspec.yaml \
+              -not -path '*/.dart_tool/*' \
+              -not -path '*/build/*' \
+              -not -path '*/.pub-cache/*' \
+              | sort
+          )
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Cannot find Flutter project with lib/main.dart"
+            echo "ERROR: Flutter project not found."
+            echo "Required: pubspec.yaml and lib/main.dart"
             exit 1
+          fi
+
+          PROJECT_DIR="${PROJECT_DIR#./}"
+          if [ -z "$PROJECT_DIR" ]; then
+            PROJECT_DIR="."
           fi
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Flutter project: $PROJECT_DIR"
 
-      - name: Validate assets
+      - name: Validate Flutter project
         shell: bash
         run: |
           cd "$PROJECT_DIR"
+
           test -f pubspec.yaml
           test -f lib/main.dart
-          test -f assets/images/1792250578954.jpg
-          test -f assets/images/1792250396366.jpg
+
+          echo "Flutter project files found."
+
+          if [ -f assets/images/1792250578954.jpg ]; then
+            echo "First image found."
+          else
+            echo "WARNING: First image not found."
+          fi
+
+          if [ -f assets/images/1792250396366.jpg ]; then
+            echo "Second image found."
+          else
+            echo "WARNING: Second image not found."
+          fi
+
+      - name: Generate Android platform
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+
+          flutter create . \
+            --platforms=android \
+            --project-name sniperhybrid
 
       - name: Clean Flutter
         run: |
@@ -74,16 +107,15 @@ jobs:
           cd "$PROJECT_DIR"
           flutter pub get
 
-      - name: Generate Android platform
-        shell: bash
-        run: |
-          cd "$PROJECT_DIR"
-          flutter create . --platforms=android
-
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
           flutter build apk --release
+
+      - name: Verify APK
+        run: |
+          test -f "$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.apk"
+          ls -lh "$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
