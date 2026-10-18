@@ -468,220 +468,70 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     _checkPinExists();
   }
 
+  // 🔧 แก้ไขฟังก์ชันนี้เพื่อป้องกันการค้างหมุน
   Future<void> _checkPinExists() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final pin = prefs.getString('user_pin');
-    setState(() {
-      hasStoredPin = pin != null && pin.isNotEmpty;
-      isLoading = false;
-    });
+    try {
+      // ตั้งเวลาอ่านค่าสูงสุด 3 วินาที หากเกินให้ข้ามไปเปิดหน้า PIN ทันที
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 3),
+      );
+      final pin = prefs.getString('user_pin');
+      
+      if (!mounted) return;
+      setState(() {
+        hasStoredPin = pin != null && pin.isNotEmpty;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Check PIN error: $e");
+      if (!mounted) return;
+      // หากเกิดข้อผิดพลาด ให้ข้ามหน้า Loading เพื่อแสดงหน้าตั้งรหัส PIN ทันที
+      setState(() {
+        hasStoredPin = false;
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveNewPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    await prefs.setString('user_pin', pin);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_pin', pin);
+    } catch (e) {
+      print("Save PIN error: $e");
+    }
   }
 
   Future<void> _verifyPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final storedPin = prefs.getString('user_pin');
-    if (storedPin == pin) {
-      setState(() {
-        isAuthorized = true;
-      });
-    } else {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedPin = prefs.getString('user_pin');
+      if (!mounted) return;
+      
+      if (storedPin == pin) {
+        setState(() {
+          isAuthorized = true;
+        });
+      } else {
+        setState(() {
+          currentPinInput = "";
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
+            backgroundColor: Color(0xFF475569),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Verify PIN error: $e");
+      if (!mounted) return;
       setState(() {
         currentPinInput = "";
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Color(0xFF475569)),
-      );
     }
   }
 
-  void _onNumberTap(String number) {
-    if (currentPinInput.length < 6) {
-      setState(() {
-        currentPinInput += number;
-      });
-
-      if (currentPinInput.length == 6) {
-        if (!hasStoredPin) {
-          if (!isConfirming) {
-            firstEnteredPin = currentPinInput;
-            currentPinInput = "";
-            isConfirming = true;
-          } else {
-            if (firstEnteredPin == currentPinInput) {
-              _saveNewPin(currentPinInput);
-              setState(() {
-                hasStoredPin = true;
-                isAuthorized = true;
-              });
-            } else {
-              setState(() {
-                currentPinInput = "";
-                isConfirming = false;
-                firstEnteredPin = "";
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Color(0xFF475569)),
-              );
-            }
-          }
-        } else {
-          _verifyPin(currentPinInput);
-        }
-      }
-    }
-  }
-
-  void _onDeleteTap() {
-    if (currentPinInput.isNotEmpty) {
-      setState(() {
-        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (isAuthorized) {
-      return const MainNavigationScreen();
-    }
-
-    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
-    if (!hasStoredPin) {
-      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
-    }
-
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/1792250578954.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0F172A)),
-          ),
-          Container(color: const Color(0xFF0F172A).withOpacity(0.9)),
-          SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFCBD5E1), size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  titleText,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (index) {
-                    bool isFilled = index < currentPinInput.length;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFE2E8F0) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFCBD5E1), width: 2),
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(width: 96),
-                      _buildPinButton('0'),
-                      _buildPinButton('del'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPinButton(String val) {
-    return Container(
-      width: 72,
-      height: 72,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF64748B), Color(0xFF1E293B)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          )
-        ]
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (val == 'del') {
-              _onDeleteTap();
-            } else {
-              _onNumberTap(val);
-            }
-          },
-          customBorder: const CircleBorder(),
-          child: Center(
-            child: val == 'del'
-                ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ==========================================
 // #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Stainless Steel Theme)
