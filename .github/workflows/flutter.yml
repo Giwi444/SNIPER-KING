@@ -24,16 +24,19 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.2' # ล็อกเวอร์ชัน stable ที่รองรับ V2 Embedding สมบูรณ์
+          flutter-version: '3.22.2'
           channel: 'stable'
-          cache: true
+          cache: false # ปิดการดึงแคชเก่าเพื่อล้างคราบ v1 embedding ออกให้หมด
 
-      - name: Fetch dependencies
-        run: flutter pub get
+      - name: Clean build cache
+        run: |
+          rm -rf ~/.pub-cache
+          flutter clean
 
-      # บังคับสร้างไฟล์แคชใหม่ และล้างโครงสร้าง v1 ที่อาจค้างอยู่
-      - name: Clean Flutter build
-        run: flutter clean && flutter pub get
+      - name: Upgrade Android Project Files to v2
+        run: |
+          flutter create --platforms android .
+          flutter pub get
 
       - name: Build Release APK
         run: flutter build apk --release
