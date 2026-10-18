@@ -31,16 +31,14 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
+          cache: false
 
       - name: Find Flutter project
         shell: bash
         run: |
           PROJECT_DIR=""
-
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
-
             if [ -f "$candidate/lib/main.dart" ]; then
               PROJECT_DIR="$candidate"
               break
@@ -60,7 +58,6 @@ jobs:
 
           PROJECT_DIR="${PROJECT_DIR#./}"
           [ -n "$PROJECT_DIR" ] || PROJECT_DIR="."
-
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Flutter project: $PROJECT_DIR"
 
@@ -69,10 +66,12 @@ jobs:
           cd "$PROJECT_DIR"
           flutter create . --platforms=android
 
-      - name: Clean Flutter
+      - name: Clean old build
         run: |
           cd "$PROJECT_DIR"
           flutter clean
+          rm -rf .dart_tool
+          rm -rf build
 
       - name: Get dependencies
         run: |
@@ -84,7 +83,7 @@ jobs:
           cd "$PROJECT_DIR"
           dart run flutter_launcher_icons
 
-      - name: Build APK
+      - name: Build fresh APK
         run: |
           cd "$PROJECT_DIR"
           flutter build apk --release
