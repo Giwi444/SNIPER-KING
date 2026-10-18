@@ -36,10 +36,10 @@ jobs:
       - name: Fetch dependencies
         run: flutter pub get
 
-      # บังคับอัปเดตและสร้างโครงสร้างฝั่ง Android ให้เป็น v2 โดยอัตโนมัติ
+      # ระบุชื่อโปรเจกต์ --project-name sniperhybrid เพื่อป้องกันมันเอาชื่อ SNIPER-KING มาใช้
       - name: Upgrade Android Embedding to v2
         run: |
-          flutter create --platforms android --org com.sniper.hybrid .
+          flutter create --platforms android --project-name sniperhybrid --org com.sniper.hybrid .
           flutter pub get
 
       - name: Build Release APK
