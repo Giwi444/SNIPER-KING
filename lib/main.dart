@@ -11,25 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// ฟังก์ชันช่วยจัดการ Firebase safely และกำหนดค่าเริ่มต้นอย่างถูกต้อง
-Future<FirebaseApp> _getFirebaseApp() async {
-  if (Firebase.apps.isNotEmpty) {
-    return Firebase.app();
-  }
-  return await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-      appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-      messagingSenderId: "155532929563",
-      projectId: "liquidity-b8739",
-      storageBucket: "liquidity-b8739-firebasestorage.app",
-      databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-    ),
-  );
-}
 
 // ==========================================
-// #2 โหมดบอลลูนทับแอปอื่น (Stainless Steel Theme)
+// #2 โหมดบอลลูนทับแอปอื่น
 // ==========================================
 
 @pragma("vm:entry-point")
@@ -64,9 +48,21 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
 
   Future<void> _initFirebaseAndListenConnection() async {
     try {
-      final app = await _getFirebaseApp();
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+            messagingSenderId: "155532929563",
+            projectId: "liquidity-b8739",
+            storageBucket: "liquidity-b8739-firebasestorage.app",
+            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+          ),
+        );
+      }
+
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -100,64 +96,53 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
         height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          border: Border.all(color: const Color(0xFFD50000), width: 2),
           boxShadow: [
             BoxShadow(
-              color: (isConnected ? const Color(0xFF00C853) : const Color(0xFF94A3B8)).withOpacity(0.6),
+              color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
               blurRadius: 8,
               spreadRadius: 2,
             ),
           ],
         ),
-        padding: const EdgeInsets.all(2),
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF10131A),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/images/1792250578954.jpg',
-                  fit: BoxFit.cover,
-                  width: 52,
-                  height: 52,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: const Color(0xFF2A2E39),
-                      child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
-                    );
-                  },
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/images/1792250578954.jpg',
+                fit: BoxFit.cover,
+                width: 56,
+                height: 56,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xFFD50000),
+                    child: const Icon(Icons.show_chart, color: Colors.white, size: 30),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isConnected ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
               ),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: isConnected ? const Color(0xFF00C853) : const Color(0xFF64748B),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isConnected ? const Color(0xFF00C853) : const Color(0xFF64748B)).withOpacity(0.8),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -193,14 +178,25 @@ Future<void> _showFloatingBalloon() async {
 
 
 // ==========================================
-// #3 โหมดเมนหลัก (แก้ไขให้ Initialize Firebase ให้ถูกต้อง)
+// #3 โหมดเมนหลัก
 // ==========================================
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    await _getFirebaseApp();
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+          appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+          messagingSenderId: "155532929563",
+          projectId: "liquidity-b8739",
+          storageBucket: "liquidity-b8739-firebasestorage.app",
+          databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+        ),
+      );
+    }
   } catch (e) {
     print("Firebase init error: $e");
   }
@@ -209,7 +205,7 @@ void main() async {
 }
 
 
-// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
+// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ (ประกาศไว้ที่เดียวที่ใช้งานร่วมกัน)
 class TypewriterText extends StatefulWidget {
   final String text;
   final TextStyle style;
@@ -288,7 +284,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #4 โหมดเริ่มต้นแอพ (Stainless Steel Theme)
+// #4 โหมดเริ่มต้นแอพ
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -300,18 +296,17 @@ class LiquiditySweepApp extends StatelessWidget {
       title: '🎯SNIPER  HYBRID🎯',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF10131A),
-        cardColor: const Color(0xFF1A1E29),
+        scaffoldBackgroundColor: const Color(0xFF0B0B0E),
+        cardColor: const Color(0xFF161619),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFCBD5E1),
-          secondary: Color(0xFF94A3B8),
+          primary: Color(0xFFD50000),
+          secondary: Color(0xFFFF1744),
         ),
       ),
       home: const MT5LoginWrapper(),
     );
   }
 }
-
 
 
 // ==========================================
@@ -625,10 +620,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 }
 
 
-
-
 // ==========================================
-// #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper - Stainless Theme)
+// #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -682,7 +675,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         currentPinInput = "";
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Color(0xFF64748B)),
+        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Colors.red),
       );
     }
   }
@@ -714,7 +707,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                 firstEnteredPin = "";
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Color(0xFF64748B)),
+                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Colors.red),
               );
             }
           }
@@ -755,14 +748,14 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF10131A)),
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0B0B0E)),
           ),
           Container(color: Colors.black.withOpacity(0.85)),
           SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFCBD5E1), size: 48),
+                const Icon(Icons.lock_outline, color: Color(0xFFFF1744), size: 48),
                 const SizedBox(height: 16),
                 Text(
                   titleText,
@@ -779,8 +772,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                       height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFE2E8F0) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFCBD5E1), width: 2),
+                        color: isFilled ? const Color(0xFFFF1744) : Colors.transparent,
+                        border: Border.all(color: const Color(0xFFFF1744), width: 2),
                       ),
                     );
                   }),
@@ -831,21 +824,13 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       width: 72,
       height: 72,
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF475569), Color(0xFF1E293B)],
+        gradient: LinearGradient(
+          colors: [Color(0xFFD50000), Color(0xFF7A0000)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          )
-        ]
       ),
       child: Material(
         color: Colors.transparent,
@@ -872,7 +857,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
 
 // ==========================================
-// #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Silver Redesign)
+// #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
@@ -894,7 +879,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   Offset _orderBubbleOffset = const Offset(20, 100);
   Offset _modalOffset = const Offset(16, 80);
   
+  // ตัวแปรควบคุมการเปิด-ปิด Live Status
   bool _isLiveStatusVisible = true;
+
   bool _isOrderBubblePressed = false;
   bool _isLargeLogsModalOpen = false;
   bool isRunning = false;
@@ -968,11 +955,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToActiveAccount() async {
+  void _listenToActiveAccount() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('status/login').onValue.listen((event) {
@@ -992,11 +978,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToAlertsCount() async {
+  void _listenToAlertsCount() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       
@@ -1026,11 +1011,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _initFirebaseAndListen() async {
+  void _initFirebaseAndListen() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -1051,11 +1035,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToConnectionStatus() async {
+  void _listenToConnectionStatus() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('.info/connected').onValue.listen((event) {
@@ -1071,11 +1054,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToLogs() async {
+  void _listenToLogs() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _logsRef = database.ref('accounts/$currentLogin/logs');
@@ -1118,11 +1100,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToOrdersForDialog() async {
+  void _listenToOrdersForDialog() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _ordersRef = database.ref('accounts/$currentLogin/orders');
@@ -1201,7 +1182,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF10131A),
+      backgroundColor: const Color(0xFF0B0B0E),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -1221,9 +1202,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161B26),
-                  border: const Border(
-                    top: BorderSide(color: Color(0xFF94A3B8), width: 1.5),
+                  color: const Color(0xFF0B0B0E),
+                  border: Border(
+                    top: BorderSide(color: const Color(0xFFD50000).withOpacity(0.6), width: 1.5),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1267,15 +1248,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                   height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 2.0),
+                    border: Border.all(color: const Color(0xFFFF0000), width: 2.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.red.withOpacity(0.7),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
-                    color: const Color(0xFF161B26),
+                    color: const Color(0xFF121215),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1287,7 +1268,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.terminal, color: Color(0xFFCBD5E1), size: 18),
+                                Icon(Icons.terminal, color: Color(0xFFFF1744), size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'STATUS & LOGS',
@@ -1302,6 +1283,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ),
                             Row(
                               children: [
+                                // 👁️ ปุ่มสลับเปิด-ปิดกล่อง Live Status ที่แถบด้านบน
                                 IconButton(
                                   icon: Icon(
                                     _isLiveStatusVisible ? Icons.visibility : Icons.visibility_off,
@@ -1319,7 +1301,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                 ),
                                 if (_botLogs.isNotEmpty)
                                   IconButton(
-                                    icon: const Icon(Icons.delete_sweep, color: Color(0xFF94A3B8), size: 20),
+                                    icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
                                     onPressed: _clearAllLogs,
                                     tooltip: 'Clear All Logs',
                                     constraints: const BoxConstraints(),
@@ -1340,7 +1322,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           ],
                         ),
                       ),
-                      const Divider(color: Color(0xFF64748B), height: 1, thickness: 1.5),
+                      const Divider(color: Color(0xFFFF0000), height: 1, thickness: 1.5),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
@@ -1353,7 +1335,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                               ],
                               const Row(
                                 children: [
-                                  Icon(Icons.show_chart, color: Color(0xFFCBD5E1), size: 16),
+                                  Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
                                   SizedBox(width: 6),
                                   Text(
                                     'ACTIVITY LOGS',
@@ -1435,7 +1417,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                                               onTap: () => _clearLogItem(log['key']),
                                               child: const Padding(
                                                 padding: EdgeInsets.only(left: 8.0),
-                                                child: Icon(Icons.delete_outline, color: Color(0xFF94A3B8), size: 15),
+                                                child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 15),
                                               ),
                                             ),
                                           ],
@@ -1515,19 +1497,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
-          colors: [Color(0xFFE2E8F0), Color(0xFF64748B), Color(0xFF1E293B)],
+          colors: [Color(0xFF222222), Color(0xFF8A0000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        border: Border.all(color: const Color(0xFFD50000), width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFF94A3B8)).withOpacity(0.6),
+            color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.6),
             blurRadius: 10,
             spreadRadius: 2,
           ),
         ],
       ),
-      padding: const EdgeInsets.all(2),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -1550,7 +1532,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFF64748B),
+                color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 2),
               ),
@@ -1569,11 +1551,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2430),
+        color: const Color(0xFF161619),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFFCBD5E1),
-          width: 1.5,
+          color: const Color(0xFFFF0000),
+          width: 2.0,
         ),
       ),
       child: Stack(
@@ -1618,12 +1600,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             child: Container(
                               height: 3,
                               decoration: const BoxDecoration(
-                                color: Color(0xFFE2E8F0),
+                                color: Color(0xFFFF1744),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white,
+                                    color: Colors.redAccent,
                                     blurRadius: 8,
                                     spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white,
+                                    blurRadius: 2,
+                                    spreadRadius: 1,
                                   ),
                                 ],
                               ),
@@ -1656,11 +1643,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: isServerActive ? const Color(0xFF00C853) : const Color(0xFF94A3B8),
+                            color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFF94A3B8)).withOpacity(0.8),
+                                color: (isServerActive ? const Color(0xFF00C853) : const Color(0xFFD50000)).withOpacity(0.8),
                                 blurRadius: 4,
                               )
                             ],
@@ -1670,7 +1657,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         Text(
                           isServerActive ? 'EA SERVER ONLINE & RUNNING' : 'EA SERVER OFFLINE / STOPPED',
                           style: TextStyle(
-                            color: isServerActive ? const Color(0xFF00C853) : const Color(0xFFCBD5E1),
+                            color: isServerActive ? const Color(0xFF00C853) : Colors.redAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
@@ -1683,7 +1670,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Active Orders: $orderCount', style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('Active Orders: $orderCount', style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                         Text('Lots: ${totalLots.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
                         Text(
                           'P/L: ${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
@@ -1700,6 +1687,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ],
           ),
+          // ปุ่มกากบาท (X) สำหรับปิด Live Status
           Positioned(
             right: 8,
             top: 8,
@@ -1714,7 +1702,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
+                  border: Border.all(color: Colors.redAccent, width: 1.5),
                 ),
                 child: const Icon(
                   Icons.close,
@@ -1745,18 +1733,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF334155) : Colors.transparent,
+          color: isSelected ? const Color(0xFFFF1744) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFCBD5E1) : Colors.transparent,
+            color: isSelected ? Colors.white : Colors.transparent,
             width: isSelected ? 1.5 : 0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.redAccent.withOpacity(0.8),
                     blurRadius: 10,
-                    spreadRadius: 1,
+                    spreadRadius: 2,
                   ),
                 ]
               : [],
@@ -1789,7 +1777,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                       child: Text(
                         '$badgeCount',
                         style: const TextStyle(
-                          color: Colors.black,
+                          color: Colors.red,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1832,10 +1820,12 @@ class ScannerClipper extends CustomClipper<Rect> {
 }
 
 
-// ==========================================
-// #8 โหมด HomeScreen (Stainless Silver Theme)
-// ==========================================
 
+
+
+// ==========================================
+//#8 โหมด HomeScreen (ดึงข้อมูล Bid/Ask ตามบัญชีเทรด & Cycle Stats)
+// ==========================================
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -1854,6 +1844,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String symbol = "XAUUSD";
   String timeframe = "M1";
 
+  // 🔴 เพิ่มตัวแปรสำหรับเก็บสถิติ Win Rate ระดับ Cycle (รอบ)
   int cycleWins = 0;
   int cycleLosses = 0;
   double cycleWinRate = 0.0;
@@ -1901,11 +1892,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _listenToConnectionStatus() async {
+  void _listenToConnectionStatus() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('.info/connected').onValue.listen((event) {
@@ -1921,11 +1911,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _initFirebaseAndListen(String login) async {
+  void _initFirebaseAndListen(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -1948,6 +1937,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               realTimeAsk = double.tryParse(data['ask'].toString()) ?? realTimeAsk;
             }
 
+            // 🔴 ดึงค่าสถิติการปิดแบบเป็นรอบ (Cycle Stats)
             cycleWins = int.tryParse(data['cycle_wins']?.toString() ?? '0') ?? 0;
             cycleLosses = int.tryParse(data['cycle_losses']?.toString() ?? '0') ?? 0;
             cycleWinRate = (data['cycle_win_rate'] ?? 0.0).toDouble();
@@ -1959,11 +1949,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToHistoryForStats(String login) async {
+  void _listenToHistoryForStats(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _historyRef = database.ref('accounts/$login/history');
@@ -2000,11 +1989,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToOrdersForDialog(String login) async {
+  void _listenToOrdersForDialog(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _ordersRef = database.ref('accounts/$login/orders');
@@ -2053,7 +2041,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'command_timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFF64748B)),
+        const SnackBar(content: Text('Sent Close All Command to EA!'), backgroundColor: Color(0xFFD50000)),
       );
     } catch (e) {
       print("Close all error: $e");
@@ -2066,19 +2054,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: const Color(0xFF10131A)),
+          Container(color: const Color(0xFF0B0B0E)),
           Image.asset(
             'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
-            opacity: const AlwaysStoppedAnimation(0.2),
+            opacity: const AlwaysStoppedAnimation(0.3),
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF10131A));
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.85), const Color(0xFF1E293B).withOpacity(0.6), Colors.black.withOpacity(0.95)],
+                colors: [Colors.black.withOpacity(0.9), const Color(0xFF3A0000).withOpacity(0.5), Colors.black.withOpacity(0.95)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -2097,22 +2085,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         height: 250,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFFFFF), Color(0xFF94A3B8), Color(0xFF334155)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withOpacity(0.25),
+                              color: Colors.red.withOpacity(0.9),
                               blurRadius: 22,
-                              spreadRadius: 2,
+                              spreadRadius: 4,
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.all(3),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(17),
+                          borderRadius: BorderRadius.circular(14),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
@@ -2132,14 +2114,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1E29).withOpacity(0.85),
+                        color: const Color(0xFF161619).withOpacity(0.85),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+                        border: Border.all(color: const Color(0xFFFF0000), width: 2.0),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.red.withOpacity(0.8),
                             blurRadius: 12.0,
-                            spreadRadius: 1.0,
+                            spreadRadius: 2.0,
                           ),
                         ],
                       ),
@@ -2148,7 +2130,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           FlashingSniperText(),
                           SizedBox(height: 4),
                           Text(
-                            'HYBRID  ROBOT',
+                            'HYBRID  ROB O T',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
@@ -2156,7 +2138,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               color: Colors.white,
                               letterSpacing: 2.5,
                               shadows: [
-                                Shadow(color: Colors.white38, blurRadius: 10, offset: Offset(0, 0)),
+                                Shadow(color: Colors.red, blurRadius: 10, offset: Offset(0, 0)),
                               ],
                             ),
                           ),
@@ -2168,12 +2150,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF94A3B8), width: 1.2),
+                        border: Border.all(color: const Color(0xFFD50000), width: 1.5),
                         color: Colors.black.withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6),
+                        ],
                       ),
                       child: const Text(
                         'Powered By Algohost',
-                        style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -2183,8 +2168,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         _buildCircularButton(
                           label: 'CLOSE',
                           icon: Icons.delete_outline,
-                          colors: const [Color(0xFF475569), Color(0xFF1E293B)],
-                          borderColor: const Color(0xFFCBD5E1),
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: _closeAllOrders,
                         ),
                         const SizedBox(width: 20),
@@ -2193,9 +2178,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
                               ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)] 
-                              : const [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569)], 
-                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFE2E8F0),
-                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFCBD5E1),
+                              : const [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000)], 
+                          borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                          glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFFF1744),
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
@@ -2203,8 +2188,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         _buildCircularButton(
                           label: 'STATS', 
                           icon: Icons.bar_chart,
-                          colors: const [Color(0xFF475569), Color(0xFF1E293B)],
-                          borderColor: const Color(0xFFCBD5E1),
+                          colors: const [Color(0xFF8A0000), Color(0xFF3A0000)],
+                          borderColor: const Color(0xFFD50000),
                           onPressed: () {
                             setState(() {
                               _isChartModalOpen = true;
@@ -2239,15 +2224,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     height: MediaQuery.of(context).size.height * 0.62,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2.5),
+                      border: Border.all(color: const Color(0xFFFF0000), width: 3.5),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.red.withOpacity(0.9),
                           blurRadius: 25,
-                          spreadRadius: 3,
+                          spreadRadius: 5,
                         ),
                       ],
-                      color: const Color(0xFF161B26),
+                      color: const Color(0xFF121215),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2259,7 +2244,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.dashboard_outlined, color: Color(0xFFCBD5E1), size: 18),
+                                  Icon(Icons.dashboard_outlined, color: Color(0xFFFF1744), size: 18),
                                   SizedBox(width: 8),
                                   Text(
                                     'DASHBOARD STATS',
@@ -2283,7 +2268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        const Divider(color: Color(0xFF64748B), height: 1, thickness: 1.5),
+                        const Divider(color: Color(0xFFFF0000), height: 1, thickness: 2),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(14.0),
@@ -2316,6 +2301,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
 
+    // 🔴 ปรับเปลี่ยนการใช้ค่า Win / Loss ตามรอบ (Cycle Stats)
     int displayWins = cycleWins;
     int displayLosses = cycleLosses;
     int totalCycles = displayWins + displayLosses;
@@ -2357,7 +2343,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'MAX DRAWDOWN',
                   value: '${maxDDAmount.toStringAsFixed(2)}%',
                   subText: 'Max Loss: \$${maxLoss.toStringAsFixed(2)}',
-                  color: const Color(0xFFCBD5E1),
+                  color: Colors.redAccent,
                   icon: Icons.trending_down,
                 ),
               ),
@@ -2371,7 +2357,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'TOTAL CYCLES',
                   value: '$totalCycles',
                   subText: '',
-                  color: const Color(0xFFE2E8F0),
+                  color: const Color(0xFFFF1744),
                   icon: Icons.receipt_long,
                 ),
               ),
@@ -2381,7 +2367,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   title: 'NET PROFIT',
                   value: '${totalProfitLoss >= 0 ? "+" : ""}\$${totalProfitLoss.toStringAsFixed(2)}',
                   subText: 'Balance: \$${balance.toStringAsFixed(2)}',
-                  color: totalProfitLoss >= 0 ? const Color(0xFF00C853) : const Color(0xFFCBD5E1),
+                  color: totalProfitLoss >= 0 ? const Color(0xFF00C853) : Colors.redAccent,
                   icon: Icons.account_balance_wallet,
                 ),
               ),
@@ -2392,13 +2378,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E2430),
+              color: const Color(0xFF0F0F12),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+              border: Border.all(color: const Color(0xFFFF1744), width: 2.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.1),
-                  blurRadius: 10,
+                  color: Colors.red.withOpacity(0.5),
+                  blurRadius: 12,
                   spreadRadius: 1,
                 ),
               ],
@@ -2406,22 +2392,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'WIN RATE & CYCLES',
                   style: TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: const Color(0xFFFF5252),
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
+                    shadows: [
+                      Shadow(color: Colors.redAccent.withOpacity(0.8), blurRadius: 8),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161B26),
+                    color: const Color(0xFF16161A),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF64748B), width: 1.2),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.4), width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2430,7 +2419,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Text(
                           'WIN RATE PERCENT',
                           style: TextStyle(
-                            color: Color(0xFFCBD5E1),
+                            color: Color(0xFFFF5252),
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
@@ -2445,7 +2434,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'GREEN',
+                                'GREEN NEON',
                                 style: TextStyle(color: Color(0xFF00C853), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                               Text(
@@ -2458,8 +2447,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               const Text(
-                                'GRAY',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                'RED NEON',
+                                style: TextStyle(color: Color(0xFFFF5252), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                               Text(
                                 'LOSS RATE: ${lossRate.toStringAsFixed(1)}%',
@@ -2475,7 +2464,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Container(
                           height: 14,
                           width: double.infinity,
-                          color: const Color(0xFF475569),
+                          color: const Color(0xFFD50000).withOpacity(0.4),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: (displayWinRate / 100).clamp(0.0, 1.0),
@@ -2501,7 +2490,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF64748B), width: 1.2),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 1.2),
                           color: Colors.black.withOpacity(0.5),
                         ),
                         child: Center(
@@ -2531,11 +2520,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2430),
+        color: const Color(0xFF1B1B20),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF64748B), width: 1.5),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
         boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 3)),
+          BoxShadow(color: color.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -2545,7 +2534,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
               Icon(icon, color: color, size: 16),
             ],
           ),
@@ -2575,13 +2564,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569), Color(0xFF1E293B)],
+          colors: [Color(0xFFFF1744), Color(0xFFD50000), Color(0xFF5A0000), Color(0xFF161619)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.red.withOpacity(0.5),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -2590,7 +2579,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFF161619),
           borderRadius: BorderRadius.circular(13),
         ),
         child: Column(
@@ -2602,7 +2591,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: Color(0xFFCBD5E1), size: 16),
+                    const Icon(Icons.show_chart, color: Color(0xFFFF1744), size: 16),
                     const SizedBox(width: 6),
                     Text(
                       symbol,
@@ -2615,11 +2604,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF94A3B8)),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
                   ),
                   child: Text(
                     'Spread: ${spreadVal > 0 ? spreadVal.toStringAsFixed(1) : "0.0"}',
-                    style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                   ),
                 ),
               ],
@@ -2630,7 +2619,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Column(
                   children: [
-                    const Text('BID', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    const Text('BID', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                     const SizedBox(height: 6),
                     Text(
                       realTimeBid > 0 ? realTimeBid.toStringAsFixed(2) : 'Loading...',
@@ -2685,7 +2674,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               border: Border.all(color: borderColor, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: (glowColor ?? borderColor).withOpacity(0.6),
+                  color: (glowColor ?? borderColor).withOpacity(0.8),
                   blurRadius: 14,
                   spreadRadius: 2,
                   offset: const Offset(0, 0),
@@ -2711,7 +2700,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// Widget ข้อความกระพริบแฟลชแบบสแตนเลสเงินเรืองแสง
+// ==========================================
+// Widget ข้อความกระพริบแฟลชแบบไฟนีออนเรืองแสง (แยกไว้นอกคลาสหลัก)
+// ==========================================
 class FlashingSniperText extends StatefulWidget {
   const FlashingSniperText({super.key});
 
@@ -2761,12 +2752,12 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
               letterSpacing: 3.0,
               shadows: [
                 Shadow(
-                  color: Colors.white.withOpacity(val),
+                  color: const Color(0xFFFF1744).withOpacity(val),
                   blurRadius: 20 * val,
                   offset: const Offset(0, 0),
                 ),
                 Shadow(
-                  color: const Color(0xFFCBD5E1).withOpacity(val),
+                  color: Colors.redAccent.withOpacity(val),
                   blurRadius: 10 * val,
                   offset: const Offset(0, 0),
                 ),
@@ -2780,8 +2771,10 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
 }
 
 
+
+
 // ==========================================
-// #9 โหมดรายงานออเดอร์ (OrdersScreen - Stainless Steel Theme)
+//#9  โหมดรายงานออเดอร์ (OrdersScreen สมบูรณ์)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -2822,11 +2815,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToStatusForSymbol(String login) async {
+  void _listenToStatusForSymbol(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _dbRef = database.ref('accounts/$login/status');
@@ -2851,11 +2843,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToOrders(String login) async {
+  void _listenToOrders(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -2901,20 +2892,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders & Portfolio', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF10131A),
+        backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/1792250578954.jpg',
+            'assets/images/1792250578954.jpg.',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF10131A));
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withOpacity(0.8),
           ),
           SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -2925,18 +2916,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFE2E8F0), Color(0xFF475569), Color(0xFF1E293B)],
+                      colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFCBD5E1),
-                      width: 2.0,
+                      color: const Color(0xFFFF0000),
+                      width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.red.withOpacity(0.8),
                         blurRadius: 15,
                         spreadRadius: 2,
                         offset: const Offset(0, 4),
@@ -2951,11 +2942,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.account_balance, color: Color(0xFF0F172A), size: 18),
+                              Icon(Icons.account_balance, color: Color(0xFFFF1744), size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'TRADING ACCOUNT INFO',
-                                style: TextStyle(color: Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, fontFamily: 'monospace'),
+                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, fontFamily: 'monospace'),
                               ),
                             ],
                           ),
@@ -2964,11 +2955,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black45,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+                              border: Border.all(color: Colors.redAccent, width: 1),
                             ),
                             child: Text(
                               activeSymbol,
-                              style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                             ),
                           ),
                         ],
@@ -2980,22 +2971,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Account Login', style: TextStyle(color: Color(0xFF334155), fontSize: 11, fontFamily: 'monospace')),
+                              const Text('Account Login', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
                               const SizedBox(height: 2),
                               Text(
                                 widget.accountLogin,
-                                style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text('Server', style: TextStyle(color: Color(0xFF334155), fontSize: 11, fontFamily: 'monospace')),
+                              const Text('Server', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
                               const SizedBox(height: 2),
                               Text(
                                 accountServer,
-                                style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                               ),
                             ],
                           ),
@@ -3009,12 +3000,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: const Color(0xFF94A3B8),
-                      width: 2.0,
+                      color: Colors.redAccent,
+                      width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.redAccent.withOpacity(0.7),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -3023,7 +3014,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      color: const Color(0xFF161B26).withOpacity(0.95),
+                      color: const Color(0xFF161619).withOpacity(0.95),
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         children: [
@@ -3049,14 +3040,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: isTotalProfit
-                                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161B26)]
-                                    : [const Color(0xFF64748B).withOpacity(0.3), const Color(0xFF161B26)],
+                                    ? [const Color(0xFF00C853).withOpacity(0.3), const Color(0xFF161619)]
+                                    : [const Color(0xFFD50000).withOpacity(0.3), const Color(0xFF161619)],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFF94A3B8).withOpacity(0.8),
+                                color: isTotalProfit ? const Color(0xFF00C853).withOpacity(0.8) : const Color(0xFFD50000).withOpacity(0.8),
                                 width: 1.5,
                               ),
                             ),
@@ -3070,7 +3061,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 Text(
                                   '${isTotalProfit ? "+" : ""}\$${totalOrdersProfit.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: isTotalProfit ? const Color(0xFF00C853) : Colors.redAccent,
+                                    color: isTotalProfit ? const Color(0xFF00C853) : const Color(0xFFD50000),
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
                                     fontFamily: 'monospace',
@@ -3086,7 +3077,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
                               child: Text(
                                 'ACTIVE ORDERS (${activeOrders.length})',
-                                style: const TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, fontFamily: 'monospace'),
+                                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, fontFamily: 'monospace'),
                               ),
                             ),
                           ),
@@ -3115,10 +3106,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       margin: const EdgeInsets.only(bottom: 10),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10131A),
+                                        color: const Color(0xFF0B0B0E),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : const Color(0xFF94A3B8).withOpacity(0.5),
+                                          color: isBuy ? const Color(0xFF00C853).withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
                                           width: 1,
                                         ),
                                       ),
@@ -3130,12 +3121,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                 decoration: BoxDecoration(
-                                                  color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : const Color(0xFF94A3B8).withOpacity(0.2),
+                                                  color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
                                                   type,
-                                                  style: TextStyle(color: isBuy ? const Color(0xFF00C853) : const Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                                  style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -3180,9 +3171,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF10131A),
+        color: const Color(0xFF0B0B0E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF475569), width: 1),
+        border: Border.all(color: Colors.white12, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -3190,9 +3181,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: const Color(0xFF94A3B8), size: 14),
+              Icon(icon, color: Colors.grey, size: 14),
               const SizedBox(width: 4),
-              Text(title, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontFamily: 'monospace')),
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
             ],
           ),
           const SizedBox(height: 8),
@@ -3246,11 +3237,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  void _listenToHistory(String login) async {
+  void _listenToHistory(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -3391,10 +3381,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF10131A),
+      backgroundColor: const Color(0xFF0B0B0E),
       appBar: AppBar(
         title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF10131A),
+        backgroundColor: const Color(0xFF0B0B0E),
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -3404,7 +3394,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF10131A));
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
@@ -3426,8 +3416,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: ChoiceChip(
                         label: Text(filter, style: const TextStyle(fontFamily: 'monospace')),
                         selected: isSelected,
-                        selectedColor: const Color(0xFF475569),
-                        backgroundColor: const Color(0xFF1A1E29),
+                        selectedColor: const Color(0xFFFF1744),
+                        backgroundColor: const Color(0xFF161619),
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.white : Colors.white70,
                           fontWeight: FontWeight.bold,
@@ -3450,18 +3440,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFE2E8F0), Color(0xFF475569), Color(0xFF1E293B)],
+                    colors: [Color(0xFFD50000), Color(0xFF101014), Color(0xFF5A0000)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: const Color(0xFFCBD5E1),
-                    width: 2.0,
+                    color: const Color(0xFFFF0000),
+                    width: 2.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.red.withOpacity(0.8),
                       blurRadius: 15,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),
@@ -3474,7 +3464,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Text(
                       'Total Realized P/L ($selectedFilter)',
                       style: const TextStyle(
-                        color: Color(0xFF0F172A),
+                        color: Colors.white70,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
@@ -3504,15 +3494,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161B26),
+                    color: const Color(0xFF121215),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: const Color(0xFF94A3B8),
+                      color: const Color(0xFFFF0000), // ปรับเป็นเส้นเรืองแสงสีแดง
                       width: 2.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.red.withOpacity(0.5),
                         blurRadius: 10,
                         spreadRadius: 1,
                       ),
@@ -3546,15 +3536,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10131A),
+                                  color: const Color(0xFF161619),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF475569),
+                                    color: Colors.redAccent.withOpacity(0.5),
                                     width: 1.2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.4),
+                                      color: Colors.red.withOpacity(0.15),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -3568,12 +3558,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : const Color(0xFF94A3B8).withOpacity(0.2),
+                                            color: isBuy ? const Color(0xFF00C853).withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
                                             type,
-                                            style: TextStyle(color: isBuy ? const Color(0xFF00C853) : const Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
+                                            style: TextStyle(color: isBuy ? const Color(0xFF00C853) : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace'),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -3584,7 +3574,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             const SizedBox(height: 3),
                                             Text(
                                               '${priceOpen.toStringAsFixed(2)} -> ${priceClose.toStringAsFixed(2)}',
-                                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontFamily: 'monospace'),
+                                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'monospace'),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(closeTime, style: const TextStyle(color: Colors.grey, fontSize: 10, fontFamily: 'monospace')),
@@ -3679,11 +3669,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return isFirstOrder || isRecovery || isProfitClose || isLossClose || isDailyTarget || isDailyLoss || isCloseTime;
   }
 
-  void _listenToAlerts(String login) async {
+  void _listenToAlerts(String login) {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -3774,14 +3763,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF10131A),
+      backgroundColor: const Color(0xFF0B0B0E),
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF10131A),
+        backgroundColor: const Color(0xFF0B0B0E),
         actions: [
           if (alertItems.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep, color: Color(0xFFCBD5E1)),
+              icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
               onPressed: _clearAllAlerts,
               tooltip: 'Clear All Alerts',
             ),
@@ -3795,7 +3784,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             fit: BoxFit.cover,
             opacity: const AlwaysStoppedAnimation(0.15),
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF10131A));
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
@@ -3804,15 +3793,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
           Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF161B26),
+              color: const Color(0xFF121215),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFF94A3B8),
-                width: 1.5,
+                color: const Color(0xFFFF0000), // ขอบเรืองแสงนีออนสีแดงเด่นชัด
+                width: 2.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.red.withOpacity(0.6),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -3836,15 +3825,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10131A),
+                            color: const Color(0xFF161619),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF475569),
+                              color: Colors.redAccent.withOpacity(0.5),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.red.withOpacity(0.15),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -3853,7 +3842,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.notifications_active, color: Color(0xFFCBD5E1), size: 20),
+                              const Icon(Icons.notifications_active, color: Color(0xFFFF1744), size: 20),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -3870,7 +3859,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                 onTap: () => _clearAlertItem(alert['key']),
                                 child: const Padding(
                                   padding: EdgeInsets.only(left: 8.0),
-                                  child: Icon(Icons.delete_outline, color: Color(0xFF94A3B8), size: 18),
+                                  child: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
                                 ),
                               ),
                             ],
@@ -3887,8 +3876,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 
+
+
+
 // ==========================================
-// #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+//#12  โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -3983,11 +3975,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadAllSettingsFromFirebase();
   }
 
-  void _loadAllSettingsFromFirebase() async {
+  void _loadAllSettingsFromFirebase() {
     try {
-      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: app,
+        app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -4085,7 +4076,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFF64748B),
+          backgroundColor: Color(0xFFFF1744),
         ),
       );
     } catch (e) {
@@ -4122,9 +4113,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF94A3B8);
-    if (mode == 'Step') return const Color(0xFF64748B);
-    return const Color(0xFF475569);
+    if (mode == 'Fixed') return const Color(0xFF00E5FF);
+    if (mode == 'Step') return const Color(0xFF9C27B0);
+    return const Color(0xFFFF9100);
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -4136,7 +4127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF10131A),
+            color: const Color(0xFF0B0B0E),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white12, width: 1),
           ),
@@ -4168,7 +4159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings Bot Parameters', style: TextStyle(fontFamily: 'monospace')),
-        backgroundColor: const Color(0xFF10131A),
+        backgroundColor: const Color(0xFF0B0B0E),
         elevation: 0,
       ),
       body: Stack(
@@ -4178,11 +4169,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(color: const Color(0xFF10131A));
+              return Container(color: const Color(0xFF0B0B0E));
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withOpacity(0.8),
           ),
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -4193,15 +4184,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161B26).withOpacity(0.9),
+                    color: const Color(0xFF161619).withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFCBD5E1),
-                      width: 2.0,
+                      color: Colors.redAccent,
+                      width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.redAccent.withOpacity(0.7),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -4212,7 +4203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
                       const Text('Trading Symbol', style: TextStyle(color: Colors.grey, fontSize: 11)),
@@ -4220,7 +4211,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color buttonColor = const Color(0xFF64748B);
+                          Color buttonColor = sym == 'XAUUSD'
+                              ? const Color(0xFFFF1744)
+                              : sym == 'BTCUSD'
+                                  ? const Color(0xFF00C853)
+                                  : const Color(0xFFD50000);
 
                           return Expanded(
                             child: Padding(
@@ -4233,10 +4228,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     selectedSymbol = sym;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF475569) : const Color(0xFF10131A),
+                                    backgroundColor: isSelected ? buttonColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    side: BorderSide(color: const Color(0xFF94A3B8), width: isSelected ? 2.5 : 1),
+                                    side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
@@ -4260,6 +4255,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
+                          Color modeColor = mode == 'All Mode'
+                              ? const Color(0xFFFF1744)
+                              : mode == 'Liquidity'
+                                  ? const Color(0xFFE91E63)
+                                  : mode == 'Breakout'
+                                      ? const Color(0xFF00BCD4)
+                                      : const Color(0xFFFF5722);
 
                           return Expanded(
                             child: Padding(
@@ -4272,10 +4274,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     tradingMode = mode;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF475569) : const Color(0xFF10131A),
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    side: BorderSide(color: const Color(0xFF94A3B8), width: isSelected ? 2.5 : 1),
+                                    side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
                                     elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
@@ -4312,7 +4314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     lotMode = mode;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF475569) : const Color(0xFF10131A),
+                                    backgroundColor: isSelected ? modeColor : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
@@ -4339,9 +4341,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10131A),
+                          color: const Color(0xFF0B0B0E),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
+                          border: Border.all(color: const Color(0xFFFF1744), width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4349,10 +4351,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12, fontWeight: FontWeight.bold)),
+                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFFF1744), fontSize: 12, fontWeight: FontWeight.bold)),
                                 Switch(
                                   value: enableTrendFilter,
-                                  activeColor: const Color(0xFFCBD5E1),
+                                  activeColor: const Color(0xFFFF1744),
                                   onChanged: (val) => setState(() {
                                     _isEditing = true;
                                     enableTrendFilter = val;
@@ -4382,11 +4384,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     selectedTf = tf;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF475569) : const Color(0xFF10131A),
+                                    backgroundColor: isSelected ? const Color(0xFFFF1744) : const Color(0xFF0B0B0E),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(
-                                      color: const Color(0xFF94A3B8),
+                                      color: const Color(0xFFFF1744),
                                       width: isSelected ? 2 : 1,
                                     ),
                                     padding: EdgeInsets.zero,
@@ -4441,13 +4443,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10131A),
+                              color: const Color(0xFF0B0B0E),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.white12, width: 1),
                             ),
                             child: Text(
                               '${calculatedTP.toStringAsFixed(1)} Pts',
-                              style: const TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ),
                         ],
@@ -4464,7 +4466,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10131A),
+                                    color: const Color(0xFF0B0B0E),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: Colors.white12, width: 1),
                                   ),
@@ -4493,7 +4495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10131A),
+                                    color: const Color(0xFF0B0B0E),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: Colors.white12, width: 1),
                                   ),
@@ -4517,12 +4519,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white12),
                       const SizedBox(height: 8),
+
+                      // ==========================================
+                      // BASKET CONTROL (เปลี่ยนสีกล่อง Basket TP เป็นน้ำเงินเข้ม)
+                      // ==========================================
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
                             'BASKET CONTROL', 
-                            style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)
+                            style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)
                           ),
                           Row(
                             children: [
@@ -4530,7 +4536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 6),
                               Switch(
                                 value: enableBasketControl,
-                                activeColor: const Color(0xFFCBD5E1),
+                                activeColor: const Color(0xFF00B0FF),
                                 onChanged: (val) => setState(() {
                                   _isEditing = true;
                                   enableBasketControl = val;
@@ -4547,9 +4553,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10131A),
+                                color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF94A3B8).withOpacity(0.8), width: 1.5),
+                                // 🔵 เปลี่ยนขอบเป็นสีน้ำเงินเข้ม
+                                border: Border.all(color: const Color(0xFF2962FF).withOpacity(0.8), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4557,10 +4564,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket TP', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      // 🔵 เปลี่ยนข้อความ Basket TP เป็นสีน้ำเงินเข้ม
+                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF2962FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        activeColor: const Color(0xFFCBD5E1),
+                                        // 🔵 เปลี่ยนสีสวิตช์ Basket TP เป็นสีน้ำเงินเข้ม
+                                        activeColor: const Color(0xFF2962FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketTp = val;
@@ -4579,9 +4588,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10131A),
+                                color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF64748B).withOpacity(0.6), width: 1.5),
+                                border: Border.all(color: const Color(0xFFFF9100).withOpacity(0.6), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4589,10 +4598,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket SL', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Basket SL', style: TextStyle(color: Color(0xFFFF9100), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketSl,
-                                        activeColor: const Color(0xFF94A3B8),
+                                        activeColor: const Color(0xFFFF9100),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketSl = val;
@@ -4609,9 +4618,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+
+                      // ==========================================
+                      // DAILY TARGET & LOSS CONTROL
+                      // ==========================================
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFFFF1744), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4620,7 +4633,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10131A),
+                                color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1),
                               ),
@@ -4652,7 +4665,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10131A),
+                                color: const Color(0xFF0B0B0E),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
                               ),
@@ -4684,25 +4697,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: _saveBotParametersToFirebase,
-                            icon: const Icon(Icons.save, color: Colors.black),
-                            label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
+                        child: ElevatedButton.icon(
+                          onPressed: _saveBotParametersToFirebase,
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF1744),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
@@ -4711,7 +4713,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         'SECURITY & PRIVACY', 
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                        style: TextStyle(color: Color(0xFFFF1744), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4729,7 +4731,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF475569),
+                              backgroundColor: const Color(0xFFD50000),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             ),
                             onPressed: _resetPin,
@@ -4753,12 +4755,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF10131A),
-                              side: const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
+                              backgroundColor: Colors.grey[850],
+                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             ),
                             onPressed: _logoutToLoginScreen,
-                            child: const Text('Log Out', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
