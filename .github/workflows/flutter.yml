@@ -22,14 +22,8 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Upgrade Android Platform to v2 Embedding
-        run: flutter create . --platforms=android --overwrite
-
       - name: Fetch Dependencies
         run: flutter pub get
-
-      - name: Generate Launcher Icons
-        run: dart run flutter_launcher_icons
 
       - name: Build Release APK
         run: flutter build apk --release
