@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // ฟังก์ชันช่วยจัดการ Firebase safely และกำหนดค่าเริ่มต้นอย่างถูกต้อง
@@ -28,8 +27,6 @@ Future<FirebaseApp> _getFirebaseApp() async {
   );
 }
 
-
-
 // ==========================================
 // #3 โหมดเมนหลัก
 // ==========================================
@@ -45,7 +42,6 @@ void main() async {
 
   runApp(const LiquiditySweepApp());
 }
-
 
 // Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
 class TypewriterText extends StatefulWidget {
@@ -124,7 +120,6 @@ class _TypewriterTextState extends State<TypewriterText> {
   }
 }
 
-
 // ==========================================
 // #4 โหมดเริ่มต้นแอพ (Stainless Steel Theme)
 // ==========================================
@@ -149,8 +144,6 @@ class LiquiditySweepApp extends StatelessWidget {
     );
   }
 }
-
-
 
 // ==========================================
 // #5 โหมดการเข้าใช้งานครั้งแรก (แก้ไขตัด SharedPreferences ออกเพื่อกัน Error)
@@ -450,10 +443,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 }
 
-
-
-
-
 // ==========================================
 // #6 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper - Stainless Steel Theme)
 // ==========================================
@@ -500,7 +489,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (!mounted) return;
     final storedPin = prefs.getString('user_pin');
     if (storedPin == pin) {
-      await _showFloatingBalloon();
       setState(() {
         isAuthorized = true;
       });
@@ -529,7 +517,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           } else {
             if (firstEnteredPin == currentPinInput) {
               _saveNewPin(currentPinInput);
-              _showFloatingBalloon();
               setState(() {
                 hasStoredPin = true;
                 isAuthorized = true;
@@ -695,8 +682,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
-
-
 
 // ==========================================
 // #7 โหมดควบคุมแดชบอร์ด (MainNavigationScreen - Stainless Steel Theme)
@@ -1658,7 +1643,6 @@ class ScannerClipper extends CustomClipper<Rect> {
   }
 }
 
-
 // ==========================================
 // #8 โหมด HomeScreen (Stainless Steel Theme)
 // ==========================================
@@ -2606,7 +2590,6 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
   }
 }
 
-
 // ==========================================
 // #9 โหมดรายงานออเดอร์ (OrdersScreen - Stainless Steel Theme)
 // ==========================================
@@ -3039,7 +3022,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-
 // ==========================================
 // #10 โหมดการบันทึกประจำวัน (HistoryScreen)
 // ==========================================
@@ -3444,7 +3426,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-
 // ==========================================
 // #11 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
 // ==========================================
@@ -3712,7 +3693,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
-
 
 // ==========================================
 // #12 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
@@ -4047,7 +4027,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
-                          Color buttonColor = const Color(0xFF64748B);
 
                           return Expanded(
                             child: Padding(
