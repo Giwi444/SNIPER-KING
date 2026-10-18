@@ -1,5 +1,6 @@
+
 name: sniperhybrid
-description: "A new Flutter project."
+description: "SNIPER HYBRID"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -20,16 +21,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  flutter_launcher_icons: "^0.13.1"
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
-
-  assets: 
-    - assets/images/1792250578954.jpg  
-    - assets/images/1792250396366.jpg       
+  assets:
+    - assets/images/1792250578954.jpg
+    - assets/images/1792250396366.jpg
 
 flutter_launcher_icons:
-  image_path: "assets/images/1792250578954.jpg"
   android: true
   ios: false
+  image_path: "assets/images/1792250578954.jpg"
