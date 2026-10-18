@@ -249,13 +249,40 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
       }
-    } catch (e) {
+    } } on FirebaseException catch (e, stackTrace) {
+      debugPrint('Firebase error code: ${e.code}');
+      debugPrint('Firebase error message: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.blueGrey),
+        SnackBar(
+          content: Text(
+            'Firebase [${e.code}]: ${e.message ?? "ไม่มีรายละเอียด"}',
+          ),
+          backgroundColor: Colors.blueGrey,
+          duration: const Duration(seconds: 8),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Login error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ข้อผิดพลาด: $e'),
+          backgroundColor: Colors.blueGrey,
+          duration: const Duration(seconds: 8),
+        ),
       );
     }
   }
