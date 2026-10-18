@@ -313,25 +313,46 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 
+
 // ==========================================
-// #5 โหมดการเข้าใช้งานครั้งแรก (Silver Metallic Styling)
+// #5 MT5 LOGIN WRAPPER
+// SNIPER HYBRID
+// Silver Metallic Styling
+// Firebase Error Handling
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
   const MT5LoginWrapper({super.key});
 
   @override
-  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
+  State<MT5LoginWrapper> createState() =>
+      _MT5LoginWrapperState();
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController(text: '');
-  final TextEditingController _passwordController = TextEditingController(text: '');
-  final TextEditingController _serverController = TextEditingController(text: ''); 
-  
+  final TextEditingController _loginController =
+      TextEditingController(text: '');
+
+  final TextEditingController _passwordController =
+      TextEditingController(text: '');
+
+  final TextEditingController _serverController =
+      TextEditingController(text: '');
+
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isLoggedInMT5 = false;
+
+  static const Color _silver = Color(0xFFE2E8F0);
+  static const Color _silverBorder = Color(0xFF64748B);
+  static const Color _background = Color(0xFF10131A);
+
+  static const String _databaseUrl =
+      'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/';
+
+  // ==========================================
+  // INITIALIZE
+  // ==========================================
 
   @override
   void initState() {
@@ -347,24 +368,86 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     super.dispose();
   }
 
+  // ==========================================
+  // CHECK SAVED LOGIN
+  // ==========================================
+
   Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final savedLogin = prefs.getString('mt5_login');
+      final savedServer = prefs.getString('mt5_server');
+
+      if (!mounted) return;
+
       setState(() {
-        _isLoggedInMT5 = true;
+        if (savedLogin != null && savedLogin.isNotEmpty) {
+          _isLoggedInMT5 = true;
+          _loginController.text = savedLogin;
+          _serverController.text = savedServer ?? '';
+        }
       });
+    } catch (e) {
+      debugPrint('Saved MT5 login error: $e');
     }
   }
 
-  void _submitMT5Login() async {
-    String login = _loginController.text.trim();
-    String password = _passwordController.text.trim();
-    String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
+  // ==========================================
+  // SAFE NOTIFICATION
+  // ไม่แสดงข้อความ Error ยาวเต็มหน้าจอ
+  // ==========================================
+
+  void _showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: isError
+              ? const Color(0xFF8B3038)
+              : const Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          margin: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+  }
+
+  // ==========================================
+  // SUBMIT MT5 LOGIN
+  // ==========================================
+
+  Future<void> _submitMT5Login() async {
+    if (_isLoading) return;
+
+    final String login = _loginController.text.trim();
+
+    final String server =
+        _serverController.text.trim().isEmpty
+            ? 'ICMarketsSC-Demo'
+            : _serverController.text.trim();
 
     if (login.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFF64748B)),
+      _showMessage(
+        'กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน',
+        isError: true,
       );
       return;
     }
@@ -374,246 +457,499 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      FirebaseApp app = await _getFirebaseApp();
+      // ใช้ Firebase App ตามระบบเดิมของโปรเจกต์
+      final FirebaseApp app = await _getFirebaseApp()
+          .timeout(const Duration(seconds: 15));
 
-      final database = FirebaseDatabase.instanceFor(
+      final FirebaseDatabase database =
+          FirebaseDatabase.instanceFor(
         app: app,
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+        databaseURL: _databaseUrl,
       );
 
-      final accountRef = database.ref('accounts/$login');
-      final snapshot = await accountRef.get();
+      // ตรวจสอบเลขบัญชีใน Firebase
+      final DatabaseReference accountRef =
+          database.ref('accounts/$login');
 
-      if (snapshot.exists) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mt5_login', login);
-        await prefs.setString('mt5_server', server);
+      final DataSnapshot snapshot = await accountRef
+          .get()
+          .timeout(const Duration(seconds: 15));
 
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _isLoggedInMT5 = true;
-        });
-      } else {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ไม่พบหมายเลขบัญชีนี้ในระบบ Firebase'),
-            backgroundColor: Color(0xFF64748B),
-          ),
-        );
-      }
-    } catch (e) {
       if (!mounted) return;
+
+      if (!snapshot.exists) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        _showMessage(
+          'ไม่พบหมายเลขบัญชีนี้ในระบบ Firebase',
+          isError: true,
+        );
+        return;
+      }
+
+      // บันทึกเลขบัญชีและ Server ตามระบบเดิม
+      final SharedPreferences prefs =
+          await SharedPreferences.getInstance();
+
+      await prefs.setString('mt5_login', login);
+      await prefs.setString('mt5_server', server);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _isLoggedInMT5 = true;
+      });
+
+      _showMessage('ตรวจสอบบัญชีสำเร็จ');
+
+    } on TimeoutException catch (e, stackTrace) {
+      debugPrint('MT5 connection timeout: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.blueGrey),
+
+      _showMessage(
+        'หมดเวลารอการเชื่อมต่อ กรุณาตรวจสอบอินเทอร์เน็ต',
+        isError: true,
+      );
+
+    } on FirebaseException catch (e, stackTrace) {
+      // รายละเอียดจริงเก็บไว้ใน Debug Console
+      debugPrint('Firebase error code: ${e.code}');
+      debugPrint('Firebase error details: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      String message =
+          'เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+
+      if (e.code == 'permission-denied') {
+        message =
+            'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules';
+      } else if (e.code == 'unavailable') {
+        message =
+            'เซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาลองใหม่';
+      } else if (e.code == 'network-error') {
+        message =
+            'เครือข่ายมีปัญหา กรุณาตรวจสอบอินเทอร์เน็ต';
+      }
+
+      _showMessage(message, isError: true);
+
+    } catch (e, stackTrace) {
+      debugPrint('MT5 connection error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _showMessage(
+        'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่',
+        isError: true,
       );
     }
   }
 
+  // ==========================================
+  // INPUT DECORATION
+  // ==========================================
+
+  InputDecoration _inputDecoration({
+    required String hintText,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: Colors.white.withOpacity(0.45),
+        fontStyle: FontStyle.italic,
+      ),
+      filled: true,
+      fillColor: Colors.black.withOpacity(0.25),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: _silverBorder,
+          width: 1.5,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: _silver,
+          width: 2,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+      suffixIcon: suffixIcon,
+    );
+  }
+
+  // ==========================================
+  // BUILD UI
+  // ==========================================
+
   @override
   Widget build(BuildContext context) {
     if (_isLoggedInMT5) {
-      return const SizedBox.shrink(); // ปรับเปลี่ยนตามหน้าจอถัดไปของคุณ
+      return const SizedBox.shrink();
     }
 
     return Scaffold(
+      backgroundColor: _background,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // ภาพพื้นหลังเดิม
           Image.asset(
             'assets/images/1792250578954.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF10131A)),
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: _background);
+            },
           ),
-          Container(color: Colors.black.withOpacity(0.85)),
+
+          // ชั้นมืดสำหรับอ่านข้อความได้ชัดเจน
+          Container(
+            color: Colors.black.withOpacity(0.85),
+          ),
+
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
               child: Center(
                 child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFFFFF), Color(0xFF94A3B8), Color(0xFF334155)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.3),
-                              blurRadius: 20,
-                              spreadRadius: 2,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 480,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // ==================================
+                        // LOGO
+                        // ==================================
+
+                        Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFFFFFFFF),
+                                Color(0xFF94A3B8),
+                                Color(0xFF334155),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.3),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(17),
+                            child: Image.asset(
+                              'assets/images/1792250578954.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (
+                                context,
+                                error,
+                                stackTrace,
+                              ) {
+                                return Container(
+                                  color: Colors.black,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.smart_toy,
+                                    color: _silver,
+                                    size: 80,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                        padding: const EdgeInsets.all(3),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(17),
-                          child: Stack(
-                            fit: StackFit.expand,
+
+                        const SizedBox(height: 16),
+
+                        // ==================================
+                        // BRAND NAME
+                        // ==================================
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF2E3545),
+                                Color(0xFF1A1E29),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFCBD5E1),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.15),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: const Column(
                             children: [
-                              Image.asset(
-                                'assets/images/1792250578954.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '🎯SNIPER  HYBRID🎯',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 3,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.white60,
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'R O B O T',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFE2E8F0),
+                                  letterSpacing: 2.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.white38,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF2E3545), Color(0xFF1A1E29)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+
+                        const SizedBox(height: 12),
+
+                        // ==================================
+                        // POWERED BY
+                        // ==================================
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.15),
-                              blurRadius: 12.0,
-                              spreadRadius: 1.0,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF94A3B8),
+                              width: 1.2,
                             ),
-                          ],
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                          child: const Text(
+                            'Powered By Algohost',
+                            style: TextStyle(
+                              color: Color(0xFFE2E8F0),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
-                        child: Column(
-                          children: const [
-                            Text(
-                              '🎯SNIPER  HYBRID🎯',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 3.0,
-                                shadows: [
-                                  Shadow(color: Colors.white60, blurRadius: 10, offset: Offset(0, 0)),
-                                ],
+
+                        const SizedBox(height: 25),
+
+                        // ==================================
+                        // ACCOUNT LOGIN
+                        // ==================================
+
+                        TextField(
+                          controller: _loginController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                          decoration: _inputDecoration(
+                            hintText: 'Account Login',
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ==================================
+                        // INVESTOR PASSWORD
+                        // ==================================
+
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                          decoration: _inputDecoration(
+                            hintText: 'Investor Password',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: const Color(0xFFCBD5E1),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword =
+                                      !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ==================================
+                        // MT5 SERVER
+                        // ==================================
+
+                        TextField(
+                          controller: _serverController,
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                          decoration: _inputDecoration(
+                            hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // ==================================
+                        // VERIFY & CONNECT BUTTON
+                        // ==================================
+
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFFE2E8F0),
+                                Color(0xFF94A3B8),
+                                Color(0xFF475569),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : _submitMT5Login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              disabledBackgroundColor:
+                                  Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              disabledForegroundColor:
+                                  const Color(0xFF0F172A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(12),
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              ' R O B O T',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFFE2E8F0),
-                                letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(color: Colors.white38, blurRadius: 8, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF94A3B8), width: 1.2),
-                          color: Colors.black.withOpacity(0.6),
-                        ),
-                        child: const Text(
-                          'Powered By Algohost',
-                          style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      TextField(
-                        controller: _loginController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Account Login',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF64748B), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Investor Password',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF64748B), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: const Color(0xFFCBD5E1),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 23,
+                                    height: 23,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  )
+                                : const Text(
+                                    'VERIFY & CONNECT',
+                                    style: TextStyle(
+                                      color: Color(0xFF0F172A),
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'monospace',
+                                      fontSize: 16,
+                                    ),
+                                  ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _serverController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
-                          hintStyle: TextStyle(color: const Color(0xFF94A3B8).withOpacity(0.6), fontStyle: FontStyle.italic),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF64748B), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      Container(
-                        width: double.infinity,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+
+                        const SizedBox(height: 18),
+
+                        // ==================================
+                        // FOOTNOTE
+                        // ==================================
+
+                        const Text(
+                          'Secure Account Verification',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFCBD5E1),
+                            fontSize: 11,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitMT5Login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.black)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 16)),
-                        ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 10),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -624,6 +960,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 
