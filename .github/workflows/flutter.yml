@@ -26,17 +26,15 @@ jobs:
         with:
           flutter-version: '3.22.2'
           channel: 'stable'
-          cache: false # ปิดการดึงแคชเก่าเพื่อล้างคราบ v1 embedding ออกให้หมด
+          cache: false
 
       - name: Clean build cache
         run: |
           rm -rf ~/.pub-cache
           flutter clean
 
-      - name: Upgrade Android Project Files to v2
-        run: |
-          flutter create --platforms android .
-          flutter pub get
+      - name: Fetch dependencies
+        run: flutter pub get
 
       - name: Build Release APK
         run: flutter build apk --release
