@@ -520,10 +520,11 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         isError: true,
       );
 
-    } on FirebaseException catch (e, stackTrace) {
-      // รายละเอียดจริงเก็บไว้ใน Debug Console
-      debugPrint('Firebase error code: ${e.code}');
-      debugPrint('Firebase error details: ${e.message}');
+    } 
+      
+    on FirebaseException catch (e, stackTrace) {
+      debugPrint('FIREBASE ERROR CODE: ${e.code}');
+      debugPrint('FIREBASE ERROR MESSAGE: ${e.message}');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
@@ -532,23 +533,46 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         _isLoading = false;
       });
 
-      String message =
-          'เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+      String message;
 
-      if (e.code == 'permission-denied') {
-        message =
-            'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules';
-      } else if (e.code == 'unavailable') {
-        message =
-            'เซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาลองใหม่';
-      } else if (e.code == 'network-error') {
-        message =
-            'เครือข่ายมีปัญหา กรุณาตรวจสอบอินเทอร์เน็ต';
+      switch (e.code) {
+        case 'permission-denied':
+          message =
+              'Firebase ปฏิเสธการเข้าถึง กรุณาตรวจสอบสิทธิ์ฐานข้อมูล';
+          break;
+
+        case 'unavailable':
+          message =
+              'เซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาลองใหม่';
+          break;
+
+        case 'network-error':
+          message =
+              'เชื่อมต่ออินเทอร์เน็ตไม่ได้';
+          break;
+
+        default:
+          message =
+              'เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า Firebase';
       }
 
-      _showMessage(message, isError: true);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: const Color(0xFF64748B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
 
-    } catch (e, stackTrace) {
+     
+     catch (e, stackTrace) {
       debugPrint('MT5 connection error: $e');
       debugPrintStack(stackTrace: stackTrace);
 
