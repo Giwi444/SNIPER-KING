@@ -1,11 +1,17 @@
-name: Build Android Release APK
+
+name: Build Sniper Hybrid APK
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+      - '.github/workflows/build_apk.yml'
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -15,30 +21,73 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: temurin
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.2'
-          channel: 'stable'
-          cache: false
+          channel: stable
+          cache: true
 
-      - name: Fetch dependencies
-        run: flutter pub get
+      - name: Find Flutter project
+        shell: bash
+        run: |
+          PROJECT_DIR=""
+          while IFS= read -r file; do
+            candidate="${file%/pubspec.yaml}"
+            if [ -f "$candidate/lib/main.dart" ]; then
+              PROJECT_DIR="$candidate"
+              break
+            fi
+          done < <(find . -name pubspec.yaml \
+            -not -path '*/.dart_tool/*' \
+            -not -path '*/build/*')
 
-      - name: Clean build cache
-        run: flutter clean
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: Cannot find Flutter project with lib/main.dart"
+            exit 1
+          fi
 
-      - name: Build Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Flutter project: $PROJECT_DIR"
 
-      - name: Upload APK Artifact
+      - name: Validate assets
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          test -f assets/images/1792250578954.jpg
+          test -f assets/images/1792250396366.jpg
+
+      - name: Clean Flutter
+        run: |
+          cd "$PROJECT_DIR"
+          flutter clean
+
+      - name: Get dependencies
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+
+      - name: Generate Android platform
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          flutter create . --platforms=android
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          flutter build apk --release
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: sniper-hybrid
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: SniperHybrid-APK
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
