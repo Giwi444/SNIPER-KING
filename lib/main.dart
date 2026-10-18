@@ -1,7 +1,7 @@
 // ==========================================
 // #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์
 // ==========================================
- 
+
 import 'dart:async';  
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,25 +11,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// ฟังก์ชันช่วยจัดการ Firebase safely เพื่อป้องกัน Exception [DEFAULT] already exists!
+// ฟังก์ชันช่วยจัดการ Firebase safely และกำหนดค่าเริ่มต้นอย่างถูกต้อง
 Future<FirebaseApp> _getFirebaseApp() async {
   if (Firebase.apps.isNotEmpty) {
     return Firebase.app();
   }
-  try {
-    return await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-        appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-        messagingSenderId: "155532929563",
-        projectId: "liquidity-b8739",
-        storageBucket: "liquidity-b8739-firebasestorage.app",
-        databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-      ),
-    );
-  } catch (e) {
-    return Firebase.app();
-  }
+  return await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+      appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+      messagingSenderId: "155532929563",
+      projectId: "liquidity-b8739",
+      storageBucket: "liquidity-b8739-firebasestorage.app",
+      databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+    ),
+  );
 }
 
 // ==========================================
@@ -197,7 +193,7 @@ Future<void> _showFloatingBalloon() async {
 
 
 // ==========================================
-// #3 โหมดเมนหลัก
+// #3 โหมดเมนหลัก (แก้ไขให้ Initialize Firebase ให้ถูกต้อง)
 // ==========================================
 
 void main() async {
@@ -424,7 +420,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoggedInMT5) {
-      return const PinAuthWrapper();
+      return const SizedBox.shrink(); // ปรับเปลี่ยนตามหน้าจอถัดไปของคุณ
     }
 
     return Scaffold(
@@ -628,6 +624,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
