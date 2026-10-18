@@ -1,0 +1,63 @@
+
+name: SNIPER HYBRID Clean Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: false
+
+      - name: Locate Flutter project
+        id: project
+        shell: bash
+        run: |
+          FILE=$(find . -type f -name pubspec.yaml \
+            -not -path './.git/*' | head -n 1)
+
+          if [ -z "$FILE" ]; then
+            echo "ERROR: pubspec.yaml not found"
+            exit 1
+          fi
+
+          DIR=$(dirname "$FILE")
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "Flutter project: $DIR"
+
+      - name: Clean old build files
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: flutter clean
+
+      - name: Resolve dependencies
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: flutter pub get
+
+      - name: Build fresh APK
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SNIPER-HYBRID-debug-APK
+          path: ${{ steps.project.outputs.dir }}/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
