@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - '**'
-      - '.github/workflows/build_apk.yml'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -63,6 +63,11 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Flutter project: $PROJECT_DIR"
 
+      - name: Generate Android platform
+        run: |
+          cd "$PROJECT_DIR"
+          flutter create . --platforms=android
+
       - name: Clean Flutter
         run: |
           cd "$PROJECT_DIR"
@@ -89,4 +94,3 @@ jobs:
           name: SniperHybrid-APK
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
-
