@@ -1,4 +1,3 @@
-
 name: BotHybrid 
 
 on:
@@ -64,20 +63,6 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Flutter project: $PROJECT_DIR"
 
-      - name: Validate project and icon
-        shell: bash
-        run: |
-          cd "$PROJECT_DIR"
-          test -f pubspec.yaml
-          test -f lib/main.dart
-          test -f assets/images/1792250578954.jpg
-          test -f assets/images/1792250396366.jpg
-
-      - name: Generate Android platform
-        run: |
-          cd "$PROJECT_DIR"
-          flutter create . --platforms=android
-
       - name: Clean Flutter
         run: |
           cd "$PROJECT_DIR"
@@ -87,11 +72,6 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
-
-      - name: Generate App Icon
-        run: |
-          cd "$PROJECT_DIR"
-          dart run flutter_launcher_icons
 
       - name: Build APK
         run: |
@@ -109,3 +89,4 @@ jobs:
           name: SniperHybrid-APK
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
