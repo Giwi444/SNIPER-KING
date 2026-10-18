@@ -11,6 +11,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// ฟังก์ชันช่วยจัดการ Firebase safely เพื่อป้องกัน Exception [DEFAULT] already exists!
+Future<FirebaseApp> _getFirebaseApp() async {
+  if (Firebase.apps.isNotEmpty) {
+    return Firebase.app();
+  }
+  try {
+    return await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
+        appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
+        messagingSenderId: "155532929563",
+        projectId: "liquidity-b8739",
+        storageBucket: "liquidity-b8739-firebasestorage.app",
+        databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+      ),
+    );
+  } catch (e) {
+    return Firebase.app();
+  }
+}
 
 // ==========================================
 // #2 โหมดบอลลูนทับแอปอื่น (Stainless Steel Theme)
@@ -48,21 +68,9 @@ class _OverlayBallonWidgetState extends State<OverlayBallonWidget> {
 
   Future<void> _initFirebaseAndListenConnection() async {
     try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-          ),
-        );
-      }
-
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -196,18 +204,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-          appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-          messagingSenderId: "155532929563",
-          projectId: "liquidity-b8739",
-          storageBucket: "liquidity-b8739-firebasestorage.app",
-          databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-        ),
-      );
-    }
+    await _getFirebaseApp();
   } catch (e) {
     print("Firebase init error: $e");
   }
@@ -381,21 +378,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     });
 
     try {
-      FirebaseApp app;
-      if (Firebase.apps.isEmpty) {
-        app = await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
-          ),
-        );
-      } else {
-        app = Firebase.app();
-      }
+      FirebaseApp app = await _getFirebaseApp();
 
       final database = FirebaseDatabase.instanceFor(
         app: app,
@@ -988,10 +971,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToActiveAccount() {
+  void _listenToActiveAccount() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('status/login').onValue.listen((event) {
@@ -1011,10 +995,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToAlertsCount() {
+  void _listenToAlertsCount() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       
@@ -1044,10 +1029,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _initFirebaseAndListen() {
+  void _initFirebaseAndListen() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -1068,10 +1054,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToConnectionStatus() {
+  void _listenToConnectionStatus() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('.info/connected').onValue.listen((event) {
@@ -1087,10 +1074,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToLogs() {
+  void _listenToLogs() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _logsRef = database.ref('accounts/$currentLogin/logs');
@@ -1133,10 +1121,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     }
   }
 
-  void _listenToOrdersForDialog() {
+  void _listenToOrdersForDialog() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _ordersRef = database.ref('accounts/$currentLogin/orders');
@@ -1915,10 +1904,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _listenToConnectionStatus() {
+  void _listenToConnectionStatus() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       database.ref('.info/connected').onValue.listen((event) {
@@ -1934,10 +1924,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _initFirebaseAndListen(String login) {
+  void _initFirebaseAndListen(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -1971,10 +1962,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToHistoryForStats(String login) {
+  void _listenToHistoryForStats(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _historyRef = database.ref('accounts/$login/history');
@@ -2011,10 +2003,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _listenToOrdersForDialog(String login) {
+  void _listenToOrdersForDialog(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _ordersRef = database.ref('accounts/$login/orders');
@@ -2832,10 +2825,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToStatusForSymbol(String login) {
+  void _listenToStatusForSymbol(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
       _dbRef = database.ref('accounts/$login/status');
@@ -2860,10 +2854,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToOrders(String login) {
+  void _listenToOrders(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -3254,10 +3249,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  void _listenToHistory(String login) {
+  void _listenToHistory(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -3686,10 +3682,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return isFirstOrder || isRecovery || isProfitClose || isLossClose || isDailyTarget || isDailyLoss || isCloseTime;
   }
 
-  void _listenToAlerts(String login) {
+  void _listenToAlerts(String login) async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
@@ -3989,10 +3986,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadAllSettingsFromFirebase();
   }
 
-  void _loadAllSettingsFromFirebase() {
+  void _loadAllSettingsFromFirebase() async {
     try {
+      final app = await _getFirebaseApp();
       final database = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
+        app: app,
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
