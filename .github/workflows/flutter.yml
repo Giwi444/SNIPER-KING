@@ -28,22 +28,14 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Clean build cache
-        run: |
-          rm -rf ~/.pub-cache
-          flutter clean
-
       - name: Fetch dependencies
         run: flutter pub get
 
-      # ระบุชื่อโปรเจกต์ --project-name sniperhybrid เพื่อป้องกันมันเอาชื่อ SNIPER-KING มาใช้
-      - name: Upgrade Android Embedding to v2
-        run: |
-          flutter create --platforms android --project-name sniperhybrid --org com.sniper.hybrid .
-          flutter pub get
+      - name: Clean build cache
+        run: flutter clean
 
       - name: Build Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
