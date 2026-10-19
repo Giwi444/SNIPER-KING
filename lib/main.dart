@@ -173,7 +173,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ตัดช่อง Server ออก เหลือแค่ Login และ Password)
+// #4 MT5 LOGIN WRAPPER (ตัดช่อง Server ออกเรียบร้อย)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -435,160 +435,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 }
 
-
-@override
-Widget build(BuildContext context) {
-return Scaffold(
-body: Stack(
-fit: StackFit.expand,
-children: [
-Image.asset(
-'assets/images/1792250396366.jpg',
-fit: BoxFit.cover,
-errorBuilder: (context, error, stackTrace) => ...
-Container(color: const Color(0xFF37474F)),
-),
-Container(color: const Color(0xFF263238).withOpacity(0.70)),
-SafeArea(
-child: Center(
-child: SingleChildScrollView(
-padding: const EdgeInsets.all(20),
-child: Column(
-mainAxisAlignment: MainAxisAlignment.center,
-children: [
-ClipRRect(
-borderRadius: BorderRadius.circular(16),
-child: Image.asset(
-'assets/images/1792250396366.jpg',
-width: 160,
-height: 160,
-fit: BoxFit.cover,
-errorBuilder: (_, __, ___) => const Icon(
-Icons.smart_toy,
-color: Colors.white,
-size: 100,
-),
-),
-),
-const SizedBox(height: 20),
-const Text(
-'SNIPER HYBRID',
-textAlign: TextAlign.center,
-style: TextStyle(
-fontSize: 26,
-fontWeight: FontWeight.w900,
-color: Colors.white,
-letterSpacing: 2,
-),
-),
-const SizedBox(height: 6),
-const Text(
-'ROBOT',
-style: TextStyle(
-fontSize: 18,
-color: Color(0xFFECEFF1),
-letterSpacing: 4,
-),
-),
-const SizedBox(height: 28),
-TextField(
-controller: _loginController,
-keyboardType: TextInputType.number,
-style: const TextStyle(color: Colors.white),
-decoration: _inputDecoration('Account Login'),
-),
-const SizedBox(height: 14),
-TextField(
-controller: _passwordController,
-obscureText: _obscurePassword,
-style: const TextStyle(color: Colors.white),
-decoration: _inputDecoration('Investor Password').copyWith(
-suffixIcon: IconButton(
-icon: Icon(
-_obscurePassword
-? Icons.visibility_off
-: Icons.visibility,
-color: Colors.white70,
-),
-onPressed: () {
-setState(() {
-_obscurePassword = !_obscurePassword;
-});
-},
-),
-),
-),
-const SizedBox(height: 14),
-TextField(
-controller: _serverController,
-style: const TextStyle(color: Colors.white),
-decoration:
-_inputDecoration('Server (เช่น ICMarketsSC-Demo)'),
-),
-const SizedBox(height: 24),
-SizedBox(
-width: double.infinity,
-child: ElevatedButton(
-onPressed: _isLoading ? null : _submitMT5Login,
-style: ElevatedButton.styleFrom(
-backgroundColor: const Color(0xFF546E7A),
-foregroundColor: Colors.white,
-padding: const EdgeInsets.symmetric(vertical: 16),
-),
-child: _isLoading
-? const SizedBox(
-width: 22,
-height: 22,
-child: CircularProgressIndicator(
-strokeWidth: 2,
-color: Colors.white,
-),
-)
-: const Text('VERIFY & CONNECT'),
-),
-),
-const SizedBox(height: 12),
-const Text(
-'Powered By Algohost',
-style: TextStyle(
-color: Colors.white70,
-fontSize: 11,
-),
-),
-],
-),
-),
-),
-),
-],
-),
-);
-}
-
-InputDecoration _inputDecoration(String label) {
-return InputDecoration(
-hintText: label,
-hintStyle: const TextStyle(color: Colors.white60),
-filled: true,
-fillColor: const Color(0xFF263238).withOpacity(0.75),
-border: OutlineInputBorder(
-borderRadius: BorderRadius.circular(12),
-),
-enabledBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(12),
-borderSide: const BorderSide(color: Color(0xFF90A4AE)),
-),
-focusedBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(12),
-borderSide: const BorderSide(
-color: Color(0xFFCFD8DC),
-width: 2,
-),
-),
-);
-}
-}
-
 // ==========================================
 // #4 PIN AUTH WRAPPER (จัดการ PIN ชัดเจน ไม่มีติดขัด)
 // ==========================================
@@ -784,7 +630,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/1792250396366.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (ctx, err, stack) =>
                 Container(color: const Color(0xFF37474F)),
           ),
           Container(
@@ -804,7 +650,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                         width: 130,
                         height: 130,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorBuilder: (ctx, err, stack) => const Icon(
                           Icons.smart_toy,
                           color: Colors.white,
                           size: 80,
@@ -964,6 +810,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
