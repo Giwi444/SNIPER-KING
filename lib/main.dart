@@ -148,7 +148,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ดึงตรงจาก Firebase ป้องกัน Crash)
+// #4 MT5 LOGIN WRAPPER (ตรวจสอบทั้งพอร์ตและรหัสผ่านจาก Firebase จริง)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -176,11 +176,13 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     if (_isLoading) return;
 
     final login = _loginController.text.trim();  
+    final password = _passwordController.text.trim();
 
-    if (login.isEmpty) {  
+    if (login.isEmpty || password.isEmpty) {  
       ScaffoldMessenger.of(context).showSnackBar(  
         const SnackBar(  
-          content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),  
+          content: Text('กรุณากรอกเลขพอร์ต MT5 และรหัสผ่านให้ครบถ้วน'),  
+          backgroundColor: Colors.red,
         ),  
       );  
       return;  
@@ -213,7 +215,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
       );  
 
-      // ยิงตรงไปเช็คบัญชีใน accounts/$login บน Firebase ทันที
+      // ดึงข้อมูลบัญชีจาก Firebase ตามเลขพอร์ตที่กรอก
       final snapshot = await database.ref('accounts/$login').get();  
 
       if (!mounted) return;  
@@ -226,15 +228,40 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ..showSnackBar(  
             const SnackBar(  
               content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาตรวจสอบเลขพอร์ตอีกครั้ง'),  
+              backgroundColor: Colors.red,
             ),  
           );  
         return;  
       }  
 
+      // ดึงข้อมูลข้างในพอร์ตเพื่อตรวจสอบรหัสผ่าน
+      final data = snapshot.value;
+      String? correctPassword;
+
+      if (data is Map) {
+        // รองรับคีย์รหัสผ่านหลายรูปแบบที่อาจเก็บไว้ใน Firebase (password หรือ investor_password)
+        correctPassword = data['password']?.toString() ?? data['investor_password']?.toString();
+      }
+
+      // ถ้าใน Firebase มีการกำหนดรหัสผ่านไว้ และรหัสที่ผู้ใช้กรอกไม่ตรงกัน ให้บล็อกทันที
+      if (correctPassword != null && correctPassword.isNotEmpty && correctPassword != password) {
+        setState(() => _isLoading = false);
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('รหัสผ่านนักลงทุน (Investor Password) ไม่ถูกต้อง'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        return;
+      }
+
       // กำหนดค่า Login สำหรับพอร์ตปัจจุบันเข้าตัวแปรหลัก
       globalSavedLogin = login;  
 
-      // พยายามบันทึกลงเครื่องแบบปลอดภัย (ถ้าล้มเหลวก็ไม่ทำให้แอปค้าง/เด้ง Error)
+      // พยายามบันทึกลงเครื่องแบบปลอดภัย
       try {
         final prefs = await SharedPreferences.getInstance();  
         await prefs.setString('saved_mt5_login', login);  
@@ -246,7 +273,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       setState(() => _isLoading = false);  
 
-      // ย้ายไปหน้าตั้งค่ารหัส PIN เมื่อผ่านการเชื่อมต่อพอร์ต
+      // ย้ายไปหน้าตั้งค่ารหัส PIN เมื่อผ่านการตรวจสอบทั้งหมด
       Navigator.pushReplacement(  
         context,  
         MaterialPageRoute(  
@@ -266,6 +293,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         ..showSnackBar(
           SnackBar(
             content: Text('การเชื่อมต่อล้มเหลว: $e'),
+            backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -419,8 +447,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 }
 
 
+
 // ==========================================
-// #4 PIN AUTH WRAPPER (จัดการ PIN ชัดเจน ไม่มีติดขัด)
+// #4 PIN AUTH WRAPPER (ปรับแก้ให้เสถียรตามโครงสร้างต้นแบบที่สมบูรณ์)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -435,7 +464,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool hasStoredPin = false;
   bool isConfirming = false;
   bool isLoading = true;
-  bool isSaving = false;
 
   String firstEnteredPin = '';
   String currentPinInput = '';
@@ -449,150 +477,116 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   Future<void> _checkPinExists() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('saved_user_pin') ?? '';
-
       if (!mounted) return;
-
+      final pin = prefs.getString('saved_user_pin');
       setState(() {
-        globalUserPin = savedPin;
-        hasStoredPin = savedPin.isNotEmpty;
+        hasStoredPin = pin != null && pin.isNotEmpty;
+        globalUserPin = pin ?? '';
         isLoading = false;
       });
-    } catch (e, stackTrace) {
-      debugPrint('PIN initialization error: $e');
-      debugPrintStack(stackTrace: stackTrace);
-
+    } catch (e) {
       if (!mounted) return;
-
-      setState(() => isLoading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('โหลดข้อมูล PIN ไม่สำเร็จ กรุณาลองเปิดแอปใหม่'),
-        ),
-      );
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   Future<void> _saveNewPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_user_pin', pin);
-    globalUserPin = pin;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_user_pin', pin);
+      globalUserPin = pin;
+    } catch (e) {
+      debugPrint('Save PIN error: $e');
+    }
   }
 
   Future<void> _verifyPin(String pin) async {
-    if (globalUserPin == pin) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedPin = prefs.getString('saved_user_pin');
       if (!mounted) return;
 
-      setState(() {
-        isAuthorized = true;
-        currentPinInput = '';
-      });
-    } else {
-      if (!mounted) return;
-
-      setState(() => currentPinInput = '');
-
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
+      if (storedPin == pin || globalUserPin == pin) {
+        setState(() {
+          isAuthorized = true;
+          currentPinInput = '';
+        });
+      } else {
+        setState(() {
+          currentPinInput = '';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
+            backgroundColor: Colors.red,
           ),
         );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        currentPinInput = '';
+      });
     }
   }
 
-  Future<void> _onNumberTap(String number) async {
-    if (isSaving || currentPinInput.length >= 6) return;
-
-    final nextPin = currentPinInput + number;
-
-    setState(() => currentPinInput = nextPin);
-
-    if (nextPin.length < 6) return;
-
-    if (hasStoredPin) {
-      await _verifyPin(nextPin);
-      return;
-    }
-
-    if (!isConfirming) {
+  void _onNumberTap(String number) {
+    if (currentPinInput.length < 6) {
       setState(() {
-        firstEnteredPin = nextPin;
-        currentPinInput = '';
-        isConfirming = true;
-      });
-      return;
-    }
-
-    if (firstEnteredPin != nextPin) {
-      setState(() {
-        currentPinInput = '';
-        firstEnteredPin = '';
-        isConfirming = false;
+        currentPinInput += number;
       });
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'),
-          ),
-        );
-      return;
-    }
-
-    setState(() => isSaving = true);
-
-    try {
-      await _saveNewPin(nextPin);
-
-      if (!mounted) return;
-
-      setState(() {
-        hasStoredPin = true;
-        isAuthorized = true;
-        currentPinInput = '';
-        isSaving = false;
-      });
-    } catch (e, stackTrace) {
-      debugPrint('Save PIN error: $e');
-
-      if (!mounted) return;
-
-      setState(() {
-        currentPinInput = '';
-        firstEnteredPin = '';
-        isConfirming = false;
-        isSaving = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('บันทึก PIN ไม่สำเร็จ กรุณาลองใหม่'),
-        ),
-      );
+      if (currentPinInput.length == 6) {
+        if (!hasStoredPin) {
+          if (!isConfirming) {
+            firstEnteredPin = currentPinInput;
+            currentPinInput = '';
+            isConfirming = true;
+          } else {
+            if (firstEnteredPin == currentPinInput) {
+              _saveNewPin(currentPinInput);
+              setState(() {
+                hasStoredPin = true;
+                isAuthorized = true;
+              });
+            } else {
+              setState(() {
+                currentPinInput = '';
+                isConfirming = false;
+                firstEnteredPin = '';
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } else {
+          _verifyPin(currentPinInput);
+        }
+      }
     }
   }
 
   void _onDeleteTap() {
-    if (isSaving || currentPinInput.isEmpty) return;
-
-    setState(() {
-      currentPinInput =
-          currentPinInput.substring(0, currentPinInput.length - 1);
-    });
+    if (currentPinInput.isNotEmpty) {
+      setState(() {
+        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFCFD8DC),
-          ),
+      return Scaffold(
+        backgroundColor: const Color(0xFF37474F),
+        body: const Center(
+          child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
         ),
       );
     }
@@ -601,11 +595,12 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return const MainNavigationScreen();
     }
 
-    final titleText = hasStoredPin
-        ? 'กรุณากรอก PIN เพื่อเข้าใช้งานระบบ'
-        : isConfirming
-            ? 'ยืนยันรหัส PIN 6 หลักอีกครั้ง'
-            : 'ตั้งค่ารหัส PIN 6 หลักความปลอดภัย';
+    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
+    if (!hasStoredPin) {
+      titleText = isConfirming
+          ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง"
+          : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
+    }
 
     return Scaffold(
       body: Stack(
@@ -676,7 +671,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(6, (index) {
                         final filled = index < currentPinInput.length;
-
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 7),
                           width: 16,
@@ -718,13 +712,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                         ],
                       ),
                     ),
-                    if (isSaving)
-                      const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      ),
                     const SizedBox(height: 10),
                     const Text(
                       'Powered By Algohost',
@@ -763,15 +750,13 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isSaving
-              ? null
-              : () {
-                  if (val == 'del') {
-                    _onDeleteTap();
-                  } else {
-                    _onNumberTap(val);
-                  }
-                },
+          onTap: () {
+            if (val == 'del') {
+              _onDeleteTap();
+            } else {
+              _onNumberTap(val);
+            }
+          },
           customBorder: const CircleBorder(),
           child: Center(
             child: val == 'del'
@@ -794,6 +779,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
 
 
 
