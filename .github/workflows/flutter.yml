@@ -1,4 +1,4 @@
-Name: BotHybrid
+name: BotHybrid
 
 on:
   workflow_dispatch:
