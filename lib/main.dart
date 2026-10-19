@@ -1920,7 +1920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           FlashingSniperText(),
                           SizedBox(height: 4),
                           Text(
-                            'HYBRID ROB O T',
+                            'HYBRID ROBOT',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
@@ -1962,18 +1962,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           borderColor: const Color(0xFFCFD8DC),
                           onPressed: _closeAllOrders,
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 20),                        
                         _buildCircularButton(
                           label: isRunning ? 'STOP' : 'START',
                           icon: isRunning ? Icons.stop : Icons.play_arrow,
                           colors: isRunning 
-                              ? const ColorRangeListActive // ใช้สีสแตนเลสโทนสว่าง
+                              ? const [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF2E7D32)] 
                               : const [Color(0xFFB0BEC5), Color(0xFF607D8B), Color(0xFF37474F)], 
                           borderColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFCFD8DC),
                           glowColor: isRunning ? const Color(0xFF00E676) : const Color(0xFFCFD8DC),
                           onPressed: () => _toggleBotStatus(!isRunning),
                           isLarge: true,
                         ),
+
                         const SizedBox(width: 18),
                         _buildCircularButton(
                           label: 'STATS', 
