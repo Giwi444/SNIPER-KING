@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เปิดมาถ้าเคยเข้าพอร์ตแล้ว จะบังคับเข้าหน้า PIN ทันที)
+// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ถ้ามีพอร์ต MT5 บันทึกไว้แล้ว ให้เข้าหน้า PIN เสมอ)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -136,10 +136,11 @@ class LiquiditySweepApp extends StatelessWidget {
       globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
-      // ถ้ามีบันทึกเลขพอร์ตไว้แล้ว ไม่ต้องไปหน้า Login ใหม่ ให้ไปหน้ากรอก PIN ทันที
+      // กฎเหล็ก: ถ้าเคยล็อกอินพอร์ต MT5 ไว้แล้ว (ไม่ว่าจะปิดแอปหรือเปิดใหม่) ต้องวิ่งมาหน้ากรอก PIN เสมอ
       if (savedLogin.isNotEmpty) {
         return const PinAuthWrapper();
       } else {
+        // ถ้ายังไม่เคยล็อกอิน (ติดตั้งใหม่ หรือกด Logout ออกมา) ถึงจะมาหน้า Login MT5
         return const MT5LoginWrapper();
       }
     } catch (e) {
@@ -184,7 +185,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ดึง Server จริงจาก Firebase ตรงพอร์ต)
+// #4 MT5 LOGIN WRAPPER (ใช้เฉพาะตอนติดตั้งครั้งแรก หรือตอนกด Logout เท่านั้น)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -489,7 +490,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER
+// #4 PIN AUTH WRAPPER (หน้ากรอกรหัสพินทุกครั้งที่เปิดแอพขึ้นมาใหม่)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
