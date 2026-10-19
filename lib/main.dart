@@ -3997,12 +3997,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: const Color(0xFF455A64).withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFF00E5FF),
+                      color: const Color(0xFFCFD8DC), // เปลี่ยนเส้นขอบเป็นสีขาว/เทาอ่อนดั้งเดิม
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withOpacity(0.4),
+                        color: const Color(0xFFCFD8DC).withOpacity(0.7), // เปลี่ยนเงาเป็นสีขาว/เทาอ่อนดั้งเดิม
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -4013,7 +4013,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'), // เปลี่ยนข้อความกลับเป็นสีขาวดั้งเดิม
                       ),
                       const SizedBox(height: 12),
                       const Text('Trading Symbol', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 11)),
@@ -4153,7 +4153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF37474F),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.6), width: 1.5),
+                          border: Border.all(color: const Color(0xFFCFD8DC), width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4161,7 +4161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold)),
+                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 12, fontWeight: FontWeight.bold)),
                                 Switch(
                                   value: enableTrendFilter,
                                   activeColor: const Color(0xFF00E676),
@@ -4189,7 +4189,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 String tf = timeframes[index];
                                 bool isSelected = selectedTf == tf;
                                 
-                                // ไล่เฉดสีสันสดใสให้ปุ่ม Timeframe แต่ละตัว
                                 List<Color> tfColors = [
                                   const Color(0xFFFF5252), // M1
                                   const Color(0xFFFF9100), // M2
@@ -4524,7 +4523,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+                              side: const BorderSide(color: Color(0xFFCFD8DC), width: 1.5),
                             ),
                             elevation: 6,
                           ),
