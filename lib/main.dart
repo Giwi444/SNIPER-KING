@@ -1,7 +1,7 @@
 // ==========================================
 // #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์
 // ==========================================
- 
+
 import 'dart:async';  
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -172,7 +172,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER (แก้ไขระบบจัดการบันทึก PIN เรียบร้อย)
+// #4 PIN AUTH WRAPPER (ฉบับแก้ไขให้บันทึกและตรวจสอบ PIN ได้สมบูรณ์)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -258,30 +258,33 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   Future<void> _onNumberTap(String number) async {
     if (isSaving || currentPinInput.length >= 6) return;
 
-    final nextPin = currentPinInput + number;
+    setState(() {
+      currentPinInput += number;
+    });
 
-    setState(() => currentPinInput = nextPin);
+    // ถ้ายังกรอกไม่ครบ 6 หลัก ให้รอผู้ใช้กดต่อ
+    if (currentPinInput.length < 6) return;
 
-    if (nextPin.length < 6) return;
+    final completedPin = currentPinInput;
 
-    // กรณีมี PIN ในระบบแล้ว
+    // กรณีมี PIN ในระบบแล้ว -> ทำการตรวจสอบเพื่อเข้าสู่แอป
     if (hasStoredPin) {
-      await _verifyPin(nextPin);
+      await _verifyPin(completedPin);
       return;
     }
 
-    // กรอกครั้งแรก
+    // กรณีตั้งรหัสครั้งแรก (ยังไม่มี PIN ในระบบ)
     if (!isConfirming) {
       setState(() {
-        firstEnteredPin = nextPin;
+        firstEnteredPin = completedPin;
         currentPinInput = '';
-        isConfirming = true;
+        isConfirming = true; // เปลี่ยนเป็นโหมด ให้นำมากรอกยืนยันอีกรอบ
       });
       return;
     }
 
-    // ยืนยันรหัสครั้งที่สองแต่ไม่ตรงกัน
-    if (firstEnteredPin != nextPin) {
+    // กรณีอยู่ในโหมดกดยืนยันรอบที่ 2 แต่รหัสไม่ตรงกัน
+    if (firstEnteredPin != completedPin) {
       setState(() {
         currentPinInput = '';
         firstEnteredPin = '';
@@ -298,11 +301,11 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return;
     }
 
-    // ยืนยันรหัสถูกต้อง -> บันทึก PIN
+    // กรณีรหัสผ่านทั้ง 2 ครั้งตรงกัน -> ทำการบันทึกข้อมูลลง SharedPreferences
     setState(() => isSaving = true);
 
     try {
-      await _saveNewPin(nextPin);
+      await _saveNewPin(completedPin);
 
       if (!mounted) return;
 
@@ -314,6 +317,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       });
     } catch (e, stackTrace) {
       debugPrint('Save PIN error: $e');
+      debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
 
@@ -336,8 +340,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (isSaving || currentPinInput.isEmpty) return;
 
     setState(() {
-      currentPinInput =
-          currentPinInput.substring(0, currentPinInput.length - 1);
+      currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
     });
   }
 
