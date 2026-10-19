@@ -1,5 +1,5 @@
 // ==========================================
-// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (ลบ shared_preferences ออกป้องกัน Error)
+// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (รองรับ SharedPreferences สำหรับจดจำการล็อกอิน MT5)
 // ==========================================
 
 import 'dart:async';  
@@ -7,8 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// ตัวแปรส่วนกลางสำหรับเก็บสถานะชั่วคราวแทน SharedPreferences
+// ตัวแปรส่วนกลางสำหรับเก็บสถานะชั่วคราว
 String globalSavedLogin = '';
 String globalSavedServer = '';
 String globalUserPin = '';
@@ -36,6 +37,12 @@ void main() async {
   } catch (e) {
     print("Firebase init error: $e");
   }
+
+  // โหลดข้อมูลการล็อกอินที่เคยบันทึกไว้ในเครื่อง
+  final prefs = await SharedPreferences.getInstance();
+  globalSavedLogin = prefs.getString('saved_mt5_login') ?? '';
+  globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
+  globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
   runApp(const LiquiditySweepApp());
 }
@@ -132,14 +139,15 @@ class LiquiditySweepApp extends StatelessWidget {
       title: '🎯SNIPER HYBRID🎯',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF37474F), // ปรับเป็นสแตนเลสโทนสว่างขึ้น
+        scaffoldBackgroundColor: const Color(0xFF37474F),
         cardColor: const Color(0xFF455A64),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFFECEFF1),
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      home: const MT5LoginWrapper(),
+      // ถ้ารู้จัก Login แล้ว ให้ข้ามไปหน้า PIN ทันทีโดยไม่ต้องกรอก User/Password ใหม่
+      home: globalSavedLogin.isNotEmpty ? const PinAuthWrapper() : const MT5LoginWrapper(),
     );
   }
 }
@@ -163,13 +171,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isLoggedInMT5 = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingMT5Login();
-  }
 
   @override
   void dispose() {
@@ -179,17 +180,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     super.dispose();
   }
 
-  Future<void> _checkExistingMT5Login() async {
-    if (globalSavedLogin.isNotEmpty) {
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    }
-  }
-
   void _submitMT5Login() async {
     String login = _loginController.text.trim();
-    String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
 
     if (login.isEmpty) {
@@ -232,11 +224,21 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         globalSavedLogin = login;
         globalSavedServer = server;
 
+        // บันทึกข้อมูลลงในเครื่องอย่างถาวร เพื่อให้เปิดแอปครั้งถัดไปไม่ต้องล็อกอิน MT5 ซ้ำ
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_mt5_login', login);
+        await prefs.setString('saved_mt5_server', server);
+
         if (!mounted) return;
         setState(() {
           _isLoading = false;
-          _isLoggedInMT5 = true;
         });
+
+        // ไปหน้า PIN ทันทีหลังยืนยันบัญชี MT5 สำเร็จ
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
+        );
       } else {
         if (!mounted) return;
         setState(() {
@@ -249,25 +251,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
       }
-    } on FirebaseException catch (e, stackTrace) {
-      debugPrint('Firebase error code: ${e.code}');
-      debugPrint('Firebase error message: ${e.message}');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Firebase [${e.code}]: ${e.message ?? "ไม่มีรายละเอียด"}',
-          ),
-          backgroundColor: Colors.blueGrey,
-          duration: const Duration(seconds: 8),
-        ),
-      );
     } catch (e, stackTrace) {
       debugPrint('Login error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -289,10 +272,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoggedInMT5) {
-      return const PinAuthWrapper();
-    }
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -302,7 +281,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF37474F)),
           ),
-          Container(color: const Color(0xFF263238).withOpacity(0.70)), // ปรับความสว่างพื้นหลังให้ดูสแตนเลสเงาวาวขึ้น
+          Container(color: const Color(0xFF263238).withOpacity(0.70)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
@@ -515,6 +494,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 
   Future<void> _checkPinExists() async {
+    final prefs = await SharedPreferences.getInstance();
+    globalUserPin = prefs.getString('saved_user_pin') ?? globalUserPin;
+
     setState(() {
       hasStoredPin = globalUserPin.isNotEmpty;
       isLoading = false;
@@ -523,6 +505,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Future<void> _saveNewPin(String pin) async {
     globalUserPin = pin;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_user_pin', pin);
   }
 
   Future<void> _verifyPin(String pin) async {
@@ -713,6 +697,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
+// ... (โค้ดส่วนของ MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ยังคงเดิมถัดจากนี้)
+
 
 
 // ==========================================
