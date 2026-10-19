@@ -10,8 +10,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ตัวแปรส่วนกลางสำหรับเก็บสถานะ
-String globalSavedLogin = '235305975';
-String globalSavedServer = 'ICMarketsSC-Demo';
+String globalSavedLogin = '';
+String globalSavedServer = '';
 String globalUserPin = '';
 
 // ==========================================
@@ -132,20 +132,20 @@ class LiquiditySweepApp extends StatelessWidget {
       final prefs = await SharedPreferences.getInstance();
       final savedLogin = prefs.getString('saved_mt5_login') ?? '';
       
-      // ดึงค่าเลขพอร์ตที่เคยล็อกอินสำเร็จไว้
+      // ดึงค่าเลขพอร์ตและ Server ที่เคยล็อกอินสำเร็จไว้
       globalSavedLogin = savedLogin;
+      globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
-      // ถ้าเคยล็อกอินพอร์ตไว้แล้ว -> ให้เด้งไปหน้า PIN ทันที!
-      if (savedLogin.isNotEmpty) {
-        return const PinAuthWrapper();
-      } else {
-        // ถ้ายังไม่เคยล็อกอินเลย (ติดตั้งใหม่/กด Log Out) -> ให้ไปหน้า MT5 Login
+      // [แก้ไขจุดที่ 1]: ถ้ายังไม่เคยล็อกอินเลย (ติดตั้งใหม่/กด Log Out) -> บังคับมาหน้า MT5 Login ก่อนเสมอ
+      if (savedLogin.isEmpty) {
         return const MT5LoginWrapper();
+      } else {
+        // ถ้าเคยล็อกอินแล้ว ค่อยเช็ค PIN ปกติ
+        return const PinAuthWrapper();
       }
     } catch (e) {
       debugPrint("Read initial storage error: $e");
-      // กรณี Error อ่าน Cache ไม่ได้ แต่มีค่าอยู่ในตัวแปร global
       if (globalSavedLogin.isNotEmpty) {
         return const PinAuthWrapper();
       }
@@ -186,7 +186,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ตรวจสอบทั้งพอร์ตและรหัสผ่านจาก Firebase จริง)
+// #4 MT5 LOGIN WRAPPER (ตรวจสอบทั้งพอร์ตและดึง Server จริงจาก Firebase)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -272,16 +272,23 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         return;  
       }  
 
-      // ดึงข้อมูลข้างในพอร์ตเพื่อตรวจสอบรหัสผ่าน
       final data = snapshot.value;
       String? correctPassword;
+      String fetchedServer = 'ICMarketsSC-Demo';
 
       if (data is Map) {
-        // รองรับคีย์รหัสผ่านหลายรูปแบบที่อาจเก็บไว้ใน Firebase (password หรือ investor_password)
         correctPassword = data['password']?.toString() ?? data['investor_password']?.toString();
+        
+        // [แก้ไขจุดที่ 2]: ดึง Server จริงจาก Firebase ตามโครงสร้างจริงของพอร์ตนั้นๆ
+        String srv = data['server']?.toString() ?? '';
+        if (srv.isEmpty && data['status'] is Map) {
+          srv = data['status']['server']?.toString() ?? '';
+        }
+        if (srv.isNotEmpty) {
+          fetchedServer = srv;
+        }
       }
 
-      // ถ้าใน Firebase มีการกำหนดรหัสผ่านไว้ และรหัสที่ผู้ใช้กรอกไม่ตรงกัน ให้บล็อกทันที
       if (correctPassword != null && correctPassword.isNotEmpty && correctPassword != password) {
         setState(() => _isLoading = false);
 
@@ -296,13 +303,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         return;
       }
 
-      // กำหนดค่า Login สำหรับพอร์ตปัจจุบันเข้าตัวแปรหลัก
+      // บันทึกค่า Login และ Server จริงลงตัวแปรกลางและเครื่อง
       globalSavedLogin = login;  
+      globalSavedServer = fetchedServer;
 
-      // พยายามบันทึกลงเครื่องแบบปลอดภัย
       try {
         final prefs = await SharedPreferences.getInstance();  
         await prefs.setString('saved_mt5_login', login);  
+        await prefs.setString('saved_mt5_server', fetchedServer);
       } catch (e) {
         debugPrint('SharedPreferences Bypass Note: $e');
       }
@@ -311,7 +319,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       setState(() => _isLoading = false);  
 
-      // ย้ายไปหน้าตั้งค่ารหัส PIN เมื่อผ่านการตรวจสอบทั้งหมด
       Navigator.pushReplacement(  
         context,  
         MaterialPageRoute(  
@@ -487,7 +494,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER (ปรับแก้ให้เสถียรตามโครงสร้างต้นแบบที่สมบูรณ์)
+// #4 PIN AUTH WRAPPER
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -834,7 +841,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> with TickerProviderStateMixin {
   int _currentIndex = 2;
-  String currentLogin = "235305975"; 
+  String currentLogin = globalSavedLogin.isNotEmpty ? globalSavedLogin : "235305975"; 
   int unreadAlertsCount = 0;
   DatabaseReference? _alertsRef;
   DatabaseReference? _dbRef;
@@ -2727,14 +2734,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-    void _listenToStatusForSymbol(String login) {
+  void _listenToStatusForSymbol(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 1. ฟังข้อมูลสถานะการเทรดปกติ
+      // 1. ฟังข้อมูลสถานะการเทรด (Balance, Equity, Margin แบบเรียลไทม์)
       _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2748,16 +2755,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
             margin = (data['margin'] ?? 0.0).toDouble();
             freeMargin = (data['free_margin']?.toString() == 'nan' ? 0.0 : (data['free_margin'] ?? 0.0)).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
+            
+            // อัปเดต Server เผื่อกรณี status เก็บไว้ด้วย
+            String srv = data['server']?.toString() ?? '';
+            if (srv.isNotEmpty) {
+              accountServer = srv;
+            }
           });
         }
       });
 
-      // 2. ดึงชื่อ Server ให้ตรงกับบัญชีที่ล็อกอินจาก Firebase จริง
+      // 2. [แก้ไขจุดที่ 2 & 3]: ดึงชื่อ Server และข้อมูลบัญชีจริงจากระดับพอร์ต accounts/{login} ให้ตรงกันแบบเรียลไทม์
       database.ref('accounts/$login').onValue.listen((event) {
         final accountData = event.snapshot.value as Map<dynamic, dynamic>?;
         if (accountData != null && mounted) {
           setState(() {
-            // เช็คว่ามีฟิลด์ server อยู่ระดับนอก หรือใน status
             String srv = accountData['server']?.toString() ?? '';
             if (srv.isEmpty && accountData['status'] is Map) {
               srv = accountData['status']['server']?.toString() ?? '';
@@ -3530,8 +3542,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -3864,7 +3876,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final String currentPinStateStatus = "ตั้งค่ารหัส PIN แล้ว";
 
   DatabaseReference? _statusRef;
-  String currentLogin = "235305975";
+  String currentLogin = globalSavedLogin.isNotEmpty ? globalSavedLogin : "235305975";
 
   bool _isEditing = false;
   bool _isInitialized = false;
@@ -4010,7 +4022,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // สั่งเด้งกลับไปหน้าสร้าง PIN ใหม่ทันที
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
@@ -4020,10 +4031,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _logoutToLoginScreen() async {
     globalSavedLogin = '';
+    globalSavedServer = '';
     globalUserPin = '';
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('saved_mt5_login');
+      await prefs.remove('saved_mt5_server');
       await prefs.remove('saved_user_pin');
     } catch (e) {
       debugPrint("Logout prefs error: $e");
@@ -4031,7 +4044,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // สั่งล้างข้อมูลพอร์ตและเด้งกลับหน้าล็อกอิน MT5 ทันที
+    // สั่งล้างข้อมูลทั้งหมดแล้วเด้งกลับหน้าล็อกอิน MT5 ทันที
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
@@ -4655,7 +4668,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 10),
                       
-                      // 1. ปุ่ม Reset PIN
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -4683,7 +4695,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       const SizedBox(height: 14),
 
-                      // 2. ปุ่ม Log Out (เปลี่ยนบัญชี MT5)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
