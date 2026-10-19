@@ -1026,7 +1026,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     bool isTotalProfit = totalOrdersProfit >= 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF37474F), // สแตนเลสโทนสว่าง
+      backgroundColor: const Color(0xFF37474F),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -1078,7 +1078,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
           ),
           
           // ==========================================
-          // # บอลลูนควบคุม Log (Floating Bubble)
+          // # บอลลูนควบคุม Log (Floating Bubble พร้อมจุดเชื่อมต่อ Server & ไม่มีไอคอนทับ)
           // ==========================================
           if (!_isLargeLogsModalOpen)
             Positioned(
@@ -1095,53 +1095,76 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                     _isLargeLogsModalOpen = true;
                   });
                 },
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFCFD8DC), Color(0xFF78909C)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFCFD8DC).withOpacity(0.8),
-                        blurRadius: 12,
-                        spreadRadius: 2,
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFCFD8DC), Color(0xFF78909C)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFCFD8DC).withOpacity(0.8),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(26),
+                          child: Image.asset(
+                            _imageA,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.smart_toy, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      // จุดสถานะออนไลน์/ออฟไลน์ที่ขอบบอลลูน
+                      Positioned(
+                        right: 2,
+                        top: 2,
+                        child: Container(
+                          width: 13,
+                          height: 13,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252)).withOpacity(0.8),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          _imageA,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.terminal, color: Colors.white),
-                        ),
-                        Container(color: const Color(0xFF37474F).withOpacity(0.4)),
-                        const Center(
-                          child: Icon(Icons.terminal, color: Colors.white, size: 24),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),
             ),
 
           // ==========================================
-          // # หน้าต่าง STATUS & LOGS
+          // # หน้าต่าง STATUS & LOGS (ปรับตำแหน่งไม่ให้ซ้อนทับบอลลูน)
           // ==========================================
           if (_isLargeLogsModalOpen)
             Positioned(
-              left: _modalOffset.dx,
-              top: _modalOffset.dy,
+              left: 16,
+              top: 70,
+              right: 16,
+              bottom: 85,
               child: GestureDetector(
                 onPanUpdate: (details) {
                   setState(() {
@@ -1149,8 +1172,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                   });
                 },
                 child: Container(
-                  width: MediaQuery.of(context).size.width * 0.92,
-                  height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFFCFD8DC), width: 2.5),
@@ -1161,7 +1182,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                         spreadRadius: 2,
                       ),
                     ],
-                    color: const Color(0xFF37474F), // ปรับเป็นสแตนเลสโทนสว่าง
+                    color: const Color(0xFF37474F),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -4541,4 +4562,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-}
+}.
