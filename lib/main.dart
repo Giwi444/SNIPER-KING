@@ -174,7 +174,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 โหมดการเข้าใช้งานครั้งแรก (Stainless Steel Style)
+// #4 MT5 LOGIN WRAPPER
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -185,10 +185,10 @@ class MT5LoginWrapper extends StatefulWidget {
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController(text: '');
-  final TextEditingController _passwordController = TextEditingController(text: '');
-  final TextEditingController _serverController = TextEditingController(text: ''); 
-  
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _serverController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -200,32 +200,38 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     super.dispose();
   }
 
-  void _submitMT5Login() async {
-    String login = _loginController.text.trim();
-    String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
+  Future<void> _submitMT5Login() async {
+    if (_isLoading) return;
+
+    final login = _loginController.text.trim();
+    final server = _serverController.text.trim().isEmpty
+        ? 'ICMarketsSC-Demo'
+        : _serverController.text.trim();
 
     if (login.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFF78909C)),
+        const SnackBar(
+          content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),
+        ),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      FirebaseApp app;
+      final FirebaseApp app;
+
       if (Firebase.apps.isEmpty) {
         app = await Firebase.initializeApp(
           options: const FirebaseOptions(
-            apiKey: "AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA",
-            appId: "1:155532929563:android:49d8a1e0040dc87ce766be",
-            messagingSenderId: "155532929563",
-            projectId: "liquidity-b8739",
-            storageBucket: "liquidity-b8739-firebasestorage.app",
-            databaseURL: "https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app",
+            apiKey: 'AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA',
+            appId: '1:155532929563:android:49d8a1e0040dc87ce766be',
+            messagingSenderId: '155532929563',
+            projectId: 'liquidity-b8739',
+            storageBucket: 'liquidity-b8739.firebasestorage.app',
+            databaseURL:
+                'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',
           ),
         );
       } else {
@@ -234,58 +240,62 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       final database = FirebaseDatabase.instanceFor(
         app: app,
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+        databaseURL:
+            'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',
       );
 
-      final accountRef = database.ref('accounts/$login');
-      final snapshot = await accountRef.get();
+      final snapshot = await database.ref('accounts/$login').get();
 
-      if (snapshot.exists) {
-        globalSavedLogin = login;
-        globalSavedServer = server;
+      if (!mounted) return;
 
-        // บันทึกข้อมูลลงใน SharedPreferences อย่างถาวร
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('saved_mt5_login', login);
-        await prefs.setString('saved_mt5_server', server);
+      if (!snapshot.exists) {
+        setState(() => _isLoading = false);
 
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
-        );
-      } else {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ไม่พบหมายเลขบัญชีนี้ในระบบ Firebase'),
-            backgroundColor: Color(0xFF78909C),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ'),
+            ),
+          );
+        return;
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_mt5_login', login);
+      await prefs.setString('saved_mt5_server', server);
+
+      globalSavedLogin = login;
+      globalSavedServer = server;
+
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PinAuthWrapper(),
+        ),
+      );
     } catch (e, stackTrace) {
       debugPrint('Login error: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ข้อผิดพลาด: $e'),
-          backgroundColor: Colors.blueGrey,
-          duration: const Duration(seconds: 8),
-        ),
-      );
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อหรือติดต่อผู้ดูแลระบบ',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
     }
   }
 
@@ -298,184 +308,117 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           Image.asset(
             'assets/images/1792250396366.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF37474F)),
+            errorBuilder: (_, __, ___) =>
+                Container(color: const Color(0xFF37474F)),
           ),
           Container(color: const Color(0xFF263238).withOpacity(0.70)),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFCFD8DC).withOpacity(0.9),
-                              blurRadius: 22,
-                              spreadRadius: 4,
-                            ),
-                          ],
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/1792250396366.jpg',
+                        width: 160,
+                        height: 160,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.smart_toy,
+                          color: Colors.white,
+                          size: 100,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/1792250396366.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: const Color(0xFF37474F));
-                                },
-                              ),
-                            ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'SNIPER HYBRID',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'ROBOT',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Color(0xFFECEFF1),
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    TextField(
+                      controller: _loginController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Account Login'),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Investor Password').copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.white70,
                           ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF455A64).withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFCFD8DC), width: 2.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFCFD8DC).withOpacity(0.7),
-                              blurRadius: 12.0,
-                              spreadRadius: 2.0,
-                            ),
-                          ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _serverController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration:
+                          _inputDecoration('Server (เช่น ICMarketsSC-Demo)'),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitMT5Login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF546E7A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Column(
-                          children: [
-                            Text(
-                              '🎯SNIPER HYBRID🎯',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 3.0,
-                                shadows: [
-                                  Shadow(color: Color(0xFFCFD8DC), blurRadius: 12, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              ' R O B O T',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFFECEFF1),
-                                letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(color: Color(0xFFB0BEC5), blurRadius: 10, offset: Offset(0, 0)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('VERIFY & CONNECT'),
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFCFD8DC), width: 1.5),
-                          color: const Color(0xFF37474F).withOpacity(0.8),
-                          boxShadow: [
-                            BoxShadow(color: Colors.white.withOpacity(0.3), blurRadius: 6),
-                          ],
-                        ),
-                        child: const Text(
-                          'Powered By Algohost',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Powered By Algohost',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
                       ),
-                      const SizedBox(height: 25),
-                      TextField(
-                        controller: _loginController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Account Login',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.45), fontStyle: FontStyle.italic),
-                          filled: true,
-                          fillColor: const Color(0xFF263238).withOpacity(0.6),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF90A4AE), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCFD8DC), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Investor Password',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.45), fontStyle: FontStyle.italic),
-                          filled: true,
-                          fillColor: const Color(0xFF263238).withOpacity(0.6),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF90A4AE), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCFD8DC), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: const Color(0xFFCFD8DC),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _serverController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'ตัวอย่าง: ICMarketsSC-Demo',
-                          hintStyle: TextStyle(color: const Color(0xFFCFD8DC).withOpacity(0.6), fontStyle: FontStyle.italic),
-                          filled: true,
-                          fillColor: const Color(0xFF263238).withOpacity(0.6),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF90A4AE), width: 1.5)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCFD8DC), width: 2.0)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitMT5Login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF546E7A),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFFCFD8DC), width: 1.5),
-                            ),
-                          ),
-                          child: _isLoading 
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('VERIFY & CONNECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -484,11 +427,33 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      hintText: label,
+      hintStyle: const TextStyle(color: Colors.white60),
+      filled: true,
+      fillColor: const Color(0xFF263238).withOpacity(0.75),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF90A4AE)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color(0xFFCFD8DC),
+          width: 2,
+        ),
+      ),
+    );
+  }
 }
 
-
 // ==========================================
-// #5 โหมดการสร้างรหัสป้องกัน (PinAuthWrapper)
+// #5 PIN AUTH WRAPPER
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -503,8 +468,10 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool hasStoredPin = false;
   bool isConfirming = false;
   bool isLoading = true;
-  String firstEnteredPin = "";
-  String currentPinInput = "";
+  bool isSaving = false;
+
+  String firstEnteredPin = '';
+  String currentPinInput = '';
 
   @override
   void initState() {
@@ -513,79 +480,148 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 
   Future<void> _checkPinExists() async {
-    final prefs = await SharedPreferences.getInstance();
-    globalUserPin = prefs.getString('saved_user_pin') ?? globalUserPin;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPin = prefs.getString('saved_user_pin') ?? '';
 
-    setState(() {
-      hasStoredPin = globalUserPin.isNotEmpty;
-      isLoading = false;
-    });
-  }
+      if (!mounted) return;
 
-  Future<void> _saveNewPin(String pin) async {
-    globalUserPin = pin;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_user_pin', pin);
-  }
-
-  Future<void> _verifyPin(String pin) async {
-    if (globalUserPin == pin) {
       setState(() {
-        isAuthorized = true;
+        globalUserPin = savedPin;
+        hasStoredPin = savedPin.isNotEmpty;
+        isLoading = false;
       });
-    } else {
-      setState(() {
-        currentPinInput = "";
-      });
+    } catch (e, stackTrace) {
+      debugPrint('PIN initialization error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'), backgroundColor: Color(0xFF78909C)),
+        const SnackBar(
+          content: Text('โหลดข้อมูล PIN ไม่สำเร็จ กรุณาลองเปิดแอปใหม่'),
+        ),
       );
     }
   }
 
-  void _onNumberTap(String number) {
-    if (currentPinInput.length < 6) {
+  Future<void> _saveNewPin(String pin) async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = await prefs.setString('saved_user_pin', pin);
+
+    if (!saved) {
+      throw Exception('Unable to save PIN');
+    }
+
+    globalUserPin = pin;
+  }
+
+  Future<void> _verifyPin(String pin) async {
+    if (globalUserPin == pin) {
+      if (!mounted) return;
+
       setState(() {
-        currentPinInput += number;
+        isAuthorized = true;
+        currentPinInput = '';
+      });
+    } else {
+      if (!mounted) return;
+
+      setState(() => currentPinInput = '');
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
+          ),
+        );
+    }
+  }
+
+  Future<void> _onNumberTap(String number) async {
+    if (isSaving || currentPinInput.length >= 6) return;
+
+    final nextPin = currentPinInput + number;
+
+    setState(() => currentPinInput = nextPin);
+
+    if (nextPin.length < 6) return;
+
+    if (hasStoredPin) {
+      await _verifyPin(nextPin);
+      return;
+    }
+
+    if (!isConfirming) {
+      setState(() {
+        firstEnteredPin = nextPin;
+        currentPinInput = '';
+        isConfirming = true;
+      });
+      return;
+    }
+
+    if (firstEnteredPin != nextPin) {
+      setState(() {
+        currentPinInput = '';
+        firstEnteredPin = '';
+        isConfirming = false;
       });
 
-      if (currentPinInput.length == 6) {
-        if (!hasStoredPin) {
-          if (!isConfirming) {
-            firstEnteredPin = currentPinInput;
-            currentPinInput = "";
-            isConfirming = true;
-          } else {
-            if (firstEnteredPin == currentPinInput) {
-              _saveNewPin(currentPinInput);
-              setState(() {
-                hasStoredPin = true;
-                isAuthorized = true;
-              });
-            } else {
-              setState(() {
-                currentPinInput = "";
-                isConfirming = false;
-                firstEnteredPin = "";
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'), backgroundColor: Color(0xFF78909C)),
-              );
-            }
-          }
-        } else {
-          _verifyPin(currentPinInput);
-        }
-      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'),
+          ),
+        );
+      return;
+    }
+
+    setState(() => isSaving = true);
+
+    try {
+      await _saveNewPin(nextPin);
+
+      if (!mounted) return;
+
+      setState(() {
+        hasStoredPin = true;
+        isAuthorized = true;
+        currentPinInput = '';
+        isSaving = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Save PIN error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        currentPinInput = '';
+        firstEnteredPin = '';
+        isConfirming = false;
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('บันทึก PIN ไม่สำเร็จ กรุณาลองใหม่'),
+        ),
+      );
     }
   }
 
   void _onDeleteTap() {
-    if (currentPinInput.isNotEmpty) {
-      setState(() {
-        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
-      });
-    }
+    if (isSaving || currentPinInput.isEmpty) return;
+
+    setState(() {
+      currentPinInput =
+          currentPinInput.substring(0, currentPinInput.length - 1);
+    });
   }
 
   @override
@@ -593,7 +629,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
+          child: CircularProgressIndicator(
+            color: Color(0xFFCFD8DC),
+          ),
         ),
       );
     }
@@ -602,10 +640,11 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return const MainNavigationScreen();
     }
 
-    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
-    if (!hasStoredPin) {
-      titleText = isConfirming ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง" : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
-    }
+    final titleText = hasStoredPin
+        ? 'กรุณากรอก PIN เพื่อเข้าใช้งานระบบ'
+        : isConfirming
+            ? 'ยืนยันรหัส PIN 6 หลักอีกครั้ง'
+            : 'ตั้งค่ารหัส PIN 6 หลักความปลอดภัย';
 
     return Scaffold(
       body: Stack(
@@ -614,70 +653,88 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           Image.asset(
             'assets/images/1792250396366.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF37474F)),
+            errorBuilder: (_, __, ___) =>
+                Container(color: const Color(0xFF37474F)),
           ),
           Container(color: const Color(0xFF263238).withOpacity(0.70)),
           SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline, color: Color(0xFFCFD8DC), size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  titleText,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                Row(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (index) {
-                    bool isFilled = index < currentPinInput.length;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isFilled ? const Color(0xFFCFD8DC) : Colors.transparent,
-                        border: Border.all(color: const Color(0xFFB0BEC5), width: 2),
+                  children: [
+                    const Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFFCFD8DC),
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      titleText,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  }),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(6, (index) {
+                        final filled = index < currentPinInput.length;
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: filled
+                                ? const Color(0xFFCFD8DC)
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: const Color(0xFFB0BEC5),
+                              width: 2,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 30),
+                    for (final row in [
+                      ['1', '2', '3'],
+                      ['4', '5', '6'],
+                      ['7', '8', '9'],
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: row.map(_buildPinButton).toList(),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: 96),
+                          _buildPinButton('0'),
+                          _buildPinButton('del'),
+                        ],
+                      ),
+                    ),
+                    if (isSaving)
+                      const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['1', '2', '3'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['4', '5', '6'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: ['7', '8', '9'].map((val) => _buildPinButton(val)).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(width: 96),
-                      _buildPinButton('0'),
-                      _buildPinButton('del'),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -697,29 +754,45 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        border: Border.all(color: const Color(0xFFCFD8DC), width: 1.5),
+        border: Border.all(
+          color: const Color(0xFFCFD8DC),
+          width: 1.5,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            if (val == 'del') {
-              _onDeleteTap();
-            } else {
-              _onNumberTap(val);
-            }
-          },
+          onTap: isSaving
+              ? null
+              : () {
+                  if (val == 'del') {
+                    _onDeleteTap();
+                  } else {
+                    _onNumberTap(val);
+                  }
+                },
           customBorder: const CircleBorder(),
           child: Center(
             child: val == 'del'
-                ? const Icon(Icons.backspace_outlined, color: Colors.white)
-                : Text(val, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                ? const Icon(
+                    Icons.backspace_outlined,
+                    color: Colors.white,
+                  )
+                : Text(
+                    val,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ),
     );
   }
 }
+
 
 
 // ==========================================
