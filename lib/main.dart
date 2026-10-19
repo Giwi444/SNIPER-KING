@@ -9,7 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ตัวแปรส่วนกลางสำหรับเก็บสถานะ (ไม่ต้องล็อกอิน MT5 แล้ว ตั้งค่าเริ่มต้นจำลองไว้)
+// ตัวแปรส่วนกลางสำหรับเก็บสถานะ
 String globalSavedLogin = '235305975';
 String globalSavedServer = 'ICMarketsSC-Demo';
 String globalUserPin = '';
@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เปิดมาเจอหน้า PIN ทันที)
+// #3 โหมดเริ่มต้นแอพ
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -172,7 +172,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER (ใช้ดีไซน์พื้นหลังและโปรไฟล์จาก MT5 Login เดิม)
+// #4 PIN AUTH WRAPPER (แก้ไขระบบจัดการบันทึก PIN เรียบร้อย)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -228,12 +228,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Future<void> _saveNewPin(String pin) async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = await prefs.setString('saved_user_pin', pin);
-
-    if (!saved) {
-      throw Exception('Unable to save PIN');
-    }
-
+    await prefs.setString('saved_user_pin', pin);
     globalUserPin = pin;
   }
 
@@ -269,19 +264,23 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
     if (nextPin.length < 6) return;
 
+    // กรณีมี PIN ในระบบแล้ว
     if (hasStoredPin) {
       await _verifyPin(nextPin);
       return;
     }
 
+    // กรอกครั้งแรก
     if (!isConfirming) {
       setState(() {
         firstEnteredPin = nextPin;
-        currentPinImageReset();
+        currentPinInput = '';
+        isConfirming = true;
       });
       return;
     }
 
+    // ยืนยันรหัสครั้งที่สองแต่ไม่ตรงกัน
     if (firstEnteredPin != nextPin) {
       setState(() {
         currentPinInput = '';
@@ -299,6 +298,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return;
     }
 
+    // ยืนยันรหัสถูกต้อง -> บันทึก PIN
     setState(() => isSaving = true);
 
     try {
@@ -314,7 +314,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       });
     } catch (e, stackTrace) {
       debugPrint('Save PIN error: $e');
-      debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
 
@@ -331,11 +330,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         ),
       );
     }
-  }
-
-  void currentPinImageReset() {
-    currentPinInput = '';
-    isConfirming = true;
   }
 
   void _onDeleteTap() {
@@ -389,7 +383,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // นำรูปภาพโปรไฟล์บอทกลมๆ จากหน้า MT5 Login มาใส่
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.asset(
@@ -557,7 +550,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
-
 
 
 // ==========================================
@@ -3726,7 +3718,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // เมื่อรีเซ็ต PIN ให้กลับมาหน้าตั้งรหัส PIN ใหม่ทันที
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
