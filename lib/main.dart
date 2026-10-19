@@ -1,5 +1,5 @@
 // ==========================================
-// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (รองรับ SharedPreferences)
+// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์
 // ==========================================
 
 import 'dart:async';  
@@ -37,12 +37,6 @@ void main() async {
   } catch (e) {
     print("Firebase init error: $e");
   }
-
-  // โหลดข้อมูลที่บันทึกไว้ในตัวเครื่องถาวร
-  final prefs = await SharedPreferences.getInstance();
-  globalSavedLogin = prefs.getString('saved_mt5_login') ?? '';
-  globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
-  globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
   runApp(const LiquiditySweepApp());
 }
@@ -127,11 +121,23 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ
+// #3 โหมดเริ่มต้นแอพ (แก้ปัญหาจอดำด้วยการเช็คค่าผ่าน FutureBuilder)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
+
+  Future<bool> _loadStoredSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      globalSavedLogin = prefs.getString('saved_mt5_login') ?? '';
+      globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
+      globalUserPin = prefs.getString('saved_user_pin') ?? '';
+    } catch (e) {
+      print("Load session error: $e");
+    }
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +152,23 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      // ถ้ารู้จัก Login ในหน่วยความจำถาวรแล้ว ข้ามไปหน้ากรอก PIN ทันที
-      home: globalSavedLogin.isNotEmpty ? const PinAuthWrapper() : const MT5LoginWrapper(),
+      home: FutureBuilder(
+        future: _loadStoredSession(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return globalSavedLogin.isNotEmpty ? const PinAuthWrapper() : const MT5LoginWrapper();
+          }
+          // ป้องกันจอดำด้วยหน้าจอโหลดสเตนเลสสตีลสวยๆ ระหว่างโหลดข้อมูล
+          return Scaffold(
+            body: Container(
+              color: const Color(0xFF37474F),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -571,7 +592,11 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
+        ),
+      );
     }
 
     if (isAuthorized) {
@@ -697,7 +722,8 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// โค้ดในส่วนหน้าจอหลักอื่นๆ (MainNavigationScreen, HomeScreen, ฯลฯ) ยังคงเหมือนเดิม สามารถเชื่อมต่อต่อท้ายได้เลยครับ
+// (หมายเหตุ: วางโค้ดส่วนหน้าจอระบบ MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ตัวเดิมต่อจากนี้ได้เลยครับ เนื่องจากไม่มีการเปลี่ยนแปลงในส่วนนั้น)
+
 // ==========================================
 // #6 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
