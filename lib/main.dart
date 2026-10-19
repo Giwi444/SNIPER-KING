@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ถ้าเคยล็อกอินแล้ว ให้เข้าหน้า PIN ทันที)
+// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ติดตั้งใหม่บังคับเข้า MT5 Login ก่อน)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -132,16 +132,14 @@ class LiquiditySweepApp extends StatelessWidget {
       final prefs = await SharedPreferences.getInstance();
       final savedLogin = prefs.getString('saved_mt5_login') ?? '';
       
-      // ดึงค่าเลขพอร์ตและ Server ที่เคยล็อกอินสำเร็จไว้
       globalSavedLogin = savedLogin;
       globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
-      // [แก้ไขจุดที่ 1]: ถ้ายังไม่เคยล็อกอินเลย (ติดตั้งใหม่/กด Log Out) -> บังคับมาหน้า MT5 Login ก่อนเสมอ
+      // ถ้ายังไม่เคยล็อกอิน (ติดตั้งใหม่ / กด Log Out) -> บังคับมาหน้า MT5 Login เสมอ
       if (savedLogin.isEmpty) {
         return const MT5LoginWrapper();
       } else {
-        // ถ้าเคยล็อกอินแล้ว ค่อยเช็ค PIN ปกติ
         return const PinAuthWrapper();
       }
     } catch (e) {
@@ -186,7 +184,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ตรวจสอบทั้งพอร์ตและดึง Server จริงจาก Firebase)
+// #4 MT5 LOGIN WRAPPER (ดึง Server จริงจาก Firebase ตรงพอร์ต)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -253,7 +251,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
       );  
 
-      // ดึงข้อมูลบัญชีจาก Firebase ตามเลขพอร์ตที่กรอก
       final snapshot = await database.ref('accounts/$login').get();  
 
       if (!mounted) return;  
@@ -279,7 +276,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       if (data is Map) {
         correctPassword = data['password']?.toString() ?? data['investor_password']?.toString();
         
-        // [แก้ไขจุดที่ 2]: ดึง Server จริงจาก Firebase ตามโครงสร้างจริงของพอร์ตนั้นๆ
         String srv = data['server']?.toString() ?? '';
         if (srv.isEmpty && data['status'] is Map) {
           srv = data['status']['server']?.toString() ?? '';
@@ -303,7 +299,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         return;
       }
 
-      // บันทึกค่า Login และ Server จริงลงตัวแปรกลางและเครื่อง
       globalSavedLogin = login;  
       globalSavedServer = fetchedServer;
 
@@ -2741,7 +2736,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
 
-      // 1. ฟังข้อมูลสถานะการเทรด (Balance, Equity, Margin แบบเรียลไทม์)
       _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2756,7 +2750,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             freeMargin = (data['free_margin']?.toString() == 'nan' ? 0.0 : (data['free_margin'] ?? 0.0)).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
             
-            // อัปเดต Server เผื่อกรณี status เก็บไว้ด้วย
             String srv = data['server']?.toString() ?? '';
             if (srv.isNotEmpty) {
               accountServer = srv;
@@ -2765,7 +2758,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       });
 
-      // 2. [แก้ไขจุดที่ 2 & 3]: ดึงชื่อ Server และข้อมูลบัญชีจริงจากระดับพอร์ต accounts/{login} ให้ตรงกันแบบเรียลไทม์
       database.ref('accounts/$login').onValue.listen((event) {
         final accountData = event.snapshot.value as Map<dynamic, dynamic>?;
         if (accountData != null && mounted) {
@@ -2784,7 +2776,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       print("Status symbol listen error: $e");
     }
   }
-
 
   void _listenToOrders(String login) {
     try {
@@ -3542,8 +3533,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -4044,7 +4035,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // สั่งล้างข้อมูลทั้งหมดแล้วเด้งกลับหน้าล็อกอิน MT5 ทันที
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
