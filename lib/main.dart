@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ติดตั้งใหม่บังคับเข้า MT5 Login ก่อน)
+// #3 โหมดเริ่มต้นแอพ (เปิดมาถ้าเคยเข้าพอร์ตแล้ว จะบังคับเข้าหน้า PIN ทันที)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -136,11 +136,11 @@ class LiquiditySweepApp extends StatelessWidget {
       globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
-      // ถ้ายังไม่เคยล็อกอิน (ติดตั้งใหม่ / กด Log Out) -> บังคับมาหน้า MT5 Login เสมอ
-      if (savedLogin.isEmpty) {
-        return const MT5LoginWrapper();
-      } else {
+      // ถ้ามีบันทึกเลขพอร์ตไว้แล้ว ไม่ต้องไปหน้า Login ใหม่ ให้ไปหน้ากรอก PIN ทันที
+      if (savedLogin.isNotEmpty) {
         return const PinAuthWrapper();
+      } else {
+        return const MT5LoginWrapper();
       }
     } catch (e) {
       debugPrint("Read initial storage error: $e");
