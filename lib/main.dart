@@ -4018,6 +4018,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _logoutToLoginScreen() async {
+    globalSavedLogin = '';
+    globalUserPin = '';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('saved_mt5_login');
+      await prefs.remove('saved_user_pin');
+    } catch (e) {
+      debugPrint("Logout prefs error: $e");
+    }
+
+    if (!mounted) return;
+
+    // สั่งล้างข้อมูลพอร์ตและเด้งกลับหน้าล็อกอิน MT5 ทันที
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
+      (route) => false,
+    );
+  }
+
   Color buttonColorForLot(String mode) {
     if (mode == 'Fixed') return const Color(0xFFFF5252);
     if (mode == 'Step') return const Color(0xFF00E5FF);
@@ -4625,7 +4646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                                            const SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       const Divider(color: Colors.white24, height: 24),
                       const SizedBox(height: 8),
                       const Text(
