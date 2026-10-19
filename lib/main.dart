@@ -121,31 +121,11 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เปิดมาเจอหน้า MT5 Login ก่อน)
+// #3 โหมดเริ่มต้นแอพ (ส่งตรงไปหน้า MT5 Login ทันที ไม่ผ่าน SharedPreferences)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
-
-  Future<Widget> _getInitialScreen() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedLogin = prefs.getString('saved_mt5_login') ?? '';
-      globalSavedLogin = savedLogin;
-      globalUserPin = prefs.getString('saved_user_pin') ?? '';
-
-      // ถ้ายังไม่มีการบันทึกเลขพอร์ต MT5 ให้ส่งไปหน้า Login ก่อน
-      if (savedLogin.isEmpty) {
-        return const MT5LoginWrapper();
-      } else {
-        // ถ้าเคยยืนยันพอร์ต MT5 ไว้แล้ว ให้เข้าสู่หน้า PIN ความปลอดภัย
-        return const PinAuthWrapper();
-      }
-    } catch (e) {
-      print("Shared Preferences read error: $e");
-      return const MT5LoginWrapper();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,31 +140,15 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      home: FutureBuilder<Widget>(
-        future: _getInitialScreen(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-            return snapshot.data!;
-          }
-          return Scaffold(
-            body: Container(
-              color: const Color(0xFF37474F),
-              child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
-              ),
-            ),
-          );
-        },
-      ),
+      // เข้าหน้า MT5LoginWrapper ทันทีโดยไม่รออ่าน Cache ในเครื่อง
+      home: const MT5LoginWrapper(),
     );
   }
 }
 
 
-
-
 // ==========================================
-// #4 MT5 LOGIN WRAPPER (ตัดช่อง Server ออกเรียบร้อย)
+// #4 MT5 LOGIN WRAPPER (ดึงตรงจาก Firebase ป้องกัน Crash)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -249,6 +213,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
       );  
 
+      // ยิงตรงไปเช็คบัญชีใน accounts/$login บน Firebase ทันที
       final snapshot = await database.ref('accounts/$login').get();  
 
       if (!mounted) return;  
@@ -260,21 +225,28 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ..hideCurrentSnackBar()  
           ..showSnackBar(  
             const SnackBar(  
-              content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ'),  
+              content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาตรวจสอบเลขพอร์ตอีกครั้ง'),  
             ),  
           );  
         return;  
       }  
 
-      final prefs = await SharedPreferences.getInstance();  
-      await prefs.setString('saved_mt5_login', login);  
-
+      // กำหนดค่า Login สำหรับพอร์ตปัจจุบันเข้าตัวแปรหลัก
       globalSavedLogin = login;  
+
+      // พยายามบันทึกลงเครื่องแบบปลอดภัย (ถ้าล้มเหลวก็ไม่ทำให้แอปค้าง/เด้ง Error)
+      try {
+        final prefs = await SharedPreferences.getInstance();  
+        await prefs.setString('saved_mt5_login', login);  
+      } catch (e) {
+        debugPrint('SharedPreferences Bypass Note: $e');
+      }
 
       if (!mounted) return;  
 
       setState(() => _isLoading = false);  
 
+      // ย้ายไปหน้าตั้งค่ารหัส PIN เมื่อผ่านการเชื่อมต่อพอร์ต
       Navigator.pushReplacement(  
         context,  
         MaterialPageRoute(  
@@ -293,8 +265,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('เข้าสู่ระบบไม่สำเร็จ: $e'),
-            duration: const Duration(seconds: 8),
+            content: Text('การเชื่อมต่อล้มเหลว: $e'),
+            duration: const Duration(seconds: 5),
           ),
         );
     }
@@ -359,7 +331,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       controller: _loginController,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Account Login'),
+                      decoration: _inputDecoration('Account Login (เช่น 53049695)'),
                     ),
                     const SizedBox(height: 14),
                     TextField(
@@ -445,6 +417,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 // ==========================================
 // #4 PIN AUTH WRAPPER (จัดการ PIN ชัดเจน ไม่มีติดขัด)
