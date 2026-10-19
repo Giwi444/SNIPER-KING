@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (แก้ไขให้เช็ค SharedPreferences แล้วพุ่งไปหน้า PIN ทันที)
+// #3 โหมดเริ่มต้นแอพ (เช็ค SharedPreferences แล้วพุ่งไปหน้า PIN ทันที)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -134,14 +134,10 @@ class LiquiditySweepApp extends StatelessWidget {
       final server = prefs.getString('saved_mt5_server') ?? '';
       final pin = prefs.getString('saved_user_pin') ?? '';
 
-      globalSavedLogin = login;
-      globalSavedServer = server;
-      globalUserPin = pin;
-
-      return {'login': login, 'pin': pin};
+      return {'login': login, 'pin': pin, 'server': server};
     } catch (e) {
       debugPrint("Read initial storage error: $e");
-      return {'login': globalSavedLogin, 'pin': globalUserPin};
+      return {'login': '', 'pin': '', 'server': ''};
     }
   }
 
@@ -165,7 +161,7 @@ class LiquiditySweepApp extends StatelessWidget {
             final data = snapshot.data ?? {};
             final login = data['login'] ?? '';
 
-            // ถ้ามีเลขพอร์ตเซฟไว้แล้ว ไม่ว่าจะเปิดแอปใหม่กี่รอบ ต้องมาหน้า PIN เสมอ!
+            // ถ้ามีเลขพอร์ตเซฟไว้แล้ว เปิดแอปใหม่กี่รอบจะพุ่งมาหน้า PIN ทันที!
             if (login.isNotEmpty) {
               return const PinAuthWrapper();
             } else {
@@ -301,9 +297,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           );
         return;
       }
-
-      globalSavedLogin = login;  
-      globalSavedServer = fetchedServer;
 
       try {
         final prefs = await SharedPreferences.getInstance();  
@@ -492,7 +485,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER (หน้ากรอกรหัสพินทุกครั้งที่เปิดแอพขึ้นมาใหม่)
+// #5 PIN AUTH WRAPPER (หน้ากรอกรหัสพินทุกครั้งที่เปิดแอพขึ้นมาใหม่)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -524,7 +517,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       final pin = prefs.getString('saved_user_pin');
       setState(() {
         hasStoredPin = pin != null && pin.isNotEmpty;
-        globalUserPin = pin ?? '';
         isLoading = false;
       });
     } catch (e) {
@@ -539,7 +531,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_user_pin', pin);
-      globalUserPin = pin;
     } catch (e) {
       debugPrint('Save PIN error: $e');
     }
@@ -551,7 +542,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       final storedPin = prefs.getString('saved_user_pin');
       if (!mounted) return;
 
-      if (storedPin == pin || globalUserPin == pin) {
+      if (storedPin == pin) {
         setState(() {
           isAuthorized = true;
           currentPinInput = '';
@@ -822,6 +813,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
 
 
 
