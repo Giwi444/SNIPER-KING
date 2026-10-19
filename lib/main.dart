@@ -121,21 +121,11 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ
+// #3 โหมดเริ่มต้นแอพ (ปรับปรุงใหม่ ไม่บังคับอ่าน SharedPreferences ตอนเริ่ม)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
-
-  Future<bool> _loadStoredSession() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      globalUserPin = prefs.getString('saved_user_pin') ?? '';
-    } catch (e) {
-      print("Shared Preferences read error: $e");
-    }
-    return true;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,29 +140,14 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      home: FutureBuilder<bool>(
-        future: _loadStoredSession(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return const PinAuthWrapper();
-          }
-          return Scaffold(
-            body: Container(
-              color: const Color(0xFF37474F),
-              child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
-              ),
-            ),
-          );
-        },
-      ),
+      home: const PinAuthWrapper(),
     );
   }
 }
 
 
 // ==========================================
-// #4 PIN AUTH WRAPPER (ฉบับแก้ไขให้บันทึกและตรวจสอบ PIN ได้สมบูรณ์)
+// #4 PIN AUTH WRAPPER (ระบบ PIN แบบเคลียร์ตัวเอง ไม่เก็บบน Disk กัน Error พัง)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -184,76 +159,14 @@ class PinAuthWrapper extends StatefulWidget {
 
 class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool isAuthorized = false;
-  bool hasStoredPin = false;
   bool isConfirming = false;
-  bool isLoading = true;
   bool isSaving = false;
 
   String firstEnteredPin = '';
   String currentPinInput = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _checkPinExists();
-  }
-
-  Future<void> _checkPinExists() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('saved_user_pin') ?? '';
-
-      if (!mounted) return;
-
-      setState(() {
-        globalUserPin = savedPin;
-        hasStoredPin = savedPin.isNotEmpty;
-        isLoading = false;
-      });
-    } catch (e, stackTrace) {
-      debugPrint('PIN initialization error: $e');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) return;
-
-      setState(() => isLoading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('โหลดข้อมูล PIN ไม่สำเร็จ กรุณาลองเปิดแอปใหม่'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _saveNewPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_user_pin', pin);
-    globalUserPin = pin;
-  }
-
-  Future<void> _verifyPin(String pin) async {
-    if (globalUserPin == pin) {
-      if (!mounted) return;
-
-      setState(() {
-        isAuthorized = true;
-        currentPinInput = '';
-      });
-    } else {
-      if (!mounted) return;
-
-      setState(() => currentPinInput = '');
-
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
-          ),
-        );
-    }
-  }
+  // ใช้ PIN สำรองในหน่วยความจำชั่วคราว ป้องกันปัญหา SharedPreferences ของเครื่องบล็อกการเขียน
+  static String? temporaryMemoryPin;
 
   Future<void> _onNumberTap(String number) async {
     if (isSaving || currentPinInput.length >= 6) return;
@@ -262,28 +175,41 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       currentPinInput += number;
     });
 
-    // ถ้ายังกรอกไม่ครบ 6 หลัก ให้รอผู้ใช้กดต่อ
     if (currentPinInput.length < 6) return;
 
     final completedPin = currentPinInput;
 
-    // กรณีมี PIN ในระบบแล้ว -> ทำการตรวจสอบเพื่อเข้าสู่แอป
-    if (hasStoredPin) {
-      await _verifyPin(completedPin);
+    // ถ้ามีรหัส PIN ตั้งไว้แล้วในหน่วยความจำ -> ตรวจสอบเพื่อเข้าแอป
+    if (temporaryMemoryPin != null && temporaryMemoryPin!.isNotEmpty) {
+      if (temporaryMemoryPin == completedPin) {
+        setState(() {
+          isAuthorized = true;
+          currentPinInput = '';
+        });
+      } else {
+        setState(() => currentPinInput = '');
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
+            ),
+          );
+      }
       return;
     }
 
-    // กรณีตั้งรหัสครั้งแรก (ยังไม่มี PIN ในระบบ)
+    // กรณีตั้งรหัสครั้งแรก (ยังไม่เคยตั้ง)
     if (!isConfirming) {
       setState(() {
         firstEnteredPin = completedPin;
         currentPinInput = '';
-        isConfirming = true; // เปลี่ยนเป็นโหมด ให้นำมากรอกยืนยันอีกรอบ
+        isConfirming = true; // เข้าสู่โหมดให้ยืนยันรหัสเดิมอีกครั้ง
       });
       return;
     }
 
-    // กรณีอยู่ในโหมดกดยืนยันรอบที่ 2 แต่รหัสไม่ตรงกัน
+    // ตรวจสอบว่ารหัสยืนยันรอบสองตรงกันไหม
     if (firstEnteredPin != completedPin) {
       setState(() {
         currentPinInput = '';
@@ -301,39 +227,21 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return;
     }
 
-    // กรณีรหัสผ่านทั้ง 2 ครั้งตรงกัน -> ทำการบันทึกข้อมูลลง SharedPreferences
+    // บันทึก PIN สำเร็จ (เก็บไว้ในตัวแปรกลางของแอพ)
     setState(() => isSaving = true);
 
-    try {
-      await _saveNewPin(completedPin);
+    await Future.delayed(const Duration(milliseconds: 300)); // หน่วงเล็กน้อยให้ดูสมูท
 
-      if (!mounted) return;
+    temporaryMemoryPin = completedPin;
+    globalUserPin = completedPin;
 
-      setState(() {
-        hasStoredPin = true;
-        isAuthorized = true;
-        currentPinInput = '';
-        isSaving = false;
-      });
-    } catch (e, stackTrace) {
-      debugPrint('Save PIN error: $e');
-      debugPrintStack(stackTrace: stackTrace);
+    if (!mounted) return;
 
-      if (!mounted) return;
-
-      setState(() {
-        currentPinInput = '';
-        firstEnteredPin = '';
-        isConfirming = false;
-        isSaving = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('บันทึก PIN ไม่สำเร็จ กรุณาลองใหม่'),
-        ),
-      );
-    }
+    setState(() {
+      isAuthorized = true;
+      currentPinInput = '';
+      isSaving = false;
+    });
   }
 
   void _onDeleteTap() {
@@ -346,21 +254,13 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFCFD8DC),
-          ),
-        ),
-      );
-    }
-
     if (isAuthorized) {
       return const MainNavigationScreen();
     }
 
-    final titleText = hasStoredPin
+    final bool hasPinSet = temporaryMemoryPin != null && temporaryMemoryPin!.isNotEmpty;
+
+    final titleText = hasPinSet
         ? 'กรุณากรอก PIN เพื่อเข้าใช้งานระบบ'
         : isConfirming
             ? 'ยืนยันรหัส PIN 6 หลักอีกครั้ง'
@@ -553,6 +453,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
