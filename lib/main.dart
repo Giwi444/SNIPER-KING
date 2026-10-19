@@ -1,5 +1,5 @@
 // ==========================================
-// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (ลบบอลลูนออกเพื่อป้องกัน Error)
+// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (ลบ shared_preferences ออกป้องกัน Error)
 // ==========================================
 
 import 'dart:async';  
@@ -7,8 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+// ตัวแปรส่วนกลางสำหรับเก็บสถานะชั่วคราวแทน SharedPreferences
+String globalSavedLogin = '';
+String globalSavedServer = '';
+String globalUserPin = '';
 
 // ==========================================
 // #2 โหมดเมนหลัก (Theme Stainless Steel Setup)
@@ -177,9 +180,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 
   Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
+    if (globalSavedLogin.isNotEmpty) {
       setState(() {
         _isLoggedInMT5 = true;
       });
@@ -228,9 +229,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       final snapshot = await accountRef.get();
 
       if (snapshot.exists) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mt5_login', login);
-        await prefs.setString('mt5_server', server);
+        globalSavedLogin = login;
+        globalSavedServer = server;
 
         if (!mounted) return;
         setState(() {
@@ -509,26 +509,18 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 
   Future<void> _checkPinExists() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final pin = prefs.getString('user_pin');
     setState(() {
-      hasStoredPin = pin != null && pin.isNotEmpty;
+      hasStoredPin = globalUserPin.isNotEmpty;
       isLoading = false;
     });
   }
 
   Future<void> _saveNewPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    await prefs.setString('user_pin', pin);
+    globalUserPin = pin;
   }
 
   Future<void> _verifyPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final storedPin = prefs.getString('user_pin');
-    if (storedPin == pin) {
+    if (globalUserPin == pin) {
       setState(() {
         isAuthorized = true;
       });
@@ -793,11 +785,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 
   Future<void> _loadSavedLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('mt5_login');
-    if (saved != null && saved.isNotEmpty && mounted) {
+    if (globalSavedLogin.isNotEmpty && mounted) {
       setState(() {
-        currentLogin = saved;
+        currentLogin = globalSavedLogin;
       });
     }
   }
@@ -3667,7 +3657,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSavedLoginAndSettings();
-    _loadLocalPreferences();
   }
 
   @override
@@ -3688,11 +3677,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSavedLoginAndSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('mt5_login');
-    if (saved != null && saved.isNotEmpty) {
+    if (globalSavedLogin.isNotEmpty) {
       setState(() {
-        currentLogin = saved;
+        currentLogin = globalSavedLogin;
       });
     }
     _loadAllSettingsFromFirebase();
@@ -3751,17 +3738,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _loadLocalPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      isSoundEnabled = prefs.getBool('pref_sound') ?? true;
-      isPushEnabled = prefs.getBool('pref_push') ?? true;
-      isAutoLotEnabled = prefs.getBool('pref_autolot') ?? false;
-      riskPercent = prefs.getDouble('pref_risk') ?? 1.0;
-    });
-  }
-
   void _saveBotParametersToFirebase() {
     try {
       final payload = {
@@ -3808,8 +3784,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _resetPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
+    globalUserPin = '';
 
     if (!mounted) return;
 
@@ -3821,10 +3796,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logoutToLoginScreen() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_pin');
-    await prefs.remove('mt5_login');
-    await prefs.remove('mt5_server');
+    globalUserPin = '';
+    globalSavedLogin = '';
+    globalSavedServer = '';
 
     if (!mounted) return;
 
