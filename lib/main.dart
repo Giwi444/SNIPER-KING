@@ -117,9 +117,6 @@ class _TypewriterTextState extends State<TypewriterText> {
 }
 
 
-// ==========================================
-// #1 โหมดเริ่มต้นแอพ (พุ่งไปหน้า PIN ทันทีโดยไม่มีแจ้งเตือนรบกวน)
-// ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
@@ -127,9 +124,15 @@ class LiquiditySweepApp extends StatelessWidget {
   Future<bool> _checkLoginSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final login = prefs.getString('mt5_login') ?? prefs.getString('saved_mt5_login') ?? '';
-      return login.isNotEmpty;
+
+      // ตรวจสอบคีย์บัญชี MT5 ที่เคยบันทึกไว้
+      final login = prefs.getString('mt5_login') ??
+          prefs.getString('saved_mt5_login') ??
+          '';
+
+      return login.trim().isNotEmpty;
     } catch (e) {
+      debugPrint('Check login session error: $e');
       return false;
     }
   }
@@ -137,7 +140,7 @@ class LiquiditySweepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '🎯SNIPER HYBRID🎯',
+      title: 'SNIPER HYBRID',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF263238),
@@ -150,23 +153,22 @@ class LiquiditySweepApp extends StatelessWidget {
       home: FutureBuilder<bool>(
         future: _checkLoginSession(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            final isLoggedIn = snapshot.data ?? false;
-
-            // เคยเชื่อมต่อพอร์ตไว้แล้ว -> เข้าหน้า PIN ทันทีทันใด
-            if (isLoggedIn) {
-              return const PinAuthWrapper();
-            } else {
-              // ยังไม่เคยล็อกอิน -> เข้าหน้ากรอกพอร์ต MT5
-              return const MT5LoginWrapper();
-            }
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Scaffold(
+              backgroundColor: Color(0xFF263238),
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFCFD8DC),
+                ),
+              ),
+            );
           }
-          return const Scaffold(
-            backgroundColor: Color(0xFF263238),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
-            ),
-          );
+
+          if (snapshot.data == true) {
+            return const PinAuthWrapper();
+          }
+
+          return const MT5LoginWrapper();
         },
       ),
     );
@@ -436,9 +438,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
 
 
-// ==========================================
-// #5 PIN AUTH WRAPPER
-// ==========================================
+
+ // ==========================================
+ // #5 PIN AUTH WRAPPER
+ // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
   const PinAuthWrapper({super.key});
@@ -452,6 +455,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   bool hasStoredPin = false;
   bool isConfirming = false;
   bool isLoading = true;
+  bool _isProcessing = false;
 
   String firstEnteredPin = '';
   String currentPinInput = '';
@@ -466,25 +470,40 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
+
       final pin = prefs.getString('saved_user_pin');
+
       setState(() {
         hasStoredPin = pin != null && pin.isNotEmpty;
         isLoading = false;
       });
     } catch (e) {
+      debugPrint('Check PIN error: $e');
       if (!mounted) return;
+
       setState(() {
         isLoading = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('อ่านข้อมูล PIN ไม่สำเร็จ กรุณาปิดแล้วเปิดแอปใหม่'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  Future<void> _saveNewPin(String pin) async {
+  Future<bool> _saveNewPin(String pin) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('saved_user_pin', pin);
+      final saved = await prefs.setString('saved_user_pin', pin);
+
+      // ตรวจสอบว่าค่าถูกบันทึกและอ่านกลับได้จริง
+      return saved && prefs.getString('saved_user_pin') == pin;
     } catch (e) {
       debugPrint('Save PIN error: $e');
+      return false;
     }
   }
 
@@ -492,9 +511,10 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final storedPin = prefs.getString('saved_user_pin');
+
       if (!mounted) return;
 
-      if (storedPin == pin) {
+      if (storedPin == pin && storedPin != null) {
         setState(() {
           isAuthorized = true;
           currentPinInput = '';
@@ -503,6 +523,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         setState(() {
           currentPinInput = '';
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'),
@@ -511,59 +532,113 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
         );
       }
     } catch (e) {
+      debugPrint('Verify PIN error: $e');
       if (!mounted) return;
+
       setState(() {
         currentPinInput = '';
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ตรวจสอบ PIN ไม่สำเร็จ กรุณาลองใหม่'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  void _onNumberTap(String number) {
-    if (currentPinInput.length < 6) {
-      setState(() {
-        currentPinInput += number;
-      });
+  Future<void> _onNumberTap(String number) async {
+    if (isLoading || _isProcessing || currentPinInput.length >= 6) {
+      return;
+    }
 
-      if (currentPinInput.length == 6) {
-        if (!hasStoredPin) {
-          if (!isConfirming) {
-            firstEnteredPin = currentPinInput;
-            currentPinInput = '';
-            isConfirming = true;
-          } else {
-            if (firstEnteredPin == currentPinInput) {
-              _saveNewPin(currentPinInput);
-              setState(() {
-                hasStoredPin = true;
-                isAuthorized = true;
-              });
-            } else {
-              setState(() {
-                currentPinInput = '';
-                isConfirming = false;
-                firstEnteredPin = '';
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-        } else {
-          _verifyPin(currentPinInput);
-        }
+    setState(() {
+      currentPinInput += number;
+    });
+
+    if (currentPinInput.length != 6) return;
+
+    _isProcessing = true;
+
+    try {
+      final enteredPin = currentPinInput;
+
+      if (hasStoredPin) {
+        await _verifyPin(enteredPin);
+        return;
       }
+
+      if (!isConfirming) {
+        setState(() {
+          firstEnteredPin = enteredPin;
+          currentPinInput = '';
+          isConfirming = true;
+        });
+        return;
+      }
+
+      if (firstEnteredPin != enteredPin) {
+        setState(() {
+          currentPinInput = '';
+          firstEnteredPin = '';
+          isConfirming = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('รหัส PIN ไม่ตรงกัน กรุณาตั้งค่าใหม่อีกครั้ง'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final saved = await _saveNewPin(enteredPin);
+
+      if (!mounted) return;
+
+      if (saved) {
+        setState(() {
+          hasStoredPin = true;
+          isAuthorized = true;
+          currentPinInput = '';
+          firstEnteredPin = '';
+          isConfirming = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('บันทึก PIN สำเร็จ'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        setState(() {
+          currentPinInput = '';
+          firstEnteredPin = '';
+          isConfirming = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('บันทึก PIN ไม่สำเร็จ กรุณาตั้งค่าใหม่'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isProcessing = false;
     }
   }
 
   void _onDeleteTap() {
-    if (currentPinInput.isNotEmpty) {
-      setState(() {
-        currentPinInput = currentPinInput.substring(0, currentPinInput.length - 1);
-      });
-    }
+    if (isLoading || _isProcessing || currentPinInput.isEmpty) return;
+
+    setState(() {
+      currentPinInput =
+          currentPinInput.substring(0, currentPinInput.length - 1);
+    });
   }
 
   @override
@@ -572,7 +647,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return Scaffold(
         backgroundColor: const Color(0xFF263238),
         body: const Center(
-          child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
+          child: CircularProgressIndicator(
+            color: Color(0xFFCFD8DC),
+          ),
         ),
       );
     }
@@ -581,11 +658,12 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
       return const MainNavigationScreen();
     }
 
-    String titleText = "กรุณากรอก PIN เพื่อเข้าใช้งานระบบ";
+    String titleText = 'กรุณากรอก PIN เพื่อเข้าใช้งานระบบ';
+
     if (!hasStoredPin) {
       titleText = isConfirming
-          ? "ยืนยันรหัส PIN 6 หลักอีกครั้ง"
-          : "ตั้งค่ารหัส PIN 6 หลักความปลอดภัย";
+          ? 'ยืนยันรหัส PIN 6 หลักอีกครั้ง'
+          : 'ตั้งค่ารหัส PIN 6 หลักความปลอดภัย';
     }
 
     return Scaffold(
@@ -765,6 +843,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
