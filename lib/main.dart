@@ -121,20 +121,30 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เปิดมาเจอหน้า PIN ทันที)
+// #3 โหมดเริ่มต้นแอพ (เปิดมาเจอหน้า MT5 Login ก่อน)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
-  Future<bool> _loadStoredSession() async {
+  Future<Widget> _getInitialScreen() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final savedLogin = prefs.getString('saved_mt5_login') ?? '';
+      globalSavedLogin = savedLogin;
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
+
+      // ถ้ายังไม่มีการบันทึกเลขพอร์ต MT5 ให้ส่งไปหน้า Login ก่อน
+      if (savedLogin.isEmpty) {
+        return const MT5LoginWrapper();
+      } else {
+        // ถ้าเคยยืนยันพอร์ต MT5 ไว้แล้ว ให้เข้าสู่หน้า PIN ความปลอดภัย
+        return const PinAuthWrapper();
+      }
     } catch (e) {
       print("Shared Preferences read error: $e");
+      return const MT5LoginWrapper();
     }
-    return true;
   }
 
   @override
@@ -150,11 +160,11 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      home: FutureBuilder<bool>(
-        future: _loadStoredSession(),
+      home: FutureBuilder<Widget>(
+        future: _getInitialScreen(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return const PinAuthWrapper();
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return snapshot.data!;
           }
           return Scaffold(
             body: Container(
@@ -169,6 +179,7 @@ class LiquiditySweepApp extends StatelessWidget {
     );
   }
 }
+
 
 
 
