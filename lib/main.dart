@@ -121,34 +121,27 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ถ้ามีพอร์ต MT5 บันทึกไว้แล้ว ให้เข้าหน้า PIN เสมอ)
+// #3 โหมดเริ่มต้นแอพ (แก้ไขให้เช็ค SharedPreferences แล้วพุ่งไปหน้า PIN ทันที)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
-  Future<Widget> _getInitialScreen() async {
+  Future<Map<String, String>> _loadSavedSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedLogin = prefs.getString('saved_mt5_login') ?? '';
-      
-      globalSavedLogin = savedLogin;
-      globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
-      globalUserPin = prefs.getString('saved_user_pin') ?? '';
+      final login = prefs.getString('saved_mt5_login') ?? '';
+      final server = prefs.getString('saved_mt5_server') ?? '';
+      final pin = prefs.getString('saved_user_pin') ?? '';
 
-      // กฎเหล็ก: ถ้าเคยล็อกอินพอร์ต MT5 ไว้แล้ว (ไม่ว่าจะปิดแอปหรือเปิดใหม่) ต้องวิ่งมาหน้ากรอก PIN เสมอ
-      if (savedLogin.isNotEmpty) {
-        return const PinAuthWrapper();
-      } else {
-        // ถ้ายังไม่เคยล็อกอิน (ติดตั้งใหม่ หรือกด Logout ออกมา) ถึงจะมาหน้า Login MT5
-        return const MT5LoginWrapper();
-      }
+      globalSavedLogin = login;
+      globalSavedServer = server;
+      globalUserPin = pin;
+
+      return {'login': login, 'pin': pin};
     } catch (e) {
       debugPrint("Read initial storage error: $e");
-      if (globalSavedLogin.isNotEmpty) {
-        return const PinAuthWrapper();
-      }
-      return const MT5LoginWrapper();
+      return {'login': globalSavedLogin, 'pin': globalUserPin};
     }
   }
 
@@ -165,11 +158,20 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      home: FutureBuilder<Widget>(
-        future: _getInitialScreen(),
+      home: FutureBuilder<Map<String, String>>(
+        future: _loadSavedSession(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-            return snapshot.data!;
+          if (snapshot.connectionState == ConnectionState.done) {
+            final data = snapshot.data ?? {};
+            final login = data['login'] ?? '';
+
+            // ถ้ามีเลขพอร์ตเซฟไว้แล้ว ไม่ว่าจะเปิดแอปใหม่กี่รอบ ต้องมาหน้า PIN เสมอ!
+            if (login.isNotEmpty) {
+              return const PinAuthWrapper();
+            } else {
+              // ถ้ายังไม่เคยล็อกอิน หรือกด Logout ถึงจะมาหน้า MT5 Login
+              return const MT5LoginWrapper();
+            }
           }
           return Scaffold(
             backgroundColor: const Color(0xFF37474F),
