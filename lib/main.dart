@@ -278,20 +278,82 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
       }
-    } catch (e) {
+    } 
+    } on FirebaseException catch (e, stackTrace) {
+      debugPrint('Firebase error code: ${e.code}');
+      debugPrint('Firebase error details: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+
+      final String message = e.code == 'permission-denied'
+          ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules'
+          : e.code == 'unavailable'
+              ? 'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'
+              : 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    } 
+    } on FirebaseException catch (e, stackTrace) {
+      debugPrint('Firebase error code: ${e.code}');
+      debugPrint('Firebase error details: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      final String message = e.code == 'permission-denied'
+          ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules'
+          : e.code == 'unavailable'
+              ? 'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'
+              : 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    } catch (e, stackTrace) {
+      debugPrint('Login error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
     }
-  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -434,7 +496,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
-}
+} 
 
 
 
