@@ -173,129 +173,268 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER
+// #4 MT5 LOGIN WRAPPER (ตัดช่อง Server ออก เหลือแค่ Login และ Password)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
-const MT5LoginWrapper({super.key});
+  const MT5LoginWrapper({super.key});
 
-@override
-State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
+  @override
+  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-final TextEditingController _loginController = TextEditingController();
-final TextEditingController _passwordController = TextEditingController();
-final TextEditingController _serverController = TextEditingController();
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-bool _obscurePassword = true;
-bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
-@override
-void dispose() {
-_loginController.dispose();
-_passwordController.dispose();
-_serverController.dispose();
-super.dispose();
-}
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-Future<void> _submitMT5Login() async {
-if (_isLoading) return;
+  Future<void> _submitMT5Login() async {
+    if (_isLoading) return;
 
-final login = _loginController.text.trim();  
-final server = _serverController.text.trim().isEmpty  
-    ? 'ICMarketsSC-Demo'  
-    : _serverController.text.trim();  
+    final login = _loginController.text.trim();  
 
-if (login.isEmpty) {  
-  ScaffoldMessenger.of(context).showSnackBar(  
-    const SnackBar(  
-      content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),  
-    ),  
-  );  
-  return;  
-}  
-
-setState(() => _isLoading = true);  
-
-try {  
-  final FirebaseApp app;  
-
-  if (Firebase.apps.isEmpty) {  
-    app = await Firebase.initializeApp(  
-      options: const FirebaseOptions(  
-        apiKey: 'AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA',  
-        appId: '1:155532929563:android:49d8a1e0040dc87ce766be',  
-        messagingSenderId: '155532929563',  
-        projectId: 'liquidity-b8739',  
-        storageBucket: 'liquidity-b8739.firebasestorage.app',  
-        databaseURL:  
-            'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
-      ),  
-    );  
-  } else {  
-    app = Firebase.app();  
-  }  
-
-  final database = FirebaseDatabase.instanceFor(  
-    app: app,  
-    databaseURL:  
-        'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
-  );  
-
-  final snapshot = await database.ref('accounts/$login').get();  
-
-  if (!mounted) return;  
-
-  if (!snapshot.exists) {  
-    setState(() => _isLoading = false);  
-
-    ScaffoldMessenger.of(context)  
-      ..hideCurrentSnackBar()  
-      ..showSnackBar(  
+    if (login.isEmpty) {  
+      ScaffoldMessenger.of(context).showSnackBar(  
         const SnackBar(  
-          content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ'),  
+          content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),  
         ),  
       );  
-    return;  
-  }  
+      return;  
+    }  
 
-  final prefs = await SharedPreferences.getInstance();  
-  await prefs.setString('saved_mt5_login', login);  
-  await prefs.setString('saved_mt5_server', server);  
+    setState(() => _isLoading = true);  
 
-  globalSavedLogin = login;  
-  globalSavedServer = server;  
+    try {  
+      final FirebaseApp app;  
 
-  if (!mounted) return;  
+      if (Firebase.apps.isEmpty) {  
+        app = await Firebase.initializeApp(  
+          options: const FirebaseOptions(  
+            apiKey: 'AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA',  
+            appId: '1:155532929563:android:49d8a1e0040dc87ce766be',  
+            messagingSenderId: '155532929563',  
+            projectId: 'liquidity-b8739',  
+            storageBucket: 'liquidity-b8739.firebasestorage.app',  
+            databaseURL:  
+                'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
+          ),  
+        );  
+      } else {  
+        app = Firebase.app();  
+      }  
 
-  setState(() => _isLoading = false);  
+      final database = FirebaseDatabase.instanceFor(  
+        app: app,  
+        databaseURL:  
+            'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',  
+      );  
 
-  Navigator.pushReplacement(  
-    context,  
-    MaterialPageRoute(  
-      builder: (_) => const PinAuthWrapper(),  
-    ),  
-  );  
-} catch (e, stackTrace) {
+      final snapshot = await database.ref('accounts/$login').get();  
 
-debugPrint('LOGIN ERROR: $e');
-debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;  
 
-if (!mounted) return;
+      if (!snapshot.exists) {  
+        setState(() => _isLoading = false);  
 
-setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context)  
+          ..hideCurrentSnackBar()  
+          ..showSnackBar(  
+            const SnackBar(  
+              content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ'),  
+            ),  
+          );  
+        return;  
+      }  
 
-ScaffoldMessenger.of(context)
-..hideCurrentSnackBar()
-..showSnackBar(
-SnackBar(
-content: Text('เข้าสู่ระบบไม่สำเร็จ: $e'),
-duration: const Duration(seconds: 8),
-),
-);
+      final prefs = await SharedPreferences.getInstance();  
+      await prefs.setString('saved_mt5_login', login);  
+
+      globalSavedLogin = login;  
+
+      if (!mounted) return;  
+
+      setState(() => _isLoading = false);  
+
+      Navigator.pushReplacement(  
+        context,  
+        MaterialPageRoute(  
+          builder: (_) => const PinAuthWrapper(),  
+        ),  
+      );  
+    } catch (e, stackTrace) {
+      debugPrint('LOGIN ERROR: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('เข้าสู่ระบบไม่สำเร็จ: $e'),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/1792250396366.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) =>
+                Container(color: const Color(0xFF37474F)),
+          ),
+          Container(color: const Color(0xFF263238).withOpacity(0.70)),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/1792250396366.jpg',
+                        width: 160,
+                        height: 160,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => const Icon(
+                          Icons.smart_toy,
+                          color: Colors.white,
+                          size: 100,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'SNIPER HYBRID',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'ROBOT',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Color(0xFFECEFF1),
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    TextField(
+                      controller: _loginController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Account Login'),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Investor Password').copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.white70,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitMT5Login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF546E7A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('VERIFY & CONNECT'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Powered By Algohost',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      hintText: label,
+      hintStyle: const TextStyle(color: Colors.white60),
+      filled: true,
+      fillColor: const Color(0xFF263238).withOpacity(0.75),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF90A4AE)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color(0xFFCFD8DC),
+          width: 2,
+        ),
+      ),
+    );
+  }
 }
-}
+
 
 @override
 Widget build(BuildContext context) {
@@ -306,7 +445,7 @@ children: [
 Image.asset(
 'assets/images/1792250396366.jpg',
 fit: BoxFit.cover,
-errorBuilder: (_, __, __) =>
+errorBuilder: (context, error, stackTrace) => ...
 Container(color: const Color(0xFF37474F)),
 ),
 Container(color: const Color(0xFF263238).withOpacity(0.70)),
