@@ -192,6 +192,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  static const String _databaseUrl =
+      'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app';
+
   @override
   void dispose() {
     _loginController.dispose();
@@ -204,23 +207,25 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     if (_isLoading) return;
 
     final login = _loginController.text.trim();
+    final password = _passwordController.text;
     final server = _serverController.text.trim().isEmpty
         ? 'ICMarketsSC-Demo'
         : _serverController.text.trim();
 
     if (login.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),
-        ),
-      );
+      _showMessage('กรุณากรอกเลขพอร์ต MT5');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showMessage('กรุณากรอกรหัสผ่าน');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final FirebaseApp app;
+      FirebaseApp app;
 
       if (Firebase.apps.isEmpty) {
         app = await Firebase.initializeApp(
@@ -230,8 +235,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             messagingSenderId: '155532929563',
             projectId: 'liquidity-b8739',
             storageBucket: 'liquidity-b8739.firebasestorage.app',
-            databaseURL:
-                'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',
+            databaseURL: _databaseUrl,
           ),
         );
       } else {
@@ -240,8 +244,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       final database = FirebaseDatabase.instanceFor(
         app: app,
-        databaseURL:
-            'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',
+        databaseURL: _databaseUrl,
       );
 
       final snapshot = await database.ref('accounts/$login').get();
@@ -250,18 +253,15 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       if (!snapshot.exists) {
         setState(() => _isLoading = false);
-
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ'),
-            ),
-          );
+        _showMessage('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ');
         return;
       }
 
+      // หมายเหตุ: โค้ดนี้ตรวจว่ามีบัญชีใน Firebase เท่านั้น
+      // ยังไม่ได้ตรวจสอบรหัสผ่าน MT5 กับโบรกเกอร์จริง
+
       final prefs = await SharedPreferences.getInstance();
+
       await prefs.setString('saved_mt5_login', login);
       await prefs.setString('saved_mt5_server', server);
 
@@ -279,22 +279,52 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         ),
       );
     } catch (e, stackTrace) {
-  debugPrint('LOGIN ERROR: $e');
-  debugPrintStack(stackTrace: stackTrace);
+      debugPrint('MT5 LOGIN ERROR: $e');
+      debugPrintStack(stackTrace: stackTrace);
 
-  if (!mounted) return;
+      if (!mounted) return;
 
-  setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text('เข้าสู่ระบบไม่สำเร็จ: $e'),
-        duration: const Duration(seconds: 8),
+      _showMessage('เข้าสู่ระบบไม่สำเร็จ: $e', seconds: 8);
+    }
+  }
+
+  void _showMessage(String message, {int seconds = 4}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: seconds),
+        ),
+      );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      hintText: label,
+      hintStyle: const TextStyle(color: Colors.white60),
+      filled: true,
+      fillColor: const Color(0xFF263238).withOpacity(0.75),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF90A4AE)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color(0xFFCFD8DC),
+          width: 2,
+        ),
       ),
     );
-}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +338,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             errorBuilder: (_, __, ___) =>
                 Container(color: const Color(0xFF37474F)),
           ),
-          Container(color: const Color(0xFF263238).withOpacity(0.70)),
+          Container(
+            color: const Color(0xFF263238).withOpacity(0.70),
+          ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -362,7 +394,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Investor Password').copyWith(
+                      decoration: _inputDecoration('MT5 Password').copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -382,8 +414,9 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                     TextField(
                       controller: _serverController,
                       style: const TextStyle(color: Colors.white),
-                      decoration:
-                          _inputDecoration('Server (เช่น ICMarketsSC-Demo)'),
+                      decoration: _inputDecoration(
+                        'Server (เช่น ICMarketsSC-Demo)',
+                      ),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -424,6 +457,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
+}
 
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
