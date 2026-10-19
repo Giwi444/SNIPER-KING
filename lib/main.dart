@@ -118,20 +118,18 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #1 โหมดเริ่มต้นแอพ (ตรวจสอบ Session แล้วเข้าหน้า PIN ทันที)
+// #1 โหมดเริ่มต้นแอพ (พุ่งไปหน้า PIN ทันทีโดยไม่มีแจ้งเตือนรบกวน)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
 
-  Future<bool> _checkLoggedInSession() async {
+  Future<bool> _checkLoginSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // เช็คทั้ง mt5_login หรือ saved_mt5_login
       final login = prefs.getString('mt5_login') ?? prefs.getString('saved_mt5_login') ?? '';
       return login.isNotEmpty;
     } catch (e) {
-      debugPrint("Read initial storage error: $e");
       return false;
     }
   }
@@ -150,16 +148,16 @@ class LiquiditySweepApp extends StatelessWidget {
         ),
       ),
       home: FutureBuilder<bool>(
-        future: _checkLoggedInSession(),
+        future: _checkLoginSession(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final isLoggedIn = snapshot.data ?? false;
 
-            // ถ้าเคยล็อกอินไว้แล้ว พุ่งตรงไปหน้า PIN ทันที!
+            // เคยเชื่อมต่อพอร์ตไว้แล้ว -> เข้าหน้า PIN ทันทีทันใด
             if (isLoggedIn) {
               return const PinAuthWrapper();
             } else {
-              // ถ้ายังไม่เคยล็อกอิน หรือกด Log Out แล้ว ถึงจะเข้าหน้า MT5 Login
+              // ยังไม่เคยล็อกอิน -> เข้าหน้ากรอกพอร์ต MT5
               return const MT5LoginWrapper();
             }
           }
@@ -176,9 +174,8 @@ class LiquiditySweepApp extends StatelessWidget {
 }
 
 
-
 // ==========================================
-// #4 โหมดการเข้าใช้งานครั้งแรก (ปรับธีมตามรูปที่ 1)
+// #2 โหมดการเข้าใช้งานครั้งแรก (MT5 Login Wrapper)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -189,19 +186,12 @@ class MT5LoginWrapper extends StatefulWidget {
 }
 
 class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController(text: '');
-  final TextEditingController _passwordController = TextEditingController(text: '');
-  final TextEditingController _serverController = TextEditingController(text: ''); 
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _serverController = TextEditingController(); 
   
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isLoggedInMT5 = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingMT5Login();
-  }
 
   @override
   void dispose() {
@@ -211,24 +201,21 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     super.dispose();
   }
 
-  Future<void> _checkExistingMT5Login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLogin = prefs.getString('mt5_login');
-    if (savedLogin != null && savedLogin.isNotEmpty) {
-      setState(() {
-        _isLoggedInMT5 = true;
-      });
-    }
-  }
-
   void _submitMT5Login() async {
+    // เคลียร์ SnackBar เก่าทิ้งทันทีเพื่อไม่ให้ค้างแสดงผล
+    ScaffoldMessenger.of(context).clearSnackBars();
+
     String login = _loginController.text.trim();
     String password = _passwordController.text.trim();
     String server = _serverController.text.trim().isEmpty ? 'ICMarketsSC-Demo' : _serverController.text.trim();
 
     if (login.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'), backgroundColor: Color(0xFF37474F)),
+        const SnackBar(
+          content: Text('กรุณากรอกเลขพอร์ต MT5 ให้ครบถ้วน'),
+          backgroundColor: Color(0xFF37474F),
+          duration: Duration(seconds: 2),
+        ),
       );
       return;
     }
@@ -264,14 +251,18 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       if (snapshot.exists) {
         final prefs = await SharedPreferences.getInstance();
+        // เซฟพอร์ตลงเครื่องทันทีแบบถาวร
         await prefs.setString('mt5_login', login);
+        await prefs.setString('saved_mt5_login', login);
         await prefs.setString('mt5_server', server);
 
         if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _isLoggedInMT5 = true;
-        });
+
+        // สลับไปหน้า PIN ทันทีแบบเกลี้ยงเกลา ไม่ทิ้ง SnackBar
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
+        );
       } else {
         if (!mounted) return;
         setState(() {
@@ -281,6 +272,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           const SnackBar(
             content: Text('ไม่พบหมายเลขบัญชีนี้ในระบบ Firebase'),
             backgroundColor: Color(0xFF37474F),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -290,17 +282,17 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoggedInMT5) {
-      return const PinAuthWrapper();
-    }
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -335,17 +327,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.asset(
-                                'assets/images/1792250396366.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.black);
-                                },
-                              ),
-                            ],
+                          child: Image.asset(
+                            'assets/images/1792250396366.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
                           ),
                         ),
                       ),
@@ -358,7 +343,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           letterSpacing: 3.0,
-                          fontFamily: 'sans-serif',
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -449,6 +433,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     );
   }
 }
+
 
 
 // ==========================================
