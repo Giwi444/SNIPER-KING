@@ -36,8 +36,10 @@ jobs:
         shell: bash
         run: |
           PROJECT_DIR=""
+
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
+
             if [ -f "$candidate/lib/main.dart" ]; then
               PROJECT_DIR="$candidate"
               break
@@ -51,50 +53,81 @@ jobs:
           )
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Cannot find Flutter project"
+            echo "ERROR: Cannot find Flutter project."
+            echo "Check that pubspec.yaml and lib/main.dart exist."
             exit 1
           fi
 
           PROJECT_DIR="${PROJECT_DIR#./}"
-          [ -n "$PROJECT_DIR" ] || PROJECT_DIR="."
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Flutter project: $PROJECT_DIR"
 
-      - name: Generate Android platform with custom package name
+          if [ -z "$PROJECT_DIR" ]; then
+            PROJECT_DIR="."
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found Flutter project: $PROJECT_DIR"
+
+      - name: Validate Flutter files
         run: |
           cd "$PROJECT_DIR"
-          flutter create . --platforms=android --org com.bothybrid --project-name bot_hybrid
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          echo "Flutter project files verified."
+
+      - name: Generate Android platform
+        run: |
+          cd "$PROJECT_DIR"
+          flutter create . \
+            --platforms=android \
+            --org com.bothybrid \
+            --project-name bot_hybrid
 
       - name: Clean old build
         run: |
           cd "$PROJECT_DIR"
           flutter clean
-          rm -rf .dart_tool
-          rm -rf build
+          rm -rf .dart_tool build
 
       - name: Get dependencies
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
 
-      - name: Generate SNIPER HYBRID Robot Icon
+      - name: Setup launcher icons
         run: |
           cd "$PROJECT_DIR"
-          dart run flutter_launcher_icons
+          dart pub add --dev flutter_launcher_icons
 
-      - name: Build fresh APK
+      - name: Generate SNIPER HYBRID Robot Icon
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+
+          if grep -q "flutter_launcher_icons:" pubspec.yaml; then
+            dart run flutter_launcher_icons
+          else
+            echo "No launcher icon configuration found."
+            echo "Skipping icon generation."
+          fi
+
+      - name: Build release APK
         run: |
           cd "$PROJECT_DIR"
           flutter build apk --release
 
-      - name: Rename APK to app-release.v2.apk
+      - name: Rename APK
         run: |
           cd "$PROJECT_DIR"
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release.v2.apk
+
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          NEW_APK="build/app/outputs/flutter-apk/app-release.v2.apk"
+
+          test -f "$APK"
+          mv "$APK" "$NEW_APK"
 
       - name: Verify APK
         run: |
-          test -f "$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.v2.apk"
+          test -s "$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.v2.apk"
           ls -lh "$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.v2.apk"
 
       - name: Upload APK
