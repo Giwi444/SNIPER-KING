@@ -1,5 +1,5 @@
 // ==========================================
-// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์ (รองรับ SharedPreferences สำหรับจดจำการล็อกอิน MT5)
+// #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์
 // ==========================================
 
 import 'dart:async';  
@@ -7,9 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// ตัวแปรส่วนกลางสำหรับเก็บสถานะชั่วคราว
+// ตัวแปรส่วนกลางสำหรับเก็บสถานะชั่วคราวระหว่างการใช้งาน
 String globalSavedLogin = '';
 String globalSavedServer = '';
 String globalUserPin = '';
@@ -37,12 +36,6 @@ void main() async {
   } catch (e) {
     print("Firebase init error: $e");
   }
-
-  // โหลดข้อมูลการล็อกอินที่เคยบันทึกไว้ในเครื่อง
-  final prefs = await SharedPreferences.getInstance();
-  globalSavedLogin = prefs.getString('saved_mt5_login') ?? '';
-  globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
-  globalUserPin = prefs.getString('saved_user_pin') ?? '';
 
   runApp(const LiquiditySweepApp());
 }
@@ -146,7 +139,6 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      // ถ้ารู้จัก Login แล้ว ให้ข้ามไปหน้า PIN ทันทีโดยไม่ต้องกรอก User/Password ใหม่
       home: globalSavedLogin.isNotEmpty ? const PinAuthWrapper() : const MT5LoginWrapper(),
     );
   }
@@ -224,17 +216,12 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         globalSavedLogin = login;
         globalSavedServer = server;
 
-        // บันทึกข้อมูลลงในเครื่องอย่างถาวร เพื่อให้เปิดแอปครั้งถัดไปไม่ต้องล็อกอิน MT5 ซ้ำ
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('saved_mt5_login', login);
-        await prefs.setString('saved_mt5_server', server);
-
         if (!mounted) return;
         setState(() {
           _isLoading = false;
         });
 
-        // ไปหน้า PIN ทันทีหลังยืนยันบัญชี MT5 สำเร็จ
+        // นำทางไปหน้า PIN ทันทีหลังจากยืนยัน MT5 Login
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
@@ -494,9 +481,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 
   Future<void> _checkPinExists() async {
-    final prefs = await SharedPreferences.getInstance();
-    globalUserPin = prefs.getString('saved_user_pin') ?? globalUserPin;
-
     setState(() {
       hasStoredPin = globalUserPin.isNotEmpty;
       isLoading = false;
@@ -505,8 +489,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Future<void> _saveNewPin(String pin) async {
     globalUserPin = pin;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_user_pin', pin);
   }
 
   Future<void> _verifyPin(String pin) async {
@@ -698,9 +680,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// ... (โค้ดส่วนของ MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ยังคงเดิมถัดจากนี้)
-
-
 
 // ==========================================
 // #6 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
@@ -749,7 +728,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     CurvedAnimation(parent: _scannerController, curve: Curves.easeInOut),
   );
 
-  // แอนิเมชันสำหรับบอลลูนเด้งขึ้น-ลง
   late final AnimationController _bubbleBounceController = AnimationController(
     duration: const Duration(milliseconds: 1500),
     vsync: this,
@@ -1036,9 +1014,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             ),
           ),
           
-          // ==========================================
-          // #1 หน้าต่าง STATUS & LOGS (วางไว้ข้างล่าง เพื่อให้บอลลูนทับได้)
-          // ==========================================
           if (_isLargeLogsModalOpen)
             Positioned(
               left: _modalOffset.dx,
@@ -1241,9 +1216,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               ),
             ),
 
-          // ==========================================
-          // #2 บอลลูนควบคุม Log (เพิ่มแอนิเมชันเด้งขึ้น-ลงอัตโนมัติ และยังลากขยับได้)
-          // ==========================================
           AnimatedBuilder(
             animation: _bubbleBounceAnimation,
             builder: (context, child) {
@@ -1295,7 +1267,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                             ),
                           ),
                         ),
-                        // จุดสถานะออนไลน์/ออฟไลน์ที่ขอบบอลลูน
                         Positioned(
                           right: 2,
                           top: 2,
@@ -1324,7 +1295,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
             },
           ),
 
-          // แถบเมนูด้านล่างสุด
           Positioned(
             left: 0,
             right: 0,
@@ -1624,8 +1594,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   }
 }
 
-
-
 class ScannerClipper extends CustomClipper<Rect> {
   final double scanValue;
   ScannerClipper(this.scanValue);
@@ -1645,6 +1613,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 // ==========================================
 // #7 โหมด HomeScreen
 // ==========================================
+
 class HomeScreen extends StatefulWidget {
   final String accountLogin;
   const HomeScreen({super.key, required this.accountLogin});
@@ -1871,7 +1840,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: const Color(0xFF37474F)), // สแตนเลสโทนสว่าง
+          Container(color: const Color(0xFF37474F)),
           Image.asset(
             'assets/images/1792250396366.jpg',
             fit: BoxFit.cover,
@@ -2050,7 +2019,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           spreadRadius: 5,
                         ),
                       ],
-                      color: const Color(0xFF37474F), // สแตนเลสสว่าง
+                      color: const Color(0xFF37474F),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2103,8 +2072,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
-  static const List<Color> ColorRangeListActive = [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF2E7D32)];
 
   Widget _buildDashboardStatsContent() {
     double totalProfitLoss = 0.0;
@@ -2398,7 +2365,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF37474F), // สแตนเลสสว่าง
+          color: const Color(0xFF37474F),
           borderRadius: BorderRadius.circular(13),
         ),
         child: Column(
@@ -2830,7 +2797,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      color: const Color(0xFF37474F).withOpacity(0.95), // สแตนเลสสว่าง
+                      color: const Color(0xFF37474F).withOpacity(0.95),
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         children: [
@@ -3197,7 +3164,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF37474F), // สแตนเลสสว่าง
+      backgroundColor: const Color(0xFF37474F),
       appBar: AppBar(
         title: const Text('History', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF37474F),
@@ -3310,7 +3277,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF37474F), // สแตนเลสสว่าง
+                    color: const Color(0xFF37474F),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: const Color(0xFFCFD8DC),
@@ -3579,7 +3546,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF37474F), // สแตนเลสสว่าง
+      backgroundColor: const Color(0xFF37474F),
       appBar: AppBar(
         title: const Text('Alerts & Notifications', style: TextStyle(fontFamily: 'monospace')),
         backgroundColor: const Color(0xFF37474F),
@@ -3896,6 +3863,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logoutToLoginScreen() async {
+    // เคลียร์ค่าที่ล็อกอินทั้งหมดเพื่อให้กดกลับไปหน้า MT5 Login Screen ได้
     globalUserPin = '';
     globalSavedLogin = '';
     globalSavedServer = '';
@@ -3910,9 +3878,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFFFF5252); // สีแดงสว่าง
-    if (mode == 'Step') return const Color(0xFF00E5FF);  // สีฟ้าอมเขียวสว่าง
-    return const Color(0xFFE040FB);                      // สีชมพูม่วงนีออน
+    if (mode == 'Fixed') return const Color(0xFFFF5252);
+    if (mode == 'Step') return const Color(0xFF00E5FF);
+    return const Color(0xFFE040FB);
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -3984,12 +3952,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: const Color(0xFF455A64).withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFCFD8DC), // เปลี่ยนเส้นขอบเป็นสีขาว/เทาอ่อนดั้งเดิม
+                      color: const Color(0xFFCFD8DC),
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFCFD8DC).withOpacity(0.7), // เปลี่ยนเงาเป็นสีขาว/เทาอ่อนดั้งเดิม
+                        color: const Color(0xFFCFD8DC).withOpacity(0.7),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -4000,7 +3968,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'), // เปลี่ยนข้อความกลับเป็นสีขาวดั้งเดิม
+                        style: TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
                       const Text('Trading Symbol', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 11)),
@@ -4009,10 +3977,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
                           Color buttonColor = sym == 'XAUUSD'
-                              ? const Color(0xFFFF5252) // สีแดงทอง
+                              ? const Color(0xFFFF5252)
                               : sym == 'BTCUSD'
-                                  ? const Color(0xFF00E676) // สีเขียวสว่าง
-                                  : const Color(0xFF00E5FF); // สีฟ้าสว่าง
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFF00E5FF);
 
                           return Expanded(
                             child: Padding(
@@ -4053,12 +4021,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
                           Color modeColor = mode == 'All Mode'
-                              ? const Color(0xFFFF9100) // สีส้ม
+                              ? const Color(0xFFFF9100)
                               : mode == 'Liquidity'
-                                  ? const Color(0xFFE040FB) // สีม่วงชมพู
+                                  ? const Color(0xFFE040FB)
                                   : mode == 'Breakout'
-                                      ? const Color(0xFF00E5FF) // สีฟ้า
-                                      : const Color(0xFF00E676); // สีเขียว
+                                      ? const Color(0xFF00E5FF)
+                                      : const Color(0xFF00E676);
 
                           return Expanded(
                             child: Padding(
@@ -4177,14 +4145,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 bool isSelected = selectedTf == tf;
                                 
                                 List<Color> tfColors = [
-                                  const Color(0xFFFF5252), // M1
-                                  const Color(0xFFFF9100), // M2
-                                  const Color(0xFFFFEA00), // M3
-                                  const Color(0xFF00E676), // M4
-                                  const Color(0xFF00E5FF), // M5
-                                  const Color(0xFF2979FF), // M15
-                                  const Color(0xFFE040FB), // M30
-                                  const Color(0xFFFF4081), // H1
+                                  const Color(0xFFFF5252),
+                                  const Color(0xFFFF9100),
+                                  const Color(0xFFFFEA00),
+                                  const Color(0xFF00E676),
+                                  const Color(0xFF00E5FF),
+                                  const Color(0xFF2979FF),
+                                  const Color(0xFFE040FB),
+                                  const Color(0xFFFF4081),
                                 ];
                                 Color tfColor = tfColors[index % tfColors.length];
 
