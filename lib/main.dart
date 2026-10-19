@@ -257,9 +257,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         return;
       }
 
-      // หมายเหตุ: โค้ดนี้ตรวจว่ามีบัญชีใน Firebase เท่านั้น
-      // ยังไม่ได้ตรวจสอบรหัสผ่าน MT5 กับโบรกเกอร์จริง
-
       final prefs = await SharedPreferences.getInstance();
 
       await prefs.setString('saved_mt5_login', login);
@@ -454,30 +451,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      hintText: label,
-      hintStyle: const TextStyle(color: Colors.white60),
-      filled: true,
-      fillColor: const Color(0xFF263238).withOpacity(0.75),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF90A4AE)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Color(0xFFCFD8DC),
-          width: 2,
-        ),
       ),
     );
   }
@@ -4010,13 +3983,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logoutToLoginScreen() async {
-    // เคลียร์ค่าที่ล็อกอินทั้งหมดทั้ง SharedPreferences และ Global เพื่อให้กลับไปหน้ากรอก MT5 ใหม่
     globalUserPin = '';
     globalSavedLogin = '';
     globalSavedServer = '';
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // ล้างข้อมูลเซสชันทั้งหมดในเครื่อง
+    await prefs.clear();
 
     if (!mounted) return;
 
