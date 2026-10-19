@@ -15,7 +15,7 @@ String globalSavedServer = '';
 String globalUserPin = '';
 
 // ==========================================
-// #2 โหมดเมนหลัก
+// #2 โหมดเมนหลัก (Theme Stainless Steel Setup)
 // ==========================================
 
 void main() async {
@@ -41,8 +41,87 @@ void main() async {
   runApp(const LiquiditySweepApp());
 }
 
+
+// Widget ช่วยทำเอฟเฟกต์พิมพ์ดีดข้อความ
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final Duration speed;
+
+  const TypewriterText({
+    super.key,
+    required this.text,
+    required this.style,
+    this.speed = const Duration(milliseconds: 65),
+  });
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> {
+  String _displayedText = "";
+  int _currentIndex = 0;
+  bool _completed = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTyping();
+  }
+
+  @override
+  void didUpdateWidget(covariant TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _timer?.cancel();
+      _displayedText = "";
+      _currentIndex = 0;
+      _completed = false;
+      _startTyping();
+    }
+  }
+
+  void _startTyping() {
+    if (widget.text.isEmpty) return;
+    _timer = Timer.periodic(widget.speed, (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_currentIndex < widget.text.length) {
+        setState(() {
+          _displayedText += widget.text[_currentIndex];
+          _currentIndex++;
+        });
+      } else {
+        setState(() {
+          _completed = true;
+        });
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _displayedText,
+      style: widget.style,
+    );
+  }
+}
+
+
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (โหลดเซสชันถาวรอย่างปลอดภัย)
+// #3 โหมดเริ่มต้นแอพ (พร้อมโหลดเซสชันถาวรและป้องกันจอดำ)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -92,7 +171,6 @@ class LiquiditySweepApp extends StatelessWidget {
     );
   }
 }
-
 
 
 // ==========================================
@@ -643,7 +721,6 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
   }
 }
 
-// (หมายเหตุ: วางโค้ดส่วนหน้าจอระบบ MainNavigationScreen, HomeScreen, OrdersScreen, HistoryScreen, AlertsScreen, SettingsScreen ตัวเดิมต่อจากนี้ได้เลยครับ เนื่องจากไม่มีการเปลี่ยนแปลงในส่วนนั้น)
 
 // ==========================================
 // #6 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
@@ -3816,6 +3893,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _resetPin() async {
     globalUserPin = '';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_user_pin');
 
     if (!mounted) return;
 
@@ -3827,10 +3906,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logoutToLoginScreen() async {
-    // เคลียร์ค่าที่ล็อกอินทั้งหมดเพื่อให้กดกลับไปหน้า MT5 Login Screen ได้
+    // เคลียร์ค่าที่ล็อกอินทั้งหมดทั้ง SharedPreferences และ Global เพื่อให้กลับไปหน้ากรอก MT5 ใหม่
     globalUserPin = '';
     globalSavedLogin = '';
     globalSavedServer = '';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // ล้างข้อมูลเซสชันทั้งหมดในเครื่อง
 
     if (!mounted) return;
 
