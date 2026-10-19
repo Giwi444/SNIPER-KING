@@ -2689,12 +2689,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _listenToStatusForSymbol(String login) {
+    void _listenToStatusForSymbol(String login) {
     try {
       final database = FirebaseDatabase.instanceFor(
         app: Firebase.app(),
         databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
       );
+
+      // 1. ฟังข้อมูลสถานะการเทรดปกติ
       _dbRef = database.ref('accounts/$login/status');
       _dbRef?.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -2702,13 +2704,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
           setState(() {
             activeSymbol = data['symbol']?.toString() ?? 'BTCUSD';
             activeTimeframe = data['timeframe']?.toString() ?? 'M1';
-            accountServer = data['server']?.toString() ?? 'ICMarketsSC-Demo';
             
             balance = (data['balance'] ?? 0.0).toDouble();
             equity = (data['equity'] ?? 0.0).toDouble();
             margin = (data['margin'] ?? 0.0).toDouble();
-            freeMargin = (data['free_margin'] ?? 0.0).toDouble();
+            freeMargin = (data['free_margin']?.toString() == 'nan' ? 0.0 : (data['free_margin'] ?? 0.0)).toDouble();
             profitLoss = (data['profit'] ?? 0.0).toDouble();
+          });
+        }
+      });
+
+      // 2. ดึงชื่อ Server ให้ตรงกับบัญชีที่ล็อกอินจาก Firebase จริง
+      database.ref('accounts/$login').onValue.listen((event) {
+        final accountData = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (accountData != null && mounted) {
+          setState(() {
+            // เช็คว่ามีฟิลด์ server อยู่ระดับนอก หรือใน status
+            String srv = accountData['server']?.toString() ?? '';
+            if (srv.isEmpty && accountData['status'] is Map) {
+              srv = accountData['status']['server']?.toString() ?? '';
+            }
+            if (srv.isNotEmpty) {
+              accountServer = srv;
+            }
           });
         }
       });
@@ -2716,6 +2734,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       print("Status symbol listen error: $e");
     }
   }
+
 
   void _listenToOrders(String login) {
     try {
@@ -4568,7 +4587,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                                            const SizedBox(height: 20),
                       const Divider(color: Colors.white24, height: 24),
                       const SizedBox(height: 8),
                       const Text(
@@ -4576,6 +4595,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
                       const SizedBox(height: 10),
+                      
+                      // 1. ปุ่ม Reset PIN
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -4600,6 +4621,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+
+                      const SizedBox(height: 14),
+
+                      // 2. ปุ่ม Log Out (เปลี่ยนบัญชี MT5)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text('Log Out (เปลี่ยนบัญชี MT5)', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                SizedBox(height: 2),
+                                Text('ออกจากระบบเพื่อกลับไปหน้าล็อกอิน', style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[850],
+                              side: const BorderSide(color: Color(0xFFFF1744), width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
+                            onPressed: _logoutToLoginScreen,
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                          ),
+                        ],
+                      ),
+
                     ],
                   ),
                 ),
