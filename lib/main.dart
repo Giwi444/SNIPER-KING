@@ -9,9 +9,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ตัวแปรส่วนกลางสำหรับเก็บสถานะ
-String globalSavedLogin = '';
-String globalSavedServer = '';
+// ตัวแปรส่วนกลางสำหรับเก็บสถานะ (ไม่ต้องล็อกอิน MT5 แล้ว ตั้งค่าเริ่มต้นจำลองไว้)
+String globalSavedLogin = '235305975';
+String globalSavedServer = 'ICMarketsSC-Demo';
 String globalUserPin = '';
 
 // ==========================================
@@ -121,7 +121,7 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (พร้อมโหลดเซสชันถาวรและป้องกันจอดำ)
+// #3 โหมดเริ่มต้นแอพ (เปิดมาเจอหน้า PIN ทันที)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
@@ -130,8 +130,6 @@ class LiquiditySweepApp extends StatelessWidget {
   Future<bool> _loadStoredSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      globalSavedLogin = prefs.getString('saved_mt5_login') ?? '';
-      globalSavedServer = prefs.getString('saved_mt5_server') ?? '';
       globalUserPin = prefs.getString('saved_user_pin') ?? '';
     } catch (e) {
       print("Shared Preferences read error: $e");
@@ -156,7 +154,7 @@ class LiquiditySweepApp extends StatelessWidget {
         future: _loadStoredSession(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return globalSavedLogin.isNotEmpty ? const PinAuthWrapper() : const MT5LoginWrapper();
+            return const PinAuthWrapper();
           }
           return Scaffold(
             body: Container(
@@ -174,290 +172,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #4 MT5 LOGIN WRAPPER
-// ==========================================
-
-class MT5LoginWrapper extends StatefulWidget {
-  const MT5LoginWrapper({super.key});
-
-  @override
-  State<MT5LoginWrapper> createState() => _MT5LoginWrapperState();
-}
-
-class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
-  final TextEditingController _loginController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _serverController = TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-
-  static const String _databaseUrl =
-      'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app';
-
-  @override
-  void dispose() {
-    _loginController.dispose();
-    _passwordController.dispose();
-    _serverController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitMT5Login() async {
-    if (_isLoading) return;
-
-    final login = _loginController.text.trim();
-    final password = _passwordController.text;
-    final server = _serverController.text.trim().isEmpty
-        ? 'ICMarketsSC-Demo'
-        : _serverController.text.trim();
-
-    if (login.isEmpty) {
-      _showMessage('กรุณากรอกเลขพอร์ต MT5');
-      return;
-    }
-
-    if (password.isEmpty) {
-      _showMessage('กรุณากรอกรหัสผ่าน');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      FirebaseApp app;
-
-      if (Firebase.apps.isEmpty) {
-        app = await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: 'AIzaSyBnKyMazopUyD1k-kcIXo3bFedWfHXN0JA',
-            appId: '1:155532929563:android:49d8a1e0040dc87ce766be',
-            messagingSenderId: '155532929563',
-            projectId: 'liquidity-b8739',
-            storageBucket: 'liquidity-b8739.firebasestorage.app',
-            databaseURL: _databaseUrl,
-          ),
-        );
-      } else {
-        app = Firebase.app();
-      }
-
-      final database = FirebaseDatabase.instanceFor(
-        app: app,
-        databaseURL: _databaseUrl,
-      );
-
-      final snapshot = await database.ref('accounts/$login').get();
-
-      if (!mounted) return;
-
-      if (!snapshot.exists) {
-        setState(() => _isLoading = false);
-        _showMessage('ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแลระบบ');
-        return;
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString('saved_mt5_login', login);
-      await prefs.setString('saved_mt5_server', server);
-
-      globalSavedLogin = login;
-      globalSavedServer = server;
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const PinAuthWrapper(),
-        ),
-      );
-    } catch (e, stackTrace) {
-      debugPrint('MT5 LOGIN ERROR: $e');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      _showMessage('เข้าสู่ระบบไม่สำเร็จ: $e', seconds: 8);
-    }
-  }
-
-  void _showMessage(String message, {int seconds = 4}) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: Duration(seconds: seconds),
-        ),
-      );
-  }
-
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      hintText: label,
-      hintStyle: const TextStyle(color: Colors.white60),
-      filled: true,
-      fillColor: const Color(0xFF263238).withOpacity(0.75),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF90A4AE)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Color(0xFFCFD8DC),
-          width: 2,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/1792250396366.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFF37474F)),
-          ),
-          Container(
-            color: const Color(0xFF263238).withOpacity(0.70),
-          ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        'assets/images/1792250396366.jpg',
-                        width: 160,
-                        height: 160,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.smart_toy,
-                          color: Colors.white,
-                          size: 100,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'SNIPER HYBRID',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'ROBOT',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFFECEFF1),
-                        letterSpacing: 4,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    TextField(
-                      controller: _loginController,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('Account Login'),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('MT5 Password').copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.white70,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _serverController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration(
-                        'Server (เช่น ICMarketsSC-Demo)',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitMT5Login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF546E7A),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('VERIFY & CONNECT'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Powered By Algohost',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// #5 PIN AUTH WRAPPER
+// #4 PIN AUTH WRAPPER (ใช้ดีไซน์พื้นหลังและโปรไฟล์จาก MT5 Login เดิม)
 // ==========================================
 
 class PinAuthWrapper extends StatefulWidget {
@@ -562,8 +277,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     if (!isConfirming) {
       setState(() {
         firstEnteredPin = nextPin;
-        currentPinInput = '';
-        isConfirming = true;
+        currentPinImageReset();
       });
       return;
     }
@@ -619,6 +333,11 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
     }
   }
 
+  void currentPinImageReset() {
+    currentPinInput = '';
+    isConfirming = true;
+  }
+
   void _onDeleteTap() {
     if (isSaving || currentPinInput.isEmpty) return;
 
@@ -660,38 +379,71 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
             errorBuilder: (_, __, ___) =>
                 Container(color: const Color(0xFF37474F)),
           ),
-          Container(color: const Color(0xFF263238).withOpacity(0.70)),
+          Container(
+            color: const Color(0xFF263238).withOpacity(0.70),
+          ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.lock_outline,
-                      color: Color(0xFFCFD8DC),
-                      size: 48,
+                    // นำรูปภาพโปรไฟล์บอทกลมๆ จากหน้า MT5 Login มาใส่
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/1792250396366.jpg',
+                        width: 130,
+                        height: 130,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.smart_toy,
+                          color: Colors.white,
+                          size: 80,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
+                    const Text(
+                      'SNIPER HYBRID',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'ROBOT',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFECEFF1),
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     Text(
                       titleText,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
+                        color: Colors.white70,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(6, (index) {
                         final filled = index < currentPinInput.length;
 
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          width: 18,
-                          height: 18,
+                          margin: const EdgeInsets.symmetric(horizontal: 7),
+                          width: 16,
+                          height: 16,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: filled
@@ -705,25 +457,25 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                         );
                       }),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 24),
                     for (final row in [
                       ['1', '2', '3'],
                       ['4', '5', '6'],
                       ['7', '8', '9'],
                     ])
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: row.map(_buildPinButton).toList(),
                         ),
                       ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 5),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const SizedBox(width: 96),
+                          const SizedBox(width: 84),
                           _buildPinButton('0'),
                           _buildPinButton('del'),
                         ],
@@ -731,11 +483,19 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                     ),
                     if (isSaving)
                       const Padding(
-                        padding: EdgeInsets.all(12),
+                        padding: EdgeInsets.all(10),
                         child: CircularProgressIndicator(
                           color: Colors.white,
                         ),
                       ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Powered By Algohost',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -748,9 +508,9 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
   Widget _buildPinButton(String val) {
     return Container(
-      width: 72,
-      height: 72,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      width: 64,
+      height: 64,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -781,11 +541,12 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
                 ? const Icon(
                     Icons.backspace_outlined,
                     color: Colors.white,
+                    size: 20,
                   )
                 : Text(
                     val,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -800,7 +561,7 @@ class _PinAuthWrapperState extends State<PinAuthWrapper> {
 
 
 // ==========================================
-// #6 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
+// #5 โหมดควบคุมแดชบอร์ด (MainNavigationScreen)
 // ==========================================
 
 class MainNavigationScreen extends StatefulWidget {
@@ -858,14 +619,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
   @override
   void initState() {
     super.initState();
-    _loadSavedLogin().then((_) {
-      _listenToActiveAccount();
-      _listenToAlertsCount();
-      _initFirebaseAndListen();
-      _listenToLogs();
-      _listenToConnectionStatus();
-      _listenToOrdersForDialog();
-    });
+    _listenToActiveAccount();
+    _listenToAlertsCount();
+    _initFirebaseAndListen();
+    _listenToLogs();
+    _listenToConnectionStatus();
+    _listenToOrdersForDialog();
 
     _scannerController.addStatusListener((status) {
       if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
@@ -883,14 +642,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     _scannerController.dispose();
     _bubbleBounceController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadSavedLogin() async {
-    if (globalSavedLogin.isNotEmpty && mounted) {
-      setState(() {
-        currentLogin = globalSavedLogin;
-      });
-    }
   }
 
   void _listenToActiveAccount() {
@@ -1729,7 +1480,7 @@ class ScannerClipper extends CustomClipper<Rect> {
 
 
 // ==========================================
-// #7 โหมด HomeScreen
+// #6 โหมด HomeScreen
 // ==========================================
 
 class HomeScreen extends StatefulWidget {
@@ -2674,7 +2425,7 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
 
 
 // ==========================================
-// #8 โหมดรายงานออเดอร์ (OrdersScreen)
+// #7 โหมดรายงานออเดอร์ (OrdersScreen)
 // ==========================================
 
 class OrdersScreen extends StatefulWidget {
@@ -3106,7 +2857,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
 
 // ==========================================
-// #9 โหมดการบันทึกประจำวัน (HistoryScreen)
+// #8 โหมดการบันทึกประจำวัน (HistoryScreen)
 // ==========================================
 
 class HistoryScreen extends StatefulWidget {
@@ -3510,7 +3261,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 
 // ==========================================
-// #10 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
+// #9 โหมดการแจ้งเตือนข้อความ (AlertsScreen)
 // ==========================================
 
 class AlertsScreen extends StatefulWidget {
@@ -3778,7 +3529,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
 
 // ==========================================
-// #11 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
+// #10 โหมดการตั้งค่าพารามิเตอร์ (SettingsScreen)
 // ==========================================
 
 class SettingsScreen extends StatefulWidget {
@@ -3975,26 +3726,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
+    // เมื่อรีเซ็ต PIN ให้กลับมาหน้าตั้งรหัส PIN ใหม่ทันที
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
-      (route) => false,
-    );
-  }
-
-  Future<void> _logoutToLoginScreen() async {
-    globalUserPin = '';
-    globalSavedLogin = '';
-    globalSavedServer = '';
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const MT5LoginWrapper()),
       (route) => false,
     );
   }
@@ -4621,7 +4356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Reset Security PIN / Login', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
+                                const Text('Reset Security PIN', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
                                 const SizedBox(height: 2),
                                 Text(currentPinStateStatus, style: const TextStyle(color: Color(0xFFB0BEC5), fontSize: 11, fontFamily: 'monospace')),
                               ],
@@ -4634,33 +4369,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: _resetPin,
-                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Log Out (เปลี่ยนบัญชี MT5)', style: TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'monospace')),
-                                SizedBox(height: 2),
-                                Text('ออกจากระบบเพื่อกลับไปหน้าล็อกอิน', style: TextStyle(color: Color(0xFFB0BEC5), fontSize: 11, fontFamily: 'monospace')),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF5252),
-                              side: const BorderSide(color: Color(0xFFCFD8DC), width: 1.5),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: _logoutToLoginScreen,
-                            child: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                            child: const Text('Reset PIN', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
