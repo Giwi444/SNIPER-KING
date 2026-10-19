@@ -121,11 +121,37 @@ class _TypewriterTextState extends State<TypewriterText> {
 
 
 // ==========================================
-// #3 โหมดเริ่มต้นแอพ (ส่งตรงไปหน้า MT5 Login ทันที ไม่ผ่าน SharedPreferences)
+// #3 โหมดเริ่มต้นแอพ (เช็คความจำ: ถ้าเคยล็อกอินแล้ว ให้เข้าหน้า PIN ทันที)
 // ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
+
+  Future<Widget> _getInitialScreen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLogin = prefs.getString('saved_mt5_login') ?? '';
+      
+      // ดึงค่าเลขพอร์ตที่เคยล็อกอินสำเร็จไว้
+      globalSavedLogin = savedLogin;
+      globalUserPin = prefs.getString('saved_user_pin') ?? '';
+
+      // ถ้าเคยล็อกอินพอร์ตไว้แล้ว -> ให้เด้งไปหน้า PIN ทันที!
+      if (savedLogin.isNotEmpty) {
+        return const PinAuthWrapper();
+      } else {
+        // ถ้ายังไม่เคยล็อกอินเลย (ติดตั้งใหม่/กด Log Out) -> ให้ไปหน้า MT5 Login
+        return const MT5LoginWrapper();
+      }
+    } catch (e) {
+      debugPrint("Read initial storage error: $e");
+      // กรณี Error อ่าน Cache ไม่ได้ แต่มีค่าอยู่ในตัวแปร global
+      if (globalSavedLogin.isNotEmpty) {
+        return const PinAuthWrapper();
+      }
+      return const MT5LoginWrapper();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,8 +166,20 @@ class LiquiditySweepApp extends StatelessWidget {
           secondary: Color(0xFFCFD8DC),
         ),
       ),
-      // เข้าหน้า MT5LoginWrapper ทันทีโดยไม่รออ่าน Cache ในเครื่อง
-      home: const MT5LoginWrapper(),
+      home: FutureBuilder<Widget>(
+        future: _getInitialScreen(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return snapshot.data!;
+          }
+          return Scaffold(
+            backgroundColor: const Color(0xFF37474F),
+            body: const Center(
+              child: CircularProgressIndicator(color: Color(0xFFCFD8DC)),
+            ),
+          );
+        },
+      ),
     );
   }
 }
