@@ -1,4 +1,4 @@
-name: BotHybrid
+Name: BotHybrid
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
       - 'lib/**'
       - 'android/**'
       - 'pubspec.yaml'
+      - 'assets/**'
 
 permissions:
   contents: read
@@ -97,6 +98,12 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
+
+      - name: Generate Launcher Icons automatically
+        run: |
+          cd "$PROJECT_DIR"
+          # สเตปนี้ช่วยสร้างไอคอนแอปให้อัตโนมัติทุกครั้งที่บิลด์ ป้องกันปัญหาไอคอนหาย
+          flutter pub run flutter_launcher_icons:main || echo "Launcher icons package not configured, skipping..."
 
       - name: Build release APK
         run: |
