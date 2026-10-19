@@ -1037,134 +1037,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
               children: pages,
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF455A64),
-                  border: Border(
-                    top: BorderSide(color: const Color(0xFFCFD8DC).withOpacity(0.8), width: 1.5),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildCustomNavItem(0, Icons.tune, 'Settings'),
-                    _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
-                    _buildCustomNavItem(2, Icons.home_filled, 'Home'),
-                    _buildCustomNavItem(3, Icons.history, 'History'),
-                    _buildCustomNavItem(
-                      4, 
-                      Icons.notifications_active, 
-                      'Alerts', 
-                      badgeCount: unreadAlertsCount,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
           
           // ==========================================
-          // # บอลลูนควบคุม Log (Floating Bubble พร้อมจุดเชื่อมต่อ Server & ไม่มีไอคอนทับ)
-          // ==========================================
-          if (!_isLargeLogsModalOpen)
-            Positioned(
-              left: _floatingBubbleOffset.dx,
-              top: _floatingBubbleOffset.dy,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    _floatingBubbleOffset += details.delta;
-                  });
-                },
-                onTap: () {
-                  setState(() {
-                    _isLargeLogsModalOpen = true;
-                  });
-                },
-                child: SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFCFD8DC), Color(0xFF78909C)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFCFD8DC).withOpacity(0.8),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(26),
-                          child: Image.asset(
-                            _imageA,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.smart_toy, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      // จุดสถานะออนไลน์/ออฟไลน์ที่ขอบบอลลูน
-                      Positioned(
-                        right: 2,
-                        top: 2,
-                        child: Container(
-                          width: 13,
-                          height: 13,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252),
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252)).withOpacity(0.8),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          // ==========================================
-          // # หน้าต่าง STATUS & LOGS (ปรับตำแหน่งไม่ให้ซ้อนทับบอลลูน)
+          // #1 หน้าต่าง STATUS & LOGS (วางไว้ข้างล่าง เพื่อให้บอลลูนทับได้)
           // ==========================================
           if (_isLargeLogsModalOpen)
             Positioned(
-              left: 16,
-              top: 70,
-              right: 16,
-              bottom: 85,
+              left: _modalOffset.dx,
+              top: _modalOffset.dy,
               child: GestureDetector(
                 onPanUpdate: (details) {
                   setState(() {
@@ -1172,6 +1052,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                   });
                 },
                 child: Container(
+                  width: MediaQuery.of(context).size.width * 0.92,
+                  height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFFCFD8DC), width: 2.5),
@@ -1360,6 +1242,125 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
                 ),
               ),
             ),
+
+          // ==========================================
+          // #2 บอลลูนควบคุม Log (วางไว้ด้านบนสุด เพื่อให้ทับหน้าต่าง Log ได้)
+          // ==========================================
+          Positioned(
+            left: _floatingBubbleOffset.dx,
+            top: _floatingBubbleOffset.dy,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _floatingBubbleOffset += details.delta;
+                });
+              },
+              onTap: () {
+                setState(() {
+                  _isLargeLogsModalOpen = !_isLargeLogsModalOpen;
+                });
+              },
+              child: SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFCFD8DC), Color(0xFF78909C)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFCFD8DC).withOpacity(0.8),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: Image.asset(
+                          _imageA,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.smart_toy, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    // จุดสถานะออนไลน์/ออฟไลน์ที่ขอบบอลลูน
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        width: 13,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isConnected ? const Color(0xFF00E676) : const Color(0xFFFF5252)).withOpacity(0.8),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // แถบเมนูด้านล่างสุด
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF455A64),
+                  border: Border(
+                    top: BorderSide(color: const Color(0xFFCFD8DC).withOpacity(0.8), width: 1.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildCustomNavItem(0, Icons.tune, 'Settings'),
+                    _buildCustomNavItem(1, Icons.list_alt, 'Orders'),
+                    _buildCustomNavItem(2, Icons.home_filled, 'Home'),
+                    _buildCustomNavItem(3, Icons.history, 'History'),
+                    _buildCustomNavItem(
+                      4, 
+                      Icons.notifications_active, 
+                      'Alerts', 
+                      badgeCount: unreadAlertsCount,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1619,6 +1620,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Ticker
     );
   }
 }
+
 
 class ScannerClipper extends CustomClipper<Rect> {
   final double scanValue;
