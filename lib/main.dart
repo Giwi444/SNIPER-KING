@@ -3888,7 +3888,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Parameters & Time Config Synced & Saved to EA Successfully!'),
-          backgroundColor: Color(0xFF546E7A),
+          backgroundColor: Color(0xFF00E676),
         ),
       );
     } catch (e) {
@@ -3923,9 +3923,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color buttonColorForLot(String mode) {
-    if (mode == 'Fixed') return const Color(0xFF00E5FF);
-    if (mode == 'Step') return const Color(0xFFCFD8DC);
-    return const Color(0xFFFF9100);
+    if (mode == 'Fixed') return const Color(0xFFFF5252); // สีแดงสว่าง
+    if (mode == 'Step') return const Color(0xFF00E5FF);  // สีฟ้าอมเขียวสว่าง
+    return const Color(0xFFE040FB);                      // สีชมพูม่วงนีออน
   }
 
   Widget _buildControllerInputField(String label, TextEditingController controller, TextInputType keyboardType) {
@@ -3939,13 +3939,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFF37474F),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFCFD8DC).withOpacity(0.4), width: 1),
+            border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.6), width: 1.2),
           ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
             onChanged: (val) => setState(() {
               _isEditing = true;
             }),
@@ -3997,12 +3997,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: const Color(0xFF455A64).withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFCFD8DC),
+                      color: const Color(0xFF00E5FF),
                       width: 2.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFCFD8DC).withOpacity(0.7),
+                        color: const Color(0xFF00E5FF).withOpacity(0.4),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -4013,7 +4013,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       const Text(
                         'PARAMETERS BOT',
-                        style: TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
+                        style: TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8, fontFamily: 'monospace'),
                       ),
                       const SizedBox(height: 12),
                       const Text('Trading Symbol', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 11)),
@@ -4022,10 +4022,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: symbolOptions.map((sym) {
                           bool isSelected = selectedSymbol == sym;
                           Color buttonColor = sym == 'XAUUSD'
-                              ? const Color(0xFF78909C)
+                              ? const Color(0xFFFF5252) // สีแดงทอง
                               : sym == 'BTCUSD'
-                                  ? const Color(0xFF00C853)
-                                  : const Color(0xFF607D8B);
+                                  ? const Color(0xFF00E676) // สีเขียวสว่าง
+                                  : const Color(0xFF00E5FF); // สีฟ้าสว่าง
 
                           return Expanded(
                             child: Padding(
@@ -4042,7 +4042,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     side: BorderSide(color: buttonColor, width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
+                                    elevation: isSelected ? 8 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
@@ -4066,12 +4066,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: tradingModeOptions.map((mode) {
                           bool isSelected = tradingMode == mode;
                           Color modeColor = mode == 'All Mode'
-                              ? const Color(0xFFB0BEC5)
+                              ? const Color(0xFFFF9100) // สีส้ม
                               : mode == 'Liquidity'
-                                  ? const Color(0xFF78909C)
+                                  ? const Color(0xFFE040FB) // สีม่วงชมพู
                                   : mode == 'Breakout'
-                                      ? const Color(0xFF00BCD4)
-                                      : const Color(0xFFCFD8DC);
+                                      ? const Color(0xFF00E5FF) // สีฟ้า
+                                      : const Color(0xFF00E676); // สีเขียว
 
                           return Expanded(
                             child: Padding(
@@ -4088,7 +4088,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
+                                    elevation: isSelected ? 8 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
@@ -4128,7 +4128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     side: BorderSide(color: modeColor, width: isSelected ? 2.5 : 1),
-                                    elevation: isSelected ? 6 : 0,
+                                    elevation: isSelected ? 8 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
@@ -4153,7 +4153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF37474F),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFCFD8DC), width: 1.5),
+                          border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.6), width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4161,10 +4161,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 12, fontWeight: FontWeight.bold)),
+                                const Text('Daily Trend Filter (D1)', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold)),
                                 Switch(
                                   value: enableTrendFilter,
-                                  activeColor: const Color(0xFFCFD8DC),
+                                  activeColor: const Color(0xFF00E676),
                                   onChanged: (val) => setState(() {
                                     _isEditing = true;
                                     enableTrendFilter = val;
@@ -4188,19 +4188,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               itemBuilder: (context, index) {
                                 String tf = timeframes[index];
                                 bool isSelected = selectedTf == tf;
+                                
+                                // ไล่เฉดสีสันสดใสให้ปุ่ม Timeframe แต่ละตัว
+                                List<Color> tfColors = [
+                                  const Color(0xFFFF5252), // M1
+                                  const Color(0xFFFF9100), // M2
+                                  const Color(0xFFFFEA00), // M3
+                                  const Color(0xFF00E676), // M4
+                                  const Color(0xFF00E5FF), // M5
+                                  const Color(0xFF2979FF), // M15
+                                  const Color(0xFFE040FB), // M30
+                                  const Color(0xFFFF4081), // H1
+                                ];
+                                Color tfColor = tfColors[index % tfColors.length];
+
                                 return ElevatedButton(
                                   onPressed: () => setState(() {
                                     _isEditing = true;
                                     selectedTf = tf;
                                   }),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSelected ? const Color(0xFF78909C) : const Color(0xFF37474F),
+                                    backgroundColor: isSelected ? tfColor : const Color(0xFF37474F),
                                     foregroundColor: isSelected ? Colors.white : Colors.white70,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     side: BorderSide(
-                                      color: const Color(0xFFCFD8DC),
-                                      width: isSelected ? 2 : 1,
+                                      color: tfColor,
+                                      width: isSelected ? 2.5 : 1,
                                     ),
+                                    elevation: isSelected ? 6 : 0,
                                     padding: EdgeInsets.zero,
                                   ),
                                   child: Text(
@@ -4255,11 +4270,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF37474F),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFCFD8DC).withOpacity(0.4), width: 1),
+                              border: Border.all(color: const Color(0xFF00E676).withOpacity(0.6), width: 1.2),
                             ),
                             child: Text(
                               '${calculatedTP.toStringAsFixed(1)} Pts',
-                              style: const TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           ),
                         ],
@@ -4278,7 +4293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF37474F),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: const Color(0xFFCFD8DC).withOpacity(0.4), width: 1),
+                                    border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.4), width: 1),
                                   ),
                                   child: TextField(
                                     controller: startTimeController,
@@ -4307,7 +4322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF37474F),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: const Color(0xFFCFD8DC).withOpacity(0.4), width: 1),
+                                    border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.4), width: 1),
                                   ),
                                   child: TextField(
                                     controller: endTimeController,
@@ -4336,7 +4351,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           const Text(
                             'BASKET CONTROL', 
-                            style: TextStyle(color: Color(0xFF00B0FF), fontSize: 11, fontWeight: FontWeight.bold)
+                            style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)
                           ),
                           Row(
                             children: [
@@ -4344,7 +4359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 6),
                               Switch(
                                 value: enableBasketControl,
-                                activeColor: const Color(0xFF00B0FF),
+                                activeColor: const Color(0xFF00E5FF),
                                 onChanged: (val) => setState(() {
                                   _isEditing = true;
                                   enableBasketControl = val;
@@ -4363,7 +4378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF37474F),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF2962FF).withOpacity(0.8), width: 1.5),
+                                border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.8), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4371,10 +4386,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF2962FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Basket TP', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableBasketTp,
-                                        activeColor: const Color(0xFF2962FF),
+                                        activeColor: const Color(0xFF00E5FF),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableBasketTp = val;
@@ -4395,7 +4410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF37474F),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFFF9100).withOpacity(0.6), width: 1.5),
+                                border: Border.all(color: const Color(0xFFFF9100).withOpacity(0.8), width: 1.5),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4427,7 +4442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // DAILY TARGET & LOSS CONTROL
                       const Text(
                         'DAILY TARGET & LOSS CONTROL', 
-                        style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 11, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4438,7 +4453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF37474F),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00C853).withOpacity(0.6), width: 1),
+                                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.8), width: 1.2),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4446,10 +4461,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Daily Target', style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableDailyTarget,
-                                        activeColor: const Color(0xFF00C853),
+                                        activeColor: const Color(0xFF00E676),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableDailyTarget = val;
@@ -4470,7 +4485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF37474F),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFCFD8DC).withOpacity(0.6), width: 1),
+                                border: Border.all(color: const Color(0xFFFF5252).withOpacity(0.8), width: 1.2),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4478,10 +4493,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Daily Loss', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 11, fontWeight: FontWeight.bold)),
+                                      const Text('Daily Loss', style: TextStyle(color: Color(0xFFFF5252), fontSize: 11, fontWeight: FontWeight.bold)),
                                       Switch(
                                         value: enableDailyLoss,
-                                        activeColor: const Color(0xFFCFD8DC),
+                                        activeColor: const Color(0xFFFF5252),
                                         onChanged: (val) => setState(() {
                                           _isEditing = true;
                                           enableDailyLoss = val;
@@ -4505,12 +4520,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: const Icon(Icons.save, color: Colors.white),
                           label: const Text('SYNC & SAVE TO EA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF78909C),
+                            backgroundColor: const Color(0xFF00C853),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFFCFD8DC), width: 1.5),
+                              side: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
                             ),
+                            elevation: 6,
                           ),
                         ),
                       ),
@@ -4519,7 +4535,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         'SECURITY & PRIVACY', 
-                        style: TextStyle(color: Color(0xFFCFD8DC), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
+                        style: TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'monospace')
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -4537,11 +4553,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF78909C),
+                              backgroundColor: const Color(0xFFFF9100),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: _resetPin,
-                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
+                            child: const Text('Reset', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
@@ -4561,12 +4578,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF455A64),
+                              backgroundColor: const Color(0xFFFF5252),
                               side: const BorderSide(color: Color(0xFFCFD8DC), width: 1.5),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: _logoutToLoginScreen,
-                            child: const Text('Log Out', style: TextStyle(color: Color(0xFFCFD8DC), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                            child: const Text('Log Out', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                           ),
                         ],
                       ),
