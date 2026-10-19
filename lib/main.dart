@@ -279,25 +279,22 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint('Login error: $e');
-      debugPrintStack(stackTrace: stackTrace);
+  debugPrint('LOGIN ERROR: $e');
+  debugPrintStack(stackTrace: stackTrace);
 
-      if (!mounted) return;
+  if (!mounted) return;
 
-      setState(() => _isLoading = false);
+  setState(() => _isLoading = false);
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อหรือติดต่อผู้ดูแลระบบ',
-            ),
-            duration: Duration(seconds: 3),
-          ),
-        );
-    }
-  }
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text('เข้าสู่ระบบไม่สำเร็จ: $e'),
+        duration: const Duration(seconds: 8),
+      ),
+    );
+}
 
   @override
   Widget build(BuildContext context) {
