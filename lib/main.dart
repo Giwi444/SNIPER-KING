@@ -117,6 +117,9 @@ class _TypewriterTextState extends State<TypewriterText> {
 }
 
 
+// ==========================================
+// #3 โหมดLiquiditySweepApp
+// ==========================================
 
 class LiquiditySweepApp extends StatelessWidget {
   const LiquiditySweepApp({super.key});
@@ -177,7 +180,7 @@ class LiquiditySweepApp extends StatelessWidget {
 
 
 // ==========================================
-// #2 โหมดการเข้าใช้งานครั้งแรก (MT5 Login Wrapper)
+// #4 โหมดการเข้าใช้งานครั้งแรก (MT5 Login Wrapper)
 // ==========================================
 
 class MT5LoginWrapper extends StatefulWidget {
@@ -204,7 +207,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
   }
 
   void _submitMT5Login() async {
-    // เคลียร์ SnackBar เก่าทิ้งทันทีเพื่อไม่ให้ค้างแสดงผล
+    // เคลียร์ SnackBar เก่าทิ้งทันทีเพื่อให้ไม่ค้างแสดงผล
     ScaffoldMessenger.of(context).clearSnackBars();
 
     String login = _loginController.text.trim();
@@ -253,14 +256,12 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
 
       if (snapshot.exists) {
         final prefs = await SharedPreferences.getInstance();
-        // เซฟพอร์ตลงเครื่องทันทีแบบถาวร
         await prefs.setString('mt5_login', login);
         await prefs.setString('saved_mt5_login', login);
         await prefs.setString('mt5_server', server);
 
         if (!mounted) return;
 
-        // สลับไปหน้า PIN ทันทีแบบเกลี้ยงเกลา ไม่ทิ้ง SnackBar
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const PinAuthWrapper()),
@@ -278,34 +279,6 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
       }
-    } 
-    } on FirebaseException catch (e, stackTrace) {
-      debugPrint('Firebase error code: ${e.code}');
-      debugPrint('Firebase error details: ${e.message}');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      final String message = e.code == 'permission-denied'
-          ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules'
-          : e.code == 'unavailable'
-              ? 'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'
-              : 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
-
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-    } 
     } on FirebaseException catch (e, stackTrace) {
       debugPrint('Firebase error code: ${e.code}');
       debugPrint('Firebase error details: ${e.message}');
@@ -348,12 +321,11 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           const SnackBar(
             content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
     }
-
-
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +468,8 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ),
     );
   }
-} 
+}
+
 
 
 
