@@ -59,7 +59,7 @@ jobs:
           )
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Cannot find Flutter project."
+            echo "ERROR: Flutter project not found"
             exit 1
           fi
 
@@ -67,16 +67,69 @@ jobs:
           [ -n "$PROJECT_DIR" ] || PROJECT_DIR="."
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Found Flutter project: $PROJECT_DIR"
+          echo "Found project: $PROJECT_DIR"
 
-      - name: Validate Flutter files
+      - name: Validate project
         shell: bash
         run: |
           cd "$PROJECT_DIR"
           test -f pubspec.yaml
           test -f lib/main.dart
           test -f android/app/src/main/AndroidManifest.xml
-          echo "Flutter project files verified."
+
+      - name: Repair Android v1 embedding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+
+          project = os.environ["PROJECT_DIR"]
+          path = os.path.join(
+              project, "android", "app", "src", "main",
+              "AndroidManifest.xml"
+          )
+
+          ANDROID = "http://schemas.android.com/apk/res/android"
+          ET.register_namespace("android", ANDROID)
+
+          tree = ET.parse(path)
+          root = tree.getroot()
+          app = root.find("application")
+
+          if app is None:
+              raise SystemExit("ERROR: Manifest has no application element")
+
+          name_key = f"{{{ANDROID}}}name"
+          value_key = f"{{{ANDROID}}}value"
+
+          if app.get(name_key) == "io.flutter.app.FlutterApplication":
+              app.set(name_key, "${applicationName}")
+
+          for activity in app.findall("activity"):
+              if activity.get(name_key) == "io.flutter.app.FlutterActivity":
+                  activity.set(name_key, ".MainActivity")
+
+          metadata = None
+          for item in app.findall("meta-data"):
+              if item.get(name_key) == "flutterEmbedding":
+                  metadata = item
+                  break
+
+          if metadata is None:
+              metadata = ET.SubElement(app, "meta-data")
+              metadata.set(name_key, "flutterEmbedding")
+
+          metadata.set(value_key, "2")
+
+          tree.write(path, encoding="utf-8", xml_declaration=True)
+
+          print("Repaired manifest:", path)
+          print("flutterEmbedding is set to 2")
+          print("===== RESULTING MANIFEST =====")
+          with open(path, encoding="utf-8") as manifest:
+              print(manifest.read())
+          PY
 
       - name: Clean old build
         shell: bash
@@ -86,56 +139,13 @@ jobs:
           rm -rf .dart_tool build
           rm -rf android/.gradle android/app/build
 
-      - name: Diagnose Android embedding
-        shell: bash
-        run: |
-          cd "$PROJECT_DIR"
-
-          echo "===== PROJECT ROOT ====="
-          pwd
-
-          echo "===== ALL ANDROID MANIFESTS ====="
-          find android -name AndroidManifest.xml -type f -print
-
-          echo "===== MAIN MANIFEST ====="
-          cat android/app/src/main/AndroidManifest.xml
-
-          echo "===== ANDROID SOURCE FILES ====="
-          find android/app/src -type f \( \
-            -name "*.kt" -o \
-            -name "*.java" -o \
-            -name "AndroidManifest.xml" \
-          \) -print
-
-          echo "===== LEGACY REFERENCES IN ANDROID AND LIB ====="
-          grep -RInE \
-            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
-            android lib 2>/dev/null || true
-
-          echo "===== FLUTTER EMBEDDING VERSION ====="
-          grep -RIn 'flutterEmbedding' android 2>/dev/null || true
-
       - name: Get dependencies
         shell: bash
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
 
-      - name: Check cached plugin legacy references
-        shell: bash
-        run: |
-          PLUGIN_DIR="$HOME/.pub-cache"
-
-          echo "===== PLUGIN LEGACY REFERENCES ====="
-          if [ -d "$PLUGIN_DIR" ]; then
-            grep -RInE \
-              --include="*.kt" \
-              --include="*.java" \
-              'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
-              "$PLUGIN_DIR" 2>/dev/null | head -n 100 || true
-          fi
-
-      - name: Generate Launcher Icons
+      - name: Generate launcher icons
         shell: bash
         run: |
           cd "$PROJECT_DIR"
