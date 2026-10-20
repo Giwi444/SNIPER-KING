@@ -1,3 +1,4 @@
+
 name: BotHybrid
 
 on:
@@ -85,40 +86,47 @@ jobs:
           rm -rf .dart_tool build
           rm -rf android/.gradle android/app/build
 
-      - name: Get dependencies
-        shell: bash
-        run: |
-          cd "$PROJECT_DIR"
-          flutter pub get
-
-      - name: Diagnose old Android embedding
+      - name: Diagnose Android embedding
         shell: bash
         run: |
           cd "$PROJECT_DIR"
 
-          echo "===== AndroidManifest.xml ====="
+          echo "===== PROJECT ROOT ====="
+          pwd
+
+          echo "===== ALL ANDROID MANIFESTS ====="
+          find android -name AndroidManifest.xml -type f -print
+
+          echo "===== MAIN MANIFEST ====="
           cat android/app/src/main/AndroidManifest.xml
 
-          echo "===== Android source files ====="
+          echo "===== ANDROID SOURCE FILES ====="
           find android/app/src -type f \( \
             -name "*.kt" -o \
             -name "*.java" -o \
             -name "AndroidManifest.xml" \
           \) -print
 
-          echo "===== Legacy embedding references in Android source ====="
+          echo "===== LEGACY REFERENCES IN ANDROID AND LIB ====="
           grep -RInE \
-            --include="*.kt" \
-            --include="*.java" \
-            --include="AndroidManifest.xml" \
-            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar|flutterEmbedding' \
-            android/app/src || true
+            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
+            android lib 2>/dev/null || true
 
-          echo "===== Flutter dependencies ====="
-          flutter pub deps
+          echo "===== FLUTTER EMBEDDING VERSION ====="
+          grep -RIn 'flutterEmbedding' android 2>/dev/null || true
 
-          echo "===== Plugin legacy embedding references ====="
+      - name: Get dependencies
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+
+      - name: Check cached plugin legacy references
+        shell: bash
+        run: |
           PLUGIN_DIR="$HOME/.pub-cache"
+
+          echo "===== PLUGIN LEGACY REFERENCES ====="
           if [ -d "$PLUGIN_DIR" ]; then
             grep -RInE \
               --include="*.kt" \
