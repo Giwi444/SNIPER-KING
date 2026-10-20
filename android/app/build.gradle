@@ -1,39 +1,39 @@
+
 plugins {
-id "com.android.application"
-id "kotlin-android"
-id "dev.flutter.flutter-gradle-plugin"
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
-namespace "com.example.bothybrid"
-compileSdkVersion flutter.compileSdkVersion
-ndkVersion flutter.ndkVersion
+    namespace "com.example.sniperhybrid"
+    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
-compileOptions {
-    sourceCompatibility JavaVersion.VERSION_17
-    targetCompatibility JavaVersion.VERSION_17
-}
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 
-kotlinOptions {
-    jvmTarget = '17'
-}
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 
-defaultConfig {
-    applicationId "com.example.bothybrid"
-    minSdkVersion flutter.minSdkVersion
-    targetSdkVersion flutter.targetSdkVersion
-    versionCode flutterVersionCode.toInteger()
-    versionName flutterVersionName
-}
+    defaultConfig {
+        applicationId "com.example.sniperhybrid"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
 
-buildTypes {
-    release {
-        signingConfig signingConfigs.debug
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
     }
 }
 
-}
-
 flutter {
-source '../..'
+    source '../..'
 }
