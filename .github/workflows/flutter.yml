@@ -74,20 +74,6 @@ jobs:
           test -f lib/main.dart
           echo "Flutter project files verified."
 
-      - name: Generate Android platform if missing
-        run: |
-          cd "$PROJECT_DIR"
-
-          if [ ! -f android/app/build.gradle ] && \
-             [ ! -f android/app/build.gradle.kts ]; then
-            flutter create . \
-              --platforms=android \
-              --org com.bothybrid \
-              --project-name bot_hybrid
-          else
-            echo "Existing Android platform found; preserving it."
-          fi
-
       - name: Clean old build
         run: |
           cd "$PROJECT_DIR"
@@ -97,12 +83,12 @@ jobs:
       - name: Get dependencies
         run: |
           cd "$PROJECT_DIR"
+          flutter pub cache repair
           flutter pub get
 
       - name: Generate Launcher Icons automatically
         run: |
           cd "$PROJECT_DIR"
-          # สเตปนี้ช่วยสร้างไอคอนแอปให้อัตโนมัติทุกครั้งที่บิลด์ ป้องกันปัญหาไอคอนหาย
           flutter pub run flutter_launcher_icons:main || echo "Launcher icons package not configured, skipping..."
 
       - name: Build release APK
