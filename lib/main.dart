@@ -306,7 +306,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
           ),
         );
     } catch (e, stackTrace) {
-      debugPrint('Login error: $e');
+      debugPrint('Login error details: $e'); // เพิ่มบรรทัดนี้เพื่อดู Error จริงใน Debug Console
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
@@ -318,14 +318,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'),
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาด: ${e.toString()}'), // แสดงข้อความจริงชั่วคราวเพื่อให้ทราบสาเหตุ
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 4),
           ),
         );
     }
-  }
+
 
   @override
   Widget build(BuildContext context) {
