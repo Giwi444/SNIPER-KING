@@ -1,5 +1,5 @@
 
-package com.example.bothybrid
+package com.example.sniperhybrid
 
 import io.flutter.embedding.android.FlutterActivity
 
