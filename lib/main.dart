@@ -206,8 +206,7 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
     super.dispose();
   }
 
-  void _submitMT5Login() async {
-    // เคลียร์ SnackBar เก่าทิ้งทันทีเพื่อให้ไม่ค้างแสดงผล
+    void _submitMT5Login() async {
     ScaffoldMessenger.of(context).clearSnackBars();
 
     String login = _loginController.text.trim();
@@ -246,9 +245,10 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         app = Firebase.app();
       }
 
+      // แก้ไข: เอาเครื่องหมาย / ท้าย URL ออก เพื่อให้ตรงกัน
       final database = FirebaseDatabase.instanceFor(
         app: app,
-        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app/',
+        databaseURL: 'https://liquidity-b8739-default-rtdb.asia-southeast1.firebasedatabase.app',
       );
 
       final accountRef = database.ref('accounts/$login');
@@ -290,23 +290,17 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         _isLoading = false;
       });
 
-      final String message = e.code == 'permission-denied'
-          ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firebase Rules'
-          : e.code == 'unavailable'
-              ? 'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'
-              : 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
-
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text('Firebase Error: ${e.message}'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
           ),
         );
     } catch (e, stackTrace) {
-      debugPrint('Login error details: $e'); // เพิ่มบรรทัดนี้เพื่อดู Error จริงใน Debug Console
+      debugPrint('Login error details: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
@@ -319,12 +313,14 @@ class _MT5LoginWrapperState extends State<MT5LoginWrapper> {
         ..clearSnackBars()
         ..showSnackBar(
           SnackBar(
-            content: Text('เกิดข้อผิดพลาด: ${e.toString()}'), // แสดงข้อความจริงชั่วคราวเพื่อให้ทราบสาเหตุ
+            content: Text('เกิดข้อผิดพลาด: $e'), // แสดง Error จริงเพื่อให้อ่านง่ายขึ้น
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 3),
           ),
         );
     }
+  }
+
 
 
   @override
