@@ -43,6 +43,7 @@ jobs:
 
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
+
             if [ -f "$candidate/lib/main.dart" ]; then
               PROJECT_DIR="$candidate"
               break
@@ -71,6 +72,7 @@ jobs:
           cd "$PROJECT_DIR"
           test -f pubspec.yaml
           test -f lib/main.dart
+          test -f android/app/src/main/AndroidManifest.xml
           echo "Flutter project files verified."
 
       - name: Clean old build
@@ -80,8 +82,7 @@ jobs:
           rm -rf .dart_tool build
           rm -rf android/.gradle android/app/build
           if [ -x android/gradlew ]; then
-            cd android
-            ./gradlew clean || true
+            (cd android && ./gradlew clean) || true
           fi
 
       - name: Get dependencies
@@ -94,16 +95,24 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
 
-          echo "=== Searching Android v1 embedding references ==="
+          echo "===== Search legacy embedding references ====="
           grep -RInE \
             --exclude-dir=.git \
             --exclude-dir=build \
             --exclude-dir=.dart_tool \
             --exclude-dir=.gradle \
-            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
-            android lib pubspec.yaml pubspec.lock 2>/dev/null || true
+            --exclude-dir=.pub-cache \
+            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar|flutterEmbedding' \
+            . || true
 
-          echo "=== Flutter dependency tree ==="
+          echo "===== Android source files ====="
+          find android -type f \( \
+            -name "*.kt" -o \
+            -name "*.java" -o \
+            -name "AndroidManifest.xml" \
+          \) -print
+
+          echo "===== Flutter dependencies ====="
           flutter pub deps
 
       - name: Generate Launcher Icons
