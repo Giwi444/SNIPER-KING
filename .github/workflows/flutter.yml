@@ -44,7 +44,8 @@ jobs:
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
 
-            if [ -f "$candidate/lib/main.dart" ]; then
+            if [ -f "$candidate/lib/main.dart" ] && \
+               [ -f "$candidate/android/app/src/main/AndroidManifest.xml" ]; then
               PROJECT_DIR="$candidate"
               break
             fi
@@ -68,6 +69,7 @@ jobs:
           echo "Found Flutter project: $PROJECT_DIR"
 
       - name: Validate Flutter files
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
           test -f pubspec.yaml
@@ -76,16 +78,15 @@ jobs:
           echo "Flutter project files verified."
 
       - name: Clean old build
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
           flutter clean
           rm -rf .dart_tool build
           rm -rf android/.gradle android/app/build
-          if [ -x android/gradlew ]; then
-            (cd android && ./gradlew clean) || true
-          fi
 
       - name: Get dependencies
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
@@ -95,38 +96,52 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
 
-          echo "===== Search legacy embedding references ====="
-          grep -RInE \
-            --exclude-dir=.git \
-            --exclude-dir=build \
-            --exclude-dir=.dart_tool \
-            --exclude-dir=.gradle \
-            --exclude-dir=.pub-cache \
-            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar|flutterEmbedding' \
-            . || true
+          echo "===== AndroidManifest.xml ====="
+          cat android/app/src/main/AndroidManifest.xml
 
           echo "===== Android source files ====="
-          find android -type f \( \
+          find android/app/src -type f \( \
             -name "*.kt" -o \
             -name "*.java" -o \
             -name "AndroidManifest.xml" \
           \) -print
 
+          echo "===== Legacy embedding references in Android source ====="
+          grep -RInE \
+            --include="*.kt" \
+            --include="*.java" \
+            --include="AndroidManifest.xml" \
+            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar|flutterEmbedding' \
+            android/app/src || true
+
           echo "===== Flutter dependencies ====="
           flutter pub deps
 
+          echo "===== Plugin legacy embedding references ====="
+          PLUGIN_DIR="$HOME/.pub-cache"
+          if [ -d "$PLUGIN_DIR" ]; then
+            grep -RInE \
+              --include="*.kt" \
+              --include="*.java" \
+              'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
+              "$PLUGIN_DIR" 2>/dev/null | head -n 100 || true
+          fi
+
       - name: Generate Launcher Icons
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
           dart run flutter_launcher_icons || \
             echo "Launcher icon generation skipped."
 
       - name: Build release APK
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
           flutter build apk --release --no-shrink -v
 
       - name: Verify APK
+        shell: bash
         run: |
           APK="$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
