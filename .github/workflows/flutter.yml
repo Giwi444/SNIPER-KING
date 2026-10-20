@@ -83,13 +83,12 @@ jobs:
       - name: Get dependencies
         run: |
           cd "$PROJECT_DIR"
-          flutter pub cache repair
           flutter pub get
 
       - name: Generate Launcher Icons automatically
         run: |
           cd "$PROJECT_DIR"
-          flutter pub run flutter_launcher_icons:main || echo "Launcher icons package not configured, skipping..."
+          dart run flutter_launcher_icons || echo "Launcher icons package not configured, skipping..."
 
       - name: Build release APK
         run: |
