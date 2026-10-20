@@ -40,6 +40,7 @@ jobs:
       - name: Find Flutter project
         shell: bash
         run: |
+          set -euo pipefail
           PROJECT_DIR=""
 
           while IFS= read -r file; do
@@ -72,26 +73,33 @@ jobs:
       - name: Validate project
         shell: bash
         run: |
+          set -euo pipefail
           cd "$PROJECT_DIR"
           test -f pubspec.yaml
           test -f lib/main.dart
           test -f android/app/src/main/AndroidManifest.xml
+          echo "Flutter project files verified."
 
-      - name: Repair Android v1 embedding
+      - name: Verify and repair Android embedding
         shell: bash
         run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+
           python3 - <<'PY'
-          import os
           import xml.etree.ElementTree as ET
+          from pathlib import Path
 
-          project = os.environ["PROJECT_DIR"]
-          path = os.path.join(
-              project, "android", "app", "src", "main",
-              "AndroidManifest.xml"
+          path = Path("android/app/src/main/AndroidManifest.xml")
+
+          if not path.is_file():
+              raise SystemExit(f"ERROR: Manifest not found: {path}")
+
+          android = "{http://schemas.android.com/apk/res/android}"
+          ET.register_namespace(
+              "android",
+              "http://schemas.android.com/apk/res/android"
           )
-
-          ANDROID = "http://schemas.android.com/apk/res/android"
-          ET.register_namespace("android", ANDROID)
 
           tree = ET.parse(path)
           root = tree.getroot()
@@ -100,8 +108,8 @@ jobs:
           if app is None:
               raise SystemExit("ERROR: Manifest has no application element")
 
-          name_key = f"{{{ANDROID}}}name"
-          value_key = f"{{{ANDROID}}}value"
+          name_key = android + "name"
+          value_key = android + "value"
 
           if app.get(name_key) == "io.flutter.app.FlutterApplication":
               app.set(name_key, "${applicationName}")
@@ -110,30 +118,44 @@ jobs:
               if activity.get(name_key) == "io.flutter.app.FlutterActivity":
                   activity.set(name_key, ".MainActivity")
 
-          metadata = None
-          for item in app.findall("meta-data"):
+          for item in list(app.findall("meta-data")):
               if item.get(name_key) == "flutterEmbedding":
-                  metadata = item
-                  break
+                  app.remove(item)
 
-          if metadata is None:
-              metadata = ET.SubElement(app, "meta-data")
-              metadata.set(name_key, "flutterEmbedding")
-
+          metadata = ET.SubElement(app, "meta-data")
+          metadata.set(name_key, "flutterEmbedding")
           metadata.set(value_key, "2")
 
           tree.write(path, encoding="utf-8", xml_declaration=True)
 
-          print("Repaired manifest:", path)
-          print("flutterEmbedding is set to 2")
-          print("===== RESULTING MANIFEST =====")
-          with open(path, encoding="utf-8") as manifest:
-              print(manifest.read())
+          check_root = ET.parse(path).getroot()
+          check_app = check_root.find("application")
+
+          if check_app is None:
+              raise SystemExit("ERROR: Application element missing")
+
+          valid = any(
+              item.get(name_key) == "flutterEmbedding"
+              and item.get(value_key) == "2"
+              for item in check_app.findall("meta-data")
+          )
+
+          if not valid:
+              raise SystemExit("ERROR: embedding v2 verification failed")
+
+          if check_app.get(name_key) == "io.flutter.app.FlutterApplication":
+              raise SystemExit("ERROR: Legacy FlutterApplication remains")
+
+          print("SUCCESS: Android embedding v2 verified")
+          print("===== MANIFEST USED FOR BUILD =====")
+          print(path.resolve())
+          print(path.read_text(encoding="utf-8"))
           PY
 
       - name: Clean old build
         shell: bash
         run: |
+          set -euo pipefail
           cd "$PROJECT_DIR"
           flutter clean
           rm -rf .dart_tool build
@@ -142,25 +164,73 @@ jobs:
       - name: Get dependencies
         shell: bash
         run: |
+          set -euo pipefail
           cd "$PROJECT_DIR"
           flutter pub get
 
       - name: Generate launcher icons
         shell: bash
         run: |
+          set -euo pipefail
           cd "$PROJECT_DIR"
-          dart run flutter_launcher_icons || \
-            echo "Launcher icon generation skipped."
+          dart run flutter_launcher_icons || {
+            echo "WARNING: Launcher icon generation skipped."
+          }
+
+      - name: Final Android embedding check
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          android = "{http://schemas.android.com/apk/res/android}"
+          root = ET.parse(path).getroot()
+          app = root.find("application")
+
+          if app is None:
+              raise SystemExit("ERROR: Application element missing")
+
+          name_key = android + "name"
+          value_key = android + "value"
+
+          if app.get(name_key) == "io.flutter.app.FlutterApplication":
+              raise SystemExit("ERROR: Legacy FlutterApplication remains")
+
+          if any(
+              item.get(name_key) == "io.flutter.app.FlutterActivity"
+              for item in app.findall("activity")
+          ):
+              raise SystemExit("ERROR: Legacy FlutterActivity remains")
+
+          valid = any(
+              item.get(name_key) == "flutterEmbedding"
+              and item.get(value_key) == "2"
+              for item in app.findall("meta-data")
+          )
+
+          if not valid:
+              raise SystemExit("ERROR: Embedding v2 metadata missing")
+
+          print("SUCCESS: Final Android embedding check passed")
+          print(path.read_text(encoding="utf-8"))
+          PY
 
       - name: Build release APK
         shell: bash
         run: |
+          set -euo pipefail
           cd "$PROJECT_DIR"
           flutter build apk --release --no-shrink -v
 
       - name: Verify APK
         shell: bash
         run: |
+          set -euo pipefail
           APK="$PROJECT_DIR/build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
           ls -lh "$APK"
