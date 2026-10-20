@@ -79,6 +79,8 @@ jobs:
           cd "$PROJECT_DIR"
           flutter clean
           rm -rf .dart_tool build
+          rm -rf android/.gradle android/app/build
+          cd android && ./gradlew clean || true
 
       - name: Get dependencies
         run: |
