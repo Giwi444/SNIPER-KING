@@ -1,7 +1,7 @@
 // ==========================================
 // #1 โหมดการเชื่อมต่อเซิร์ฟเวอร์
 // ==========================================
-  
+ 
 import 'dart:async';  
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -2662,7 +2662,7 @@ class _FlashingSniperTextState extends State<FlashingSniperText>
         return Opacity(
           opacity: val,
           child: const Text(
-            '🎯 S N I P E R 🎯',
+            'S N I P E R ',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 26,
