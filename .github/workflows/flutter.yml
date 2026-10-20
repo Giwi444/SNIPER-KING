@@ -94,7 +94,7 @@ jobs:
       - name: Build release APK
         run: |
           cd "$PROJECT_DIR"
-          flutter build apk --release
+          flutter build apk --release --no-shrink
 
       - name: Verify APK
         run: |
