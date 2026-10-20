@@ -10,6 +10,7 @@ on:
       - 'lib/**'
       - 'android/**'
       - 'pubspec.yaml'
+      - 'pubspec.lock'
       - 'assets/**'
 
 permissions:
@@ -42,7 +43,6 @@ jobs:
 
           while IFS= read -r file; do
             candidate="${file%/pubspec.yaml}"
-
             if [ -f "$candidate/lib/main.dart" ]; then
               PROJECT_DIR="$candidate"
               break
@@ -57,7 +57,6 @@ jobs:
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: Cannot find Flutter project."
-            echo "Required: pubspec.yaml and lib/main.dart"
             exit 1
           fi
 
@@ -80,22 +79,43 @@ jobs:
           flutter clean
           rm -rf .dart_tool build
           rm -rf android/.gradle android/app/build
-          cd android && ./gradlew clean || true
+          if [ -x android/gradlew ]; then
+            cd android
+            ./gradlew clean || true
+          fi
 
       - name: Get dependencies
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
 
-      - name: Generate Launcher Icons automatically
+      - name: Diagnose old Android embedding
+        shell: bash
         run: |
           cd "$PROJECT_DIR"
-          dart run flutter_launcher_icons || echo "Launcher icons package not configured, skipping..."
+
+          echo "=== Searching Android v1 embedding references ==="
+          grep -RInE \
+            --exclude-dir=.git \
+            --exclude-dir=build \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=.gradle \
+            'io\.flutter\.app\.FlutterActivity|io\.flutter\.app\.FlutterApplication|PluginRegistry\.Registrar|registerWith\(Registrar' \
+            android lib pubspec.yaml pubspec.lock 2>/dev/null || true
+
+          echo "=== Flutter dependency tree ==="
+          flutter pub deps
+
+      - name: Generate Launcher Icons
+        run: |
+          cd "$PROJECT_DIR"
+          dart run flutter_launcher_icons || \
+            echo "Launcher icon generation skipped."
 
       - name: Build release APK
         run: |
           cd "$PROJECT_DIR"
-          flutter build apk --release --no-shrink
+          flutter build apk --release --no-shrink -v
 
       - name: Verify APK
         run: |
